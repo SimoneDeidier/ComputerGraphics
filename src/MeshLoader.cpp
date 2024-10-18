@@ -278,7 +278,7 @@ protected:
         DStaxi.bind(commandBuffer, P, 0, currentImage);
         Mtaxi.bind(commandBuffer);
         vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(M3.indices.size()), 1, 0, 0, 0);
+                         static_cast<uint32_t>(Mtaxi.indices.size()), 1, 0, 0, 0);
     }
 
     // Here is where you update the uniforms.
