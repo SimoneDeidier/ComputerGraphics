@@ -46,6 +46,7 @@ protected:
     // Please note that Model objects depends on the corresponding vertex structure
     // Models
     Model<Vertex> M1, M2, M3, M4, Mtaxi;
+    Model<Vertex>  M2, M3, M4, Mtaxi;
     // Descriptor sets
     DescriptorSet DS1, DS2, DS3, DS4, DStaxi;
     // Textures
@@ -55,13 +56,16 @@ protected:
     UniformBlock ubo1, ubo2, ubo3, ubo4, ubotaxi;
 
     // Other application parameters
+    glm::vec3 CamPos = glm::vec3(0.0, 1.5, 7.0); //initial pos of camera?
+    float CamAlpha = 0.0f;
+    float CamBeta = 0.0f;
 
     // Here you set the main application parameters
     void setWindowParameters() {
         // window size, titile and initial background
         windowWidth = 800;
         windowHeight = 600;
-        windowTitle = "Mesh Loader";
+        windowTitle = "Computer graphics' project";
         windowResizable = GLFW_TRUE;
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
@@ -141,7 +145,7 @@ protected:
         // The second parameter is the pointer to the vertex definition for this model
         // The third parameter is the file name
         // The last is a constant specifying the file type: currently only OBJ or GLTF
-        M1.init(this,   &VD, "Models/Cube.obj", OBJ);
+        //M1.init(this,   &VD, "Models/Cube.obj", OBJ);
         M2.init(this,   &VD, "Models/Sphere.gltf", GLTF);
         M3.init(this,   &VD, "Models/dish.005_Mesh.098.mgcg", MGCG);
         Mtaxi.init(this, &VD, "Models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
@@ -220,7 +224,7 @@ protected:
         Tcity.cleanup();
 
         // Cleanup models
-        M1.cleanup();
+        //M1.cleanup();
         M2.cleanup();
         M3.cleanup();
         M4.cleanup();
@@ -252,13 +256,13 @@ protected:
         // of the current image in the swap chain, passed in its last parameter
 
         // binds the model
-        M1.bind(commandBuffer);
+        //M1.bind(commandBuffer);
         // For a Model object, this command binds the corresponing index and vertex buffer
         // to the command buffer passed in its parameter
 
         // record the drawing command in the command buffer
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);
+        //vkCmdDrawIndexed(commandBuffer,
+          //               static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);
         // the second parameter is the number of indexes to be drawn. For a Model object,
         // this can be retrieved with the .indices.size() method.
 
@@ -304,7 +308,22 @@ protected:
         // If fills the last boolean variable with true if fire has been pressed:
         //          SPACE on the keyboard, A or B button on the Gamepad, Right mouse button
 
+        
+        const float ROT_SPEED = glm::radians(240.0f);
+        const float MOVE_SPEED = 4.0f;
 
+        CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
+        CamBeta = CamBeta - ROT_SPEED * deltaT * r.x;
+        CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
+            (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
+
+        glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
+        glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
+        CamPos = CamPos + MOVE_SPEED * m.x * ux * deltaT;
+        CamPos = CamPos + MOVE_SPEED * m.y * glm::vec3(0, 1, 0) * deltaT;
+        CamPos = CamPos + MOVE_SPEED * m.z * uz * deltaT;
+
+        /* codice prof che c'era prima
         // Parameters
         // Camera FOV-y, Near Plane and Far Plane
         const float FOVy = glm::radians(90.0f);
@@ -315,34 +334,43 @@ protected:
         Prj[1][1] *= -1;
         glm::vec3 camTarget = glm::vec3(0,0,0);
         glm::vec3 camPos    = camTarget + glm::vec3(6,3,10) / 2.0f;
-        glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0));
+        glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0)); */
+        
+        const float nearPlane = 0.1f;
+        const float farPlane = 100.0f;
+        glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
+        Prj[1][1] *= -1;
+
+        glm::mat4 mView =  glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
+                        glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
+                        glm::translate(glm::mat4(1.0), -CamPos);
 
 
-        glm::mat4 World;
+        glm::mat4 mWorld;
 
-        World = glm::translate(glm::mat4(1), glm::vec3(-3, 0, 0));
-        ubo1.mvpMat = Prj * View * World;
+        mWorld = glm::translate(glm::mat4(1), glm::vec3(-3, 0, 0));
+        ubo1.mvpMat = Prj * mView * mWorld;
         DS1.map(currentImage, &ubo1, sizeof(ubo1), 0);
         // the .map() method of a DataSet object, requires the current image of the swap chain as first parameter
         // the second parameter is the pointer to the C++ data structure to transfer to the GPU
         // the third parameter is its size
         // the fourth parameter is the location inside the descriptor set of this uniform block
-        World = glm::translate(glm::mat4(1), glm::vec3(3, 0, 0));
-        ubo2.mvpMat = Prj * View * World;
+        mWorld = glm::translate(glm::mat4(1), glm::vec3(3, 0, 0));
+        ubo2.mvpMat = Prj * mView * mWorld;
         DS2.map(currentImage, &ubo2, sizeof(ubo2), 0);
 
-        World = glm::scale(glm::mat4(1), glm::vec3(10.0f));
-        ubo3.mvpMat = Prj * View * World;
+        mWorld = glm::scale(glm::mat4(1), glm::vec3(10.0f));
+        ubo3.mvpMat = Prj * mView * mWorld;
         DS3.map(currentImage, &ubo3, sizeof(ubo3), 0);
 
-        World = glm::translate(glm::mat4(1), glm::vec3(0, -5, 0)) *
+        mWorld = glm::translate(glm::mat4(1), glm::vec3(0, -5, 0)) *
                 glm::scale(glm::mat4(1), glm::vec3(5.0f));
-        ubo4.mvpMat = Prj * View * World;
+        ubo4.mvpMat = Prj * mView * mWorld;
         DS4.map(currentImage, &ubo4, sizeof(ubo4), 0);
 
-        World = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) *
+        mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) *
                 glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
-        ubotaxi.mvpMat = Prj * View * World;
+        ubotaxi.mvpMat = Prj * mView * mWorld;
         DStaxi.map(currentImage, &ubotaxi, sizeof(ubotaxi), 0);
 
     }
