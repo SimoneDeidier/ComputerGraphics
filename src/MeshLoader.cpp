@@ -45,15 +45,14 @@ protected:
     // Models, textures and Descriptors (values assigned to the uniforms)
     // Please note that Model objects depends on the corresponding vertex structure
     // Models
-    Model<Vertex> M1, M2, M3, M4, Mtaxi;
-    Model<Vertex>  M2, M3, M4, Mtaxi;
+    Model<Vertex>  Mtaxi;
     // Descriptor sets
-    DescriptorSet DS1, DS2, DS3, DS4, DStaxi;
+    DescriptorSet DStaxi;
     // Textures
-    Texture T1, T2, Tcity;
+    Texture Tcity;
 
     // C++ storage for uniform variables
-    UniformBlock ubo1, ubo2, ubo3, ubo4, ubotaxi;
+    UniformBlock ubotaxi;
 
     // Other application parameters
     glm::vec3 CamPos = glm::vec3(0.0, 1.5, 7.0); //initial pos of camera?
@@ -70,9 +69,9 @@ protected:
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool = 5;
-        texturesInPool = 5;
-        setsInPool = 5;
+        uniformBlocksInPool = 1;
+        texturesInPool = 1;
+        setsInPool = 1;
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -145,21 +144,10 @@ protected:
         // The second parameter is the pointer to the vertex definition for this model
         // The third parameter is the file name
         // The last is a constant specifying the file type: currently only OBJ or GLTF
-        //M1.init(this,   &VD, "Models/Cube.obj", OBJ);
-        M2.init(this,   &VD, "Models/Sphere.gltf", GLTF);
-        M3.init(this,   &VD, "Models/dish.005_Mesh.098.mgcg", MGCG);
         Mtaxi.init(this, &VD, "Models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
 
-        // Creates a mesh with direct enumeration of vertices and indices
-        M4.vertices = {{{-6,-2,-6}, {0.0f,0.0f}}, {{-6,-2,6}, {0.0f,1.0f}},
-                       {{6,-2,-6}, {1.0f,0.0f}}, {{ 6,-2,6}, {1.0f,1.0f}}};
-        M4.indices = {0, 1, 2,    1, 3, 2};
-        M4.initMesh(this, &VD);
 
         // Create the textures
-        // The second parameter is the file name
-        T1.init(this,   "textures/Checker.png");
-        T2.init(this,   "textures/Textures_Food.png");
         Tcity.init(this,"textures/Textures_City.png");
 
         // Init local variables
@@ -171,28 +159,6 @@ protected:
         P.create();
 
         // Here you define the data set
-        DS1.init(this, &DSL, {
-                // the second parameter, is a pointer to the Uniform Set Layout of this set
-                // the last parameter is an array, with one element per binding of the set.
-                // first  elmenet : the binding number
-                // second element : UNIFORM or TEXTURE (an enum) depending on the type
-                // third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
-                // fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
-                {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T1}
-        });
-        DS2.init(this, &DSL, {
-                {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T1}
-        });
-        DS3.init(this, &DSL, {
-                {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T2}
-        });
-        DS4.init(this, &DSL, {
-                {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T1}
-        });
         DStaxi.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBlock), nullptr},
                 {1, TEXTURE, 0, &Tcity}
@@ -206,10 +172,6 @@ protected:
         P.cleanup();
 
         // Cleanup datasets
-        DS1.cleanup();
-        DS2.cleanup();
-        DS3.cleanup();
-        DS4.cleanup();
         DStaxi.cleanup();
     }
 
@@ -219,15 +181,9 @@ protected:
     // methods: .cleanup() recreates them, while .destroy() delete them completely
     void localCleanup() {
         // Cleanup textures
-        T1.cleanup();
-        T2.cleanup();
         Tcity.cleanup();
 
         // Cleanup models
-        //M1.cleanup();
-        M2.cleanup();
-        M3.cleanup();
-        M4.cleanup();
         Mtaxi.cleanup();
 
         // Cleanup descriptor set layouts
@@ -247,7 +203,6 @@ protected:
         // For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
         // binds the data set
-        DS1.bind(commandBuffer, P, 0, currentImage);
         // For a Dataset object, this command binds the corresponing dataset
         // to the command buffer and pipeline passed in its first and second parameters.
         // The third parameter is the number of the set being bound
@@ -256,28 +211,12 @@ protected:
         // of the current image in the swap chain, passed in its last parameter
 
         // binds the model
-        //M1.bind(commandBuffer);
         // For a Model object, this command binds the corresponing index and vertex buffer
         // to the command buffer passed in its parameter
 
         // record the drawing command in the command buffer
-        //vkCmdDrawIndexed(commandBuffer,
-          //               static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);
         // the second parameter is the number of indexes to be drawn. For a Model object,
         // this can be retrieved with the .indices.size() method.
-
-        DS2.bind(commandBuffer, P, 0, currentImage);
-        M2.bind(commandBuffer);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
-        DS3.bind(commandBuffer, P, 0, currentImage);
-        M3.bind(commandBuffer);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(M3.indices.size()), 1, 0, 0, 0);
-        DS4.bind(commandBuffer, P, 0, currentImage);
-        M4.bind(commandBuffer);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(M4.indices.size()), 1, 0, 0, 0);
 
         DStaxi.bind(commandBuffer, P, 0, currentImage);
         Mtaxi.bind(commandBuffer);
@@ -348,25 +287,10 @@ protected:
 
         glm::mat4 mWorld;
 
-        mWorld = glm::translate(glm::mat4(1), glm::vec3(-3, 0, 0));
-        ubo1.mvpMat = Prj * mView * mWorld;
-        DS1.map(currentImage, &ubo1, sizeof(ubo1), 0);
         // the .map() method of a DataSet object, requires the current image of the swap chain as first parameter
         // the second parameter is the pointer to the C++ data structure to transfer to the GPU
         // the third parameter is its size
         // the fourth parameter is the location inside the descriptor set of this uniform block
-        mWorld = glm::translate(glm::mat4(1), glm::vec3(3, 0, 0));
-        ubo2.mvpMat = Prj * mView * mWorld;
-        DS2.map(currentImage, &ubo2, sizeof(ubo2), 0);
-
-        mWorld = glm::scale(glm::mat4(1), glm::vec3(10.0f));
-        ubo3.mvpMat = Prj * mView * mWorld;
-        DS3.map(currentImage, &ubo3, sizeof(ubo3), 0);
-
-        mWorld = glm::translate(glm::mat4(1), glm::vec3(0, -5, 0)) *
-                glm::scale(glm::mat4(1), glm::vec3(5.0f));
-        ubo4.mvpMat = Prj * mView * mWorld;
-        DS4.map(currentImage, &ubo4, sizeof(ubo4), 0);
 
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) *
                 glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
