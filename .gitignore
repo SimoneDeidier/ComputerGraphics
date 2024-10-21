@@ -54,3 +54,5 @@ dkms.conf
 src/compile
 src/shaders/compileShader
 src/MeshLoader
+.idea/*
+src/.idea/*
