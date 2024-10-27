@@ -11,8 +11,16 @@
 //        mat3  : alignas(16)
 //        mat4  : alignas(16)
 // Example:
-struct UniformBlock {
+struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
+    alignas(16) glm::mat4 mMat;
+    alignas(16) glm::mat4 nMat;
+};
+
+struct GlobalUniformBufferObject {
+	alignas(16) glm::vec3 lightDir;
+	alignas(16) glm::vec4 lightColor;
+	alignas(16) glm::vec3 eyePos;
 };
 
 // The vertices data structures
@@ -20,6 +28,7 @@ struct UniformBlock {
 struct Vertex {
     glm::vec3 pos;
     glm::vec2 UV;
+    glm::vec3 normal;
 };
 
 
@@ -52,7 +61,8 @@ protected:
     Texture Tcity;
 
     // C++ storage for uniform variables
-    UniformBlock ubotaxi;
+    UniformBufferObject uboTaxi;
+    GlobalUniformBufferObject guboTaxi;
 
     // Other application parameters
     glm::vec3 CamPos = glm::vec3(0.0, 1.5, 7.0); //initial pos of camera?
@@ -62,14 +72,14 @@ protected:
     // Here you set the main application parameters
     void setWindowParameters() {
         // window size, titile and initial background
-        windowWidth = 800;
-        windowHeight = 600;
+        windowWidth = 1280;
+        windowHeight = 720;
         windowTitle = "Computer graphics' project";
         windowResizable = GLFW_TRUE;
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool = 1;
+        uniformBlocksInPool = 2;
         texturesInPool = 1;
         setsInPool = 1;
 
@@ -93,7 +103,8 @@ protected:
                 // third  element : the pipeline stage where it will be used
                 //                  using the corresponding Vulkan constant
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
         });
 
         // Vertex descriptors
@@ -128,7 +139,9 @@ protected:
                         {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
                                 sizeof(glm::vec3), POSITION},
                         {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                                sizeof(glm::vec2), UV}
+                                sizeof(glm::vec2), UV},
+                        {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                                sizeof(glm::vec3), NORMAL}
                 });
 
         // Pipelines [Shader couples]
@@ -136,7 +149,7 @@ protected:
         // Third and fourth parameters are respectively the vertex and fragment shaders
         // The last array, is a vector of pointer to the layouts of the sets that will
         // be used in this pipeline. The first element will be set 0, and so on..
-        P.init(this, &VD, "shaders/ShaderVert.spv", "shaders/ShaderFrag.spv", {&DSL});
+        P.init(this, &VD, "shaders/TaxiVert.spv", "shaders/TaxiFrag.spv", {&DSL});
 
         // Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -160,8 +173,9 @@ protected:
 
         // Here you define the data set
         DStaxi.init(this, &DSL, {
-                {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &Tcity}
+                {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+                {1, TEXTURE, 0, &Tcity},
+                {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
         });
     }
 
@@ -294,8 +308,14 @@ protected:
 
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) *
                 glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
-        ubotaxi.mvpMat = Prj * mView * mWorld;
-        DStaxi.map(currentImage, &ubotaxi, sizeof(ubotaxi), 0);
+        uboTaxi.mvpMat = Prj * mView * mWorld;
+        uboTaxi.mMat = mView * mWorld;
+        uboTaxi.nMat = glm::transpose(glm::inverse(uboTaxi.mMat));
+        DStaxi.map(currentImage, &uboTaxi, sizeof(uboTaxi), 0);
+        guboTaxi.lightDir = glm::normalize(glm::vec3(0.5f, -1.0f, 0.5f));
+        guboTaxi.lightColor = glm::vec4(1.0f);
+        guboTaxi.eyePos = CamPos;
+        DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
 
     }
 };
