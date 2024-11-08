@@ -1,6 +1,9 @@
 // This has been adapted from the Vulkan tutorial
 
 #include "Starter.hpp"
+#include <iostream>
+#include <fstream>
+#define MESH 209
 
 // The uniform buffer objects data structures
 // Remember to use the correct alignas(...) value
@@ -31,10 +34,6 @@ struct Vertex {
     glm::vec3 normal;
 };
 
-
-
-
-
 // MAIN ! 
 class MeshLoader : public BaseProject {
 protected:
@@ -43,26 +42,29 @@ protected:
     float Ar;
 
     // Descriptor Layouts ["classes" of what will be passed to the shaders]
-    DescriptorSetLayout DSL;
+    DescriptorSetLayout DSL,DSLcity;
 
     // Vertex formats
-    VertexDescriptor VD;
+    VertexDescriptor VD, VDcity;
 
     // Pipelines [Shader couples]
-    Pipeline P;
+    Pipeline P, Pcity;
 
     // Models, textures and Descriptors (values assigned to the uniforms)
     // Please note that Model objects depends on the corresponding vertex structure
     // Models
     Model<Vertex>  Mtaxi;
+    Model<Vertex> Mcity[MESH];
     // Descriptor sets
-    DescriptorSet DStaxi;
+    DescriptorSet DStaxi, DScity[MESH];
     // Textures
     Texture Tcity;
 
     // C++ storage for uniform variables
     UniformBufferObject uboTaxi;
+    UniformBufferObject ubocity[MESH];
     GlobalUniformBufferObject guboTaxi;
+    GlobalUniformBufferObject gubocity[MESH];
 
     // Other application parameters
     glm::vec3 CamPos = glm::vec3(0.0, 1.5, 7.0); //initial pos of camera?
@@ -79,9 +81,9 @@ protected:
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool = 2;
-        texturesInPool = 1;
-        setsInPool = 1;
+        uniformBlocksInPool =  (2 * MESH) + 2;
+        texturesInPool = MESH + 1;
+        setsInPool = MESH + 1;
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -96,6 +98,17 @@ protected:
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
         DSL.init(this, {
+                // this array contains the bindings:
+                // first  element : the binding number
+                // second element : the type of element (buffer or texture)
+                //                  using the corresponding Vulkan constant
+                // third  element : the pipeline stage where it will be used
+                //                  using the corresponding Vulkan constant
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+        });
+        DSLcity.init(this, {
                 // this array contains the bindings:
                 // first  element : the binding number
                 // second element : the type of element (buffer or texture)
@@ -143,6 +156,22 @@ protected:
                         {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                 sizeof(glm::vec3), NORMAL}
                 });
+        VDcity.init(this, {
+                // this array contains the bindings
+                // first  element : the binding number
+                // second element : the stride of this binging
+                // third  element : whether this parameter change per vertex or per instance
+                //                  using the corresponding Vulkan constant
+                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+                        // ***************************************************
+                        {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                                sizeof(glm::vec3), POSITION},
+                        {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                                sizeof(glm::vec2), UV},
+                        {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                                sizeof(glm::vec3), NORMAL}
+                });
 
         // Pipelines [Shader couples]
         // The second parameter is the pointer to the vertex definition
@@ -150,7 +179,7 @@ protected:
         // The last array, is a vector of pointer to the layouts of the sets that will
         // be used in this pipeline. The first element will be set 0, and so on..
         P.init(this, &VD, "shaders/TaxiVert.spv", "shaders/TaxiFrag.spv", {&DSL});
-
+        Pcity.init(this, &VDcity, "shaders/TaxiVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
         // Models, textures and Descriptors (values assigned to the uniforms)
 
         // Create models
@@ -163,6 +192,27 @@ protected:
         // Create the textures
         Tcity.init(this,"textures/Textures_City.png");
 
+        nlohmann::json js;
+        std::ifstream ifs("models/city.json");
+        if (!ifs.is_open()) {
+            std::cout << "Error! Scene file not found!";
+            exit(-1);
+        }
+        try{
+            json j;
+            ifs>>j;
+
+            for(int k = 0; k < MESH; k++) {
+                std::string modelPath= j["models"][k]["model"];
+                std::string format = j["models"][k]["format"];
+
+                Mcity[k].init(this, &VDcity, modelPath, (format[0] == 'O') ? OBJ : ((format[0] == 'G') ? GLTF : MGCG));
+
+            }
+        }catch (const nlohmann::json::exception& e) {
+            std::cout << e.what() << '\n';
+        }
+
         // Init local variables
     }
 
@@ -170,6 +220,7 @@ protected:
     void pipelinesAndDescriptorSetsInit() {
         // This creates a new pipeline (with the current surface), using its shaders
         P.create();
+        Pcity.create();
 
         // Here you define the data set
         DStaxi.init(this, &DSL, {
@@ -177,6 +228,14 @@ protected:
                 {1, TEXTURE, 0, &Tcity},
                 {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
         });
+
+        for(int i = 0; i < MESH; i++) {
+            DScity[i].init(this, &DSLcity, {
+                    {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+                    {1, TEXTURE, 0, &Tcity},
+                    {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+            });
+        }
     }
 
     // Here you destroy your pipelines and Descriptor Sets!
@@ -184,9 +243,14 @@ protected:
     void pipelinesAndDescriptorSetsCleanup() {
         // Cleanup pipelines
         P.cleanup();
+        Pcity.cleanup();
 
         // Cleanup datasets
         DStaxi.cleanup();
+
+        for(int i = 0; i < MESH; i++) {
+            DScity[i].cleanup();
+        }
     }
 
     // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -200,11 +264,17 @@ protected:
         // Cleanup models
         Mtaxi.cleanup();
 
+        for(int i = 0; i < MESH; i++) {
+            Mcity[i].cleanup();
+        }
+
         // Cleanup descriptor set layouts
         DSL.cleanup();
+        DSLcity.cleanup();
 
         // Destroies the pipelines
         P.destroy();
+        Pcity.destroy();
     }
 
     // Here it is the creation of the command buffer:
@@ -214,6 +284,7 @@ protected:
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
         // binds the pipeline
         P.bind(commandBuffer);
+        Pcity.bind(commandBuffer);
         // For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
         // binds the data set
@@ -236,11 +307,24 @@ protected:
         Mtaxi.bind(commandBuffer);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(Mtaxi.indices.size()), 1, 0, 0, 0);
+
+        for(int i = 0; i < MESH; i++) {
+            DScity[i].bind(commandBuffer, P, 0, currentImage);
+            Mcity[i].bind(commandBuffer);
+            vkCmdDrawIndexed(commandBuffer,
+                             static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
+        }
     }
 
     // Here is where you update the uniforms.
     // Very likely this will be where you will be writing the logic of your application.
     void updateUniformBuffer(uint32_t currentImage) {
+
+        static bool autoTime = true;
+        static float cTime = 0.0f;
+        const float turnTime = 72.0f;
+		const float angTurnTimeFact = 2.0f * M_PI / turnTime;
+
         // Standard procedure to quit when the ESC key is pressed
         if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
             glfwSetWindowShouldClose(window, GL_TRUE);
@@ -261,6 +345,10 @@ protected:
         // If fills the last boolean variable with true if fire has been pressed:
         //          SPACE on the keyboard, A or B button on the Gamepad, Right mouse button
 
+        if(autoTime) {
+            cTime += deltaT;
+            cTime = (cTime > turnTime) ? (cTime - turnTime) : cTime;
+        }
         
         const float ROT_SPEED = glm::radians(240.0f);
         const float MOVE_SPEED = 4.0f;
@@ -290,7 +378,7 @@ protected:
         glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0)); */
         
         const float nearPlane = 0.1f;
-        const float farPlane = 100.0f;
+        const float farPlane = 250.0f;
         glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
         Prj[1][1] *= -1;
 
@@ -312,10 +400,40 @@ protected:
         uboTaxi.mMat = mView * mWorld;
         uboTaxi.nMat = glm::transpose(glm::inverse(uboTaxi.mMat));
         DStaxi.map(currentImage, &uboTaxi, sizeof(uboTaxi), 0);
-        guboTaxi.lightDir = glm::normalize(glm::vec3(0.5f, -1.0f, 0.5f));
+        guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
         guboTaxi.lightColor = glm::vec4(1.0f);
         guboTaxi.eyePos = CamPos;
         DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
+
+        nlohmann::json js;
+        std::ifstream ifs2("models/city.json");
+        if (!ifs2.is_open()) {
+            std::cout << "Error! Scene file not found!";
+            exit(-1);
+        }
+        try{
+            json j;
+            ifs2>>j;
+
+            float TMj[16];
+
+            for(int k = 0; k < MESH; k++) {
+                nlohmann::json TMjson = j["instances"][k]["transform"];
+                for(int l = 0; l < 16; l++) {TMj[l] = TMjson[l];}
+                mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                ubocity[k].mvpMat = Prj * mView * mWorld;
+                ubocity[k].mMat = mView * mWorld;
+                ubocity[k].nMat = glm::transpose(glm::inverse(ubocity[k].mMat));
+                DScity[k].map(currentImage, &ubocity[k], sizeof(ubocity[k]), 0);
+                gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+                gubocity[k].lightColor = glm::vec4(1.0f);
+                gubocity[k].eyePos = CamPos;
+                DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
+            }
+
+        }catch (const nlohmann::json::exception& e) {
+            std::cout << e.what() << '\n';
+        }
 
     }
 };

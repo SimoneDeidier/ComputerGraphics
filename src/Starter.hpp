@@ -2528,7 +2528,9 @@ void Pipeline::init(BaseProject *bp, VertexDescriptor *vd,
 
  	compareOp = VK_COMPARE_OP_LESS;
  	polyModel = VK_POLYGON_MODE_FILL;
- 	CM = VK_CULL_MODE_BACK_BIT;
+    //TODO : MODIFICA
+ 	//CM = VK_CULL_MODE_BACK_BIT;
+    CM=VK_CULL_MODE_NONE;
  	transp = false;
 
 	D = d;

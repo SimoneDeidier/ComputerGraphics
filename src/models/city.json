@@ -1,0 +1,2517 @@
+{
+  "models": [
+    {"id": "r1a", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r2a", "model": "models/road_tile_1x1_007.mgcg", "format": "MGCG"},
+    {"id": "r3a", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r4a", "model": "models/road_tile_1x1_007.mgcg", "format": "MGCG"},
+    {"id": "r5a", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r1b", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r2b", "model": "models/road_tile_1x1_007.mgcg", "format": "MGCG"},
+    {"id": "r3b", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r4b", "model": "models/road_tile_1x1_007.mgcg", "format": "MGCG"},
+    {"id": "r5b", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r1c", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r2c", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r3c", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r1d", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r2d", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r3d", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r1e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r2e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r3e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r4e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r5e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r6e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r7e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r8e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r9e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r10e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r11e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "r12e", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
+    {"id": "roadext1", "model": "models/road_tile_1x1_008.mgcg", "format": "MGCG"},
+    {"id": "roadext2", "model": "models/road_tile_1x1_008.mgcg", "format": "MGCG"},
+    {"id": "roadext3", "model": "models/road_tile_1x1_008.mgcg", "format": "MGCG"},
+    {"id": "roadext4", "model": "models/road_tile_1x1_008.mgcg", "format": "MGCG"},
+    {"id": "roadext5", "model": "models/road_tile_1x1_008.mgcg", "format": "MGCG"},
+    {"id": "roadext6", "model": "models/road_tile_1x1_008.mgcg", "format": "MGCG"},
+    {"id": "roadext7", "model": "models/road_tile_1x1_008.mgcg", "format": "MGCG"},
+    {"id": "roadext8", "model": "models/road_tile_1x1_008.mgcg", "format": "MGCG"},
+    {"id": "roadang1", "model": "models/road_tile_1x1_006.mgcg", "format": "MGCG"},
+    {"id": "roadang2", "model": "models/road_tile_1x1_006.mgcg", "format": "MGCG"},
+    {"id": "roadang3", "model": "models/road_tile_1x1_006.mgcg", "format": "MGCG"},
+    {"id": "roadang4", "model": "models/road_tile_1x1_006.mgcg", "format": "MGCG"},
+    {"id": "tilehouses1", "model": "models/tile_for_home_1x1_006.mgcg", "format": "MGCG"},
+    {"id": "tilehouses2", "model": "models/tile_for_home_1x1_006.mgcg", "format": "MGCG"},
+    {"id": "tileshops1", "model": "models/tile_for_home_1x1_007.mgcg", "format": "MGCG"},
+    {"id": "tileshops2", "model": "models/tile_for_home_1x1_007.mgcg", "format": "MGCG"},
+    {"id": "chair1a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair2a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair3a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair4a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair5a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair6a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair7a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair8a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair9a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair10a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair11a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair12a", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "tree1a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree2a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree3a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree4a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree5a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree6a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree7a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree8a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree9a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree10a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree11a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree12a", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "plant1a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant2a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant3a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant4a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant5a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant6a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant7a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant8a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant9a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant10a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant11a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant12a", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "chair1b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair2b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair3b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair4b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair5b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair6b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair7b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair8b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair9b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair10b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair11b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair12b", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "tree1b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree2b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree3b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree4b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree5b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree6b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree7b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree8b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree9b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree10b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree11b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree12b", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "plant1b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant2b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant3b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant4b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant5b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant6b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant7b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant8b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant9b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant10b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant11b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant12b", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "chair1c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair2c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair3c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair4c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair5c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair6c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair7c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair8c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair9c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair10c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair11c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair12c", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "tree1c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree2c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree3c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree4c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree5c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree6c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree7c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree8c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree9c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree10c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree11c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree12c", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "plant1c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant2c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant3c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant4c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant5c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant6c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant7c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant8c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant9c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant10c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant11c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant12c", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "chair1d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair2d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair3d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair4d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair5d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair6d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair7d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair8d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair9d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair10d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair11d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "chair12d", "model": "models/chair_001.mgcg", "format": "MGCG"},
+    {"id": "tree1d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree2d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree3d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree4d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree5d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree6d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree7d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree8d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree9d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree10d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree11d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "tree12d", "model": "models/plant_011.mgcg", "format": "MGCG"},
+    {"id": "plant1d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant2d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant3d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant4d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant5d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant6d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant7d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant8d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant9d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant10d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant11d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "plant12d", "model": "models/plant_008.mgcg", "format": "MGCG"},
+    {"id": "park", "model": "models/park_001.mgcg", "format": "MGCG"},
+    {"id": "park2", "model": "models/park_002.mgcg", "format": "MGCG"},
+    {"id": "park3", "model": "models/park_004.mgcg", "format": "MGCG"},
+    {"id": "landscape1", "model": "models/landscape_entertainments_010.mgcg", "format": "MGCG"},
+    {"id": "landscape2", "model": "models/landscape_entertainments_004.mgcg", "format": "MGCG"},
+    {"id": "house1abc", "model": "models/apartment_001.mgcg", "format": "MGCG"},
+    {"id": "house2abc", "model": "models/apartment_003.mgcg", "format": "MGCG"},
+    {"id": "house3abc", "model": "models/apartment_005.mgcg", "format": "MGCG"},
+    {"id": "house4abc", "model": "models/apartment_008.mgcg", "format": "MGCG"},
+    {"id": "house1abd", "model": "models/apartment_001.mgcg", "format": "MGCG"},
+    {"id": "house2abd", "model": "models/apartment_003.mgcg", "format": "MGCG"},
+    {"id": "house3abd", "model": "models/apartment_005.mgcg", "format": "MGCG"},
+    {"id": "house4abd", "model": "models/apartment_008.mgcg", "format": "MGCG"},
+    {"id": "shop1", "model": "models/store_001.mgcg", "format": "MGCG"},
+    {"id": "shop2", "model": "models/store_002.mgcg", "format": "MGCG"},
+    {"id": "shop3", "model": "models/store_003.mgcg", "format": "MGCG"},
+    {"id": "shop4", "model": "models/store_004.mgcg", "format": "MGCG"},
+    {"id": "skyscraper1", "model": "models/apartment_1_001_apartment_1_001.004.mgcg", "format": "MGCG"},
+    {"id": "skyscraper2", "model": "models/apartment_1_002.mgcg", "format": "MGCG"},
+    {"id": "skyscraper3", "model": "models/apartment_1_003.mgcg", "format": "MGCG"},
+    {"id": "skyscraper4", "model": "models/apartment_1_004.mgcg", "format": "MGCG"}
+  ],
+  "textures": [
+    {"id": "t0", "texture": "textures/Textures_City.png"}
+  ],
+  "instances": [
+    {
+      "id": "r1a",
+      "model": "r1a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 0,
+        0, 2, 0, 0,
+        -6, 0, 0, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r2a",
+      "model": "r2a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 0,
+        0, 2, 0, 0,
+        -3, 0, 0, -36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r3a",
+      "model": "r3a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 0,
+        0, 2, 0, 0,
+        -6, 0, 0, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r4a",
+      "model": "r4a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 0,
+        0, 2, 0, 0,
+        -3, 0, 0, -108,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r5a",
+      "model": "r5a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 0,
+        0, 2, 0, 0,
+        -6, 0, 0, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r1b",
+      "model": "r1b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 72,
+        0, 2, 0, 0,
+        -6, 0, 0, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r2b",
+      "model": "r2b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 72,
+        0, 2, 0, 0,
+        -3, 0, 0, -36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r3b",
+      "model": "r3b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 72,
+        0, 2, 0, 0,
+        -6, 0, 0, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r4b",
+      "model": "r4b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 72,
+        0, 2, 0, 0,
+        -3, 0, 0, -108,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r5b",
+      "model": "r5b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 72,
+        0, 2, 0, 0,
+        -6, 0, 0, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r1c",
+      "model": "r1c",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, -36,
+        0, 2, 0, 0,
+        0, 0, 3, -36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r2c",
+      "model": "r2c",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 36,
+        0, 2, 0, 0,
+        0, 0, 3, -36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r3c",
+      "model": "r3c",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 108,
+        0, 2, 0, 0,
+        0, 0, 3, -36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r1d",
+      "model": "r1d",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, -36,
+        0, 2, 0, 0,
+        0, 0, 3, -108,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r2d",
+      "model": "r2d",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 36,
+        0, 2, 0, 0,
+        0, 0, 3, -108,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r3d",
+      "model": "r3d",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 108,
+        0, 2, 0, 0,
+        0, 0, 3, -108,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r1e",
+      "model": "r1e",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, -36,
+        0, 2, 0, 0,
+        0, 0, 3, 36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r2e",
+      "model": "r2e",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 36,
+        0, 2, 0, 0,
+        0, 0, 3, 36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r3e",
+      "model": "r3e",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 108,
+        0, 2, 0, 0,
+        0, 0, 3, 36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r4e",
+      "model": "r4e",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, -36,
+        0, 2, 0, 0,
+        0, 0, 3, -180,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r5e",
+      "model": "r5e",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 36,
+        0, 2, 0, 0,
+        0, 0, 3, -180,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r6e",
+      "model": "r6e",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 108,
+        0, 2, 0, 0,
+        0, 0, 3, -180,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r7e",
+      "model": "r7e",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, -72,
+        0, 2, 0, 0,
+        -6, 0, 0, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r8e",
+      "model": "r8e",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, -72,
+        0, 2, 0, 0,
+        -6, 0, 0, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r9e",
+      "model": "r9e",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, -72,
+        0, 2, 0, 0,
+        -6, 0, 0, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r10e",
+      "model": "r10e",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 144,
+        0, 2, 0, 0,
+        -6, 0, 0, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r11e",
+      "model": "r11e",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 144,
+        0, 2, 0, 0,
+        -6, 0, 0, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "r12e",
+      "model": "r12e",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 144,
+        0, 2, 0, 0,
+        -6, 0, 0, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadext1",
+      "model": "roadext1",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 0,
+        0, 2, 0, 0,
+        0, 0, 3, 36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadext2",
+      "model": "roadext2",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, -72,
+        0, 2, 0, 0,
+        3, 0, 0, -36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadext3",
+      "model": "roadext3",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, -72,
+        0, 2, 0, 0,
+        3, 0, 0, -108,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadext4",
+      "model": "roadext4",
+      "texture": "t0",
+      "transform": [
+        -3, 0, 0, 0,
+        0, 2, 0, 0,
+        0, 0, -3, -180,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadext5",
+      "model": "roadext5",
+      "texture": "t0",
+      "transform": [
+        -3, 0, 0, 72,
+        0, 2, 0, 0,
+        0, 0, -3, -180,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadext6",
+      "model": "roadext6",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 144,
+        0, 2, 0, 0,
+        -3, 0, 0, -108,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadext7",
+      "model": "roadext7",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, 144,
+        0, 2, 0, 0,
+        -3, 0, 0, -36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadext8",
+      "model": "roadext8",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 72,
+        0, 2, 0, 0,
+        0, 0, 3, 36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadang1",
+      "model": "roadang1",
+      "texture": "t0",
+      "transform": [
+        -3, 0, 0, -72,
+        0, 2, 0, 0,
+        0, 0, -3, 36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadang2",
+      "model": "roadang2",
+      "texture": "t0",
+      "transform": [
+        0, 0, 3, -72,
+        0, 2, 0, 0,
+        -3, 0, 0, -180,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadang3",
+      "model": "roadang3",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 144,
+        0, 2, 0, 0,
+        0, 0, 3, -180,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "roadang4",
+      "model": "roadang4",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, 144,
+        0, 2, 0, 0,
+        3, 0, 0, 36,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tilehouse1",
+      "model": "tilehouse1",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 36,
+        0, 1, 0, 0,
+        0, 0, 6, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tilehouse2",
+      "model": "tilehouse2",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 36,
+        0, 1, 0, 0,
+        0, 0, 6, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tileshops1",
+      "model": "tileshops1",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, -36,
+        0, 1, 0, 0,
+        0, 0, 6, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tileshops2",
+      "model": "tileshops2",
+      "texture": "t0",
+      "transform": [
+        6, 0, 0, 108,
+        0, 1, 0, 0,
+        0, 0, 6, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair1a",
+      "model": "chair1a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 1, 0, 0,
+        -1, 0, 0, 12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair2a",
+      "model": "chair2a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 1, 0, 0,
+        1, 0, 0, 12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair3a",
+      "model": "chair3a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 1, 0, 0,
+        -1, 0, 0, -12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair4a",
+      "model": "chair4a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 1, 0, 0,
+        1, 0, 0, -12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair5a",
+      "model": "chair5a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 1, 0, 0,
+        -1, 0, 0, -60,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair6a",
+      "model": "chair6a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 1, 0, 0,
+        1, 0, 0, -60,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair7a",
+      "model": "chair7a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 1, 0, 0,
+        1, 0, 0, -84,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair8a",
+      "model": "chair8a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 1, 0, 0,
+        -1, 0, 0, -84,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair9a",
+      "model": "chair9a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 1, 0, 0,
+        1, 0, 0, -132,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair10a",
+      "model": "chair10a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 1, 0, 0,
+        -1, 0, 0, -132,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair11a",
+      "model": "chair11a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 1, 0, 0,
+        1, 0, 0, -156,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair12a",
+      "model": "chair12a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 1, 0, 0,
+        -1, 0, 0, -156,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree1a",
+      "model": "tree1a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, 6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree2a",
+      "model": "tree2a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -18,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree3a",
+      "model": "tree3a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -66,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree4a",
+      "model": "tree4a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -90,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree5a",
+      "model": "tree5a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -138,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree6a",
+      "model": "tree6a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -162,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree7a",
+      "model": "tree7a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, 6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree8a",
+      "model": "tree8a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -18,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree9a",
+      "model": "tree9a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -66,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree10a",
+      "model": "tree10a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -90,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree11a",
+      "model": "tree11a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -138,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree12a",
+      "model": "tree12a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -162,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant1a",
+      "model": "plant1a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, 18,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant2a",
+      "model": "plant2a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant3a",
+      "model": "plant3a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -54,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant4a",
+      "model": "plant4a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -78,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant5a",
+      "model": "plant5a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -126,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant6a",
+      "model": "plant6a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -150,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant7a",
+      "model": "plant7a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, 18,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant8a",
+      "model": "plant8a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant9a",
+      "model": "plant9a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -54,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant10a",
+      "model": "plant10a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -78,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant11a",
+      "model": "plant11a",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 9,
+        0, 3, 0, 0,
+        1, 0, 0, -126,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant12a",
+      "model": "plant12a",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -9,
+        0, 3, 0, 0,
+        -1, 0, 0, -150,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair1b",
+      "model": "chair1b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 1, 0, 0,
+        -1, 0, 0, 12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair2b",
+      "model": "chair2b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 1, 0, 0,
+        1, 0, 0, 12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair3b",
+      "model": "chair3b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 1, 0, 0,
+        -1, 0, 0, -12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair4b",
+      "model": "chair4b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 1, 0, 0,
+        1, 0, 0, -12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair5b",
+      "model": "chair5b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 1, 0, 0,
+        -1, 0, 0, -60,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair6b",
+      "model": "chair6b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 1, 0, 0,
+        1, 0, 0, -60,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair7b",
+      "model": "chair7b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 1, 0, 0,
+        1, 0, 0, -84,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair8b",
+      "model": "chair8b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 1, 0, 0,
+        -1, 0, 0, -84,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair9b",
+      "model": "chair9b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 1, 0, 0,
+        1, 0, 0, -132,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair10b",
+      "model": "chair10b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 1, 0, 0,
+        -1, 0, 0, -132,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair11b",
+      "model": "chair11b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 1, 0, 0,
+        1, 0, 0, -156,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair12b",
+      "model": "chair12b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 1, 0, 0,
+        -1, 0, 0, -156,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree1b",
+      "model": "tree1b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 3, 0, 0,
+        -1, 0, 0, 6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree2b",
+      "model": "tree2b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 3, 0, 0,
+        1, 0, 0, -18,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree3b",
+      "model": "tree3b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 3, 0, 0,
+        -1, 0, 0, -66,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree4b",
+      "model": "tree4b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 3, 0, 0,
+        1, 0, 0, -90,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree5b",
+      "model": "tree5b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 3, 0, 0,
+        -1, 0, 0, -138,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree6b",
+      "model": "tree6b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 3, 0, 0,
+        1, 0, 0, -162,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree7b",
+      "model": "tree7b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 3, 0, 0,
+        1, 0, 0, 6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree8b",
+      "model": "tree8b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 3, 0, 0,
+        -1, 0, 0, -18,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree9b",
+      "model": "tree9b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 3, 0, 0,
+        1, 0, 0, -66,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree10b",
+      "model": "tree10b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 3, 0, 0,
+        -1, 0, 0, -90,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree11b",
+      "model": "tree11b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 3, 0, 0,
+        1, 0, 0, -138,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree12b",
+      "model": "tree12b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 3, 0, 0,
+        -1, 0, 0, -162,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant1b",
+      "model": "plant1b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 3, 0, 0,
+        -1, 0, 0, 18,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant2b",
+      "model": "plant2b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 3, 0, 0,
+        1, 0, 0, -6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant3b",
+      "model": "plant3b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 3, 0, 0,
+        -1, 0, 0, -54,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant4b",
+      "model": "plant4b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 3, 0, 0,
+        1, 0, 0, -78,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant5b",
+      "model": "plant5b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 63,
+        0, 3, 0, 0,
+        -1, 0, 0, -126,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant6b",
+      "model": "plant6b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 63,
+        0, 3, 0, 0,
+        1, 0, 0, -150,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant7b",
+      "model": "plant7b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 3, 0, 0,
+        1, 0, 0, 18,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant8b",
+      "model": "plant8b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 3, 0, 0,
+        -1, 0, 0, -6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant9b",
+      "model": "plant9b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 3, 0, 0,
+        1, 0, 0, -54,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant10b",
+      "model": "plant10b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 3, 0, 0,
+        -1, 0, 0, -78,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant11b",
+      "model": "plant11b",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 81,
+        0, 3, 0, 0,
+        1, 0, 0, -126,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant12b",
+      "model": "plant12b",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 81,
+        0, 3, 0, 0,
+        -1, 0, 0, -150,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair1c",
+      "model": "chair1c",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, -48,
+        0, 1, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair2c",
+      "model": "chair2c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -48,
+        0, 1, 0, 0,
+        0, 0, 1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair3c",
+      "model": "chair3c",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, -24,
+        0, 1, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair4c",
+      "model": "chair4c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -24,
+        0, 1, 0, 0,
+        0, 0, 1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair5c",
+      "model": "chair5c",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, 24,
+        0, 1, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair6c",
+      "model": "chair6c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 24,
+        0, 1, 0, 0,
+        0, 0, 1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair7c",
+      "model": "chair7c",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, 48,
+        0, 1, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair8c",
+      "model": "chair8c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 48,
+        0, 1, 0, 0,
+        0, 0, 1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair9c",
+      "model": "chair9c",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, 96,
+        0, 1, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair10c",
+      "model": "chair10c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 96,
+        0, 1, 0, 0,
+        0, 0, 1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair11c",
+      "model": "chair11c",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, 120,
+        0, 1, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair12c",
+      "model": "chair12c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 120,
+        0, 1, 0, 0,
+        0, 0, 1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree1c",
+      "model": "tree1c",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -54,
+        0, 3, 0, 0,
+        -1, 0, 0, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree2c",
+      "model": "tree2c",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, -54,
+        0, 3, 0, 0,
+        1, 0, 0, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree3c",
+      "model": "tree3c",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -30,
+        0, 3, 0, 0,
+        -1, 0, 0, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree4c",
+      "model": "tree4c",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, -30,
+        0, 3, 0, 0,
+        1, 0, 0, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree5c",
+      "model": "tree5c",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 18,
+        0, 3, 0, 0,
+        -1, 0, 0, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree6c",
+      "model": "tree6c",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 18,
+        0, 3, 0, 0,
+        1, 0, 0, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree7c",
+      "model": "tree7c",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 42,
+        0, 3, 0, 0,
+        1, 0, 0, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree8c",
+      "model": "tree8c",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 42,
+        0, 3, 0, 0,
+        -1, 0, 0, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree9c",
+      "model": "tree9c",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 90,
+        0, 3, 0, 0,
+        1, 0, 0, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree10c",
+      "model": "tree10c",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 90,
+        0, 3, 0, 0,
+        -1, 0, 0, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree11c",
+      "model": "tree11c",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 114,
+        0, 3, 0, 0,
+        1, 0, 0, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree12c",
+      "model": "tree12c",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 114,
+        0, 3, 0, 0,
+        -1, 0, 0, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant1c",
+      "model": "plant1c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -42,
+        0, 3, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant2c",
+      "model": "plant2c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -42,
+        0, 3, 0, 0,
+        0, 0, -1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant3c",
+      "model": "plant3c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -18,
+        0, 3, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant4c",
+      "model": "plant4c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -18,
+        0, 3, 0, 0,
+        0, 0, -1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant5c",
+      "model": "plant5c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 30,
+        0, 3, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant6c",
+      "model": "plant6c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 30,
+        0, 3, 0, 0,
+        0, 0, -1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant7c",
+      "model": "plant7c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 54,
+        0, 3, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant8c",
+      "model": "plant8c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 54,
+        0, 3, 0, 0,
+        0, 0, -1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant9c",
+      "model": "plant9c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 102,
+        0, 3, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant10c",
+      "model": "plant10c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 102,
+        0, 3, 0, 0,
+        0, 0, -1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant11c",
+      "model": "plant11c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 126,
+        0, 3, 0, 0,
+        0, 0, -1, -27,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant12c",
+      "model": "plant12c",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 126,
+        0, 3, 0, 0,
+        0, 0, -1, -45,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair1d",
+      "model": "chair1d",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, -48,
+        0, 1, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair2d",
+      "model": "chair2d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -48,
+        0, 1, 0, 0,
+        0, 0, 1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair3d",
+      "model": "chair3d",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, -24,
+        0, 1, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair4d",
+      "model": "chair4d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -24,
+        0, 1, 0, 0,
+        0, 0, 1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair5d",
+      "model": "chair5d",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, 24,
+        0, 1, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair6d",
+      "model": "chair6d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 24,
+        0, 1, 0, 0,
+        0, 0, 1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair7d",
+      "model": "chair7d",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, 48,
+        0, 1, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair8d",
+      "model": "chair8d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 48,
+        0, 1, 0, 0,
+        0, 0, 1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair9d",
+      "model": "chair9d",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, 96,
+        0, 1, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair10d",
+      "model": "chair10d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 96,
+        0, 1, 0, 0,
+        0, 0, 1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair11d",
+      "model": "chair11d",
+      "texture": "t0",
+      "transform": [
+        -1, 0, 0, 120,
+        0, 1, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "chair12d",
+      "model": "chair12d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 120,
+        0, 1, 0, 0,
+        0, 0, 1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree1d",
+      "model": "tree1d",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -54,
+        0, 3, 0, 0,
+        -1, 0, 0, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree2d",
+      "model": "tree2d",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, -54,
+        0, 3, 0, 0,
+        1, 0, 0, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree3d",
+      "model": "tree3d",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, -30,
+        0, 3, 0, 0,
+        -1, 0, 0, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree4d",
+      "model": "tree4d",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, -30,
+        0, 3, 0, 0,
+        1, 0, 0, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree5d",
+      "model": "tree5d",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 18,
+        0, 3, 0, 0,
+        -1, 0, 0, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree6d",
+      "model": "tree6d",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 18,
+        0, 3, 0, 0,
+        1, 0, 0, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree7d",
+      "model": "tree7d",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 42,
+        0, 3, 0, 0,
+        1, 0, 0, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree8d",
+      "model": "tree8d",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 42,
+        0, 3, 0, 0,
+        -1, 0, 0, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree9d",
+      "model": "tree9d",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 90,
+        0, 3, 0, 0,
+        1, 0, 0, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree10d",
+      "model": "tree10d",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 90,
+        0, 3, 0, 0,
+        -1, 0, 0, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree11d",
+      "model": "tree11d",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1, 114,
+        0, 3, 0, 0,
+        1, 0, 0, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "tree12d",
+      "model": "tree12d",
+      "texture": "t0",
+      "transform": [
+        0, 0, 1, 114,
+        0, 3, 0, 0,
+        -1, 0, 0, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant1d",
+      "model": "plant1d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -42,
+        0, 3, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant2d",
+      "model": "plant2d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -42,
+        0, 3, 0, 0,
+        0, 0, -1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant3d",
+      "model": "plant3d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -18,
+        0, 3, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant4d",
+      "model": "plant4d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, -18,
+        0, 3, 0, 0,
+        0, 0, -1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant5d",
+      "model": "plant5d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 30,
+        0, 3, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant6d",
+      "model": "plant6d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 30,
+        0, 3, 0, 0,
+        0, 0, -1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant7d",
+      "model": "plant7d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 54,
+        0, 3, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant8d",
+      "model": "plant8d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 54,
+        0, 3, 0, 0,
+        0, 0, -1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant9d",
+      "model": "plant9d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 102,
+        0, 3, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant10d",
+      "model": "plant10d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 102,
+        0, 3, 0, 0,
+        0, 0, -1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant11d",
+      "model": "plant11d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 126,
+        0, 3, 0, 0,
+        0, 0, -1, -99,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "plant12d",
+      "model": "plant12d",
+      "texture": "t0",
+      "transform": [
+        1, 0, 0, 126,
+        0, 3, 0, 0,
+        0, 0, -1, -117,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "park",
+      "model": "park",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 36,
+        0, 1, 0, 0,
+        0, 0, 3, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "park2",
+      "model": "park2",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, -36,
+        0, 1, 0, 0,
+        0, 0, 3, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "park3",
+      "model": "park3",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 108,
+        0, 1, 0, 0,
+        0, 0, 3, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "landscape1",
+      "model": "landscape1",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, -36,
+        0, 1, 0, 0,
+        0, 0, 3, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "landscape2",
+      "model": "landscape2",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 108,
+        0, 1, 0, 0,
+        0, 0, 3, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "house1abc",
+      "model": "house1abc",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 23,
+        0, 2, 0, 0,
+        0, 0, 3, 12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "house2abc",
+      "model": "house2abc",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, 23,
+        0, 2, 0, 0,
+        -3, 0, 0, -12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "house3abc",
+      "model": "house3abc",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, 49,
+        0, 2, 0, 0,
+        -3, 0, 0, -12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "house4abc",
+      "model": "house4abc",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 49,
+        0, 2, 0, 0,
+        0, 0, 3, 12,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "house1abd",
+      "model": "house1abd",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 23,
+        0, 2, 0, 0,
+        0, 0, 3, -132,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "house2abd",
+      "model": "house2abd",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, 23,
+        0, 2, 0, 0,
+        -3, 0, 0, -156,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "house3abd",
+      "model": "house3abd",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, 49,
+        0, 2, 0, 0,
+        -3, 0, 0, -156,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "house4abd",
+      "model": "house4abd",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, 49,
+        0, 2, 0, 0,
+        0, 0, 3, -132,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "shop1",
+      "model": "shop1",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, -23,
+        0, 2, 0, 0,
+        0, 0, 3, -60,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "shop2",
+      "model": "shop2",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, -23,
+        0, 2, 0, 0,
+        -3, 0, 0, -84,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "shop3",
+      "model": "shop3",
+      "texture": "t0",
+      "transform": [
+        0, 0, -3, -49,
+        0, 2, 0, 0,
+        -3, 0, 0, -60,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "shop4",
+      "model": "shop4",
+      "texture": "t0",
+      "transform": [
+        3, 0, 0, -49,
+        0, 2, 0, 0,
+        0, 0, 3, -84,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "skyscraper1",
+      "model": "skyscraper1",
+      "texture": "t0",
+      "transform": [
+        1.5, 0, 0, 95,
+        0, 2, 0, 0,
+        0, 0, 1.5, -60,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "skyscraper2",
+      "model": "skyscraper2",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1.5, 95,
+        0, 2, 0, 0,
+        -1.5, 0, 0, -84,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "skyscraper3",
+      "model": "skyscraper3",
+      "texture": "t0",
+      "transform": [
+        0, 0, -1.5, 121,
+        0, 2, 0, 0,
+        -1.5, 0, 0, -60,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "skyscraper4",
+      "model": "skyscraper4",
+      "texture": "t0",
+      "transform": [
+        1.5, 0, 0, 121,
+        0, 2, 0, 0,
+        0, 0, 1.5, -84,
+        0, 0, 0, 1
+      ]
+    }
+  ]
+}

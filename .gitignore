@@ -56,3 +56,4 @@ src/shaders/compileShader
 src/MeshLoader
 .idea/*
 src/.idea/*
+src/.vscode/settings.json

@@ -18,9 +18,9 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, vec3 Ms, float gamma) {
 
 	vec3 Diffuse = Md * clamp(dot(N, L), 0.0, 1.0);
-	vec3 Specular = Ms * vec3(pow(clamp(dot(N, normalize(V + L)), 0.0, 1.0), gamma));
+	//vec3 Specular = Ms * vec3(pow(clamp(dot(N, normalize(V + L)), 0.0, 1.0), gamma));
 	
-	return (Diffuse + Specular);
+	return (Diffuse);
 
 }
 
