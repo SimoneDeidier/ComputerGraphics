@@ -23,6 +23,7 @@ struct UniformBufferObject {
 
 struct GlobalUniformBufferObject {
 	alignas(16) glm::vec3 lightDir;
+    alignas(16) glm::vec3 lightPos;
 	alignas(16) glm::vec4 lightColor;
 	alignas(16) glm::vec3 eyePos;
 };
@@ -398,12 +399,15 @@ protected:
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) *
                 glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
         uboTaxi.mvpMat = Prj * mView * mWorld;
-        uboTaxi.mMat = mView * mWorld;
-        uboTaxi.nMat = glm::transpose(glm::inverse(uboTaxi.mMat));
+        //uboTaxi.mMat = mView * mWorld;
+        uboTaxi.mMat = glm::mat4(1);
+        //uboTaxi.nMat = glm::transpose(glm::inverse(uboTaxi.mMat));
+        uboTaxi.nMat = glm::inverse(glm::transpose(uboTaxi.mMat));
         DStaxi.map(currentImage, &uboTaxi, sizeof(uboTaxi), 0);
         guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
         guboTaxi.lightColor = glm::vec4(1.0f);
         guboTaxi.eyePos = CamPos;
+        guboTaxi.lightPos = glm::vec3(30.0f, 30.0f, 20.0f);
         DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
 
         nlohmann::json js;
@@ -422,12 +426,18 @@ protected:
                 nlohmann::json TMjson = j["instances"][k]["transform"];
                 for(int l = 0; l < 16; l++) {TMj[l] = TMjson[l];}
                 mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                //ubocity[k].mvpMat = Prj * mView * mWorld;
+                ubocity[k].mMat = glm::mat4(1);
+                ubocity[k].nMat = glm::inverse(glm::transpose(ubocity[k].mMat));
                 ubocity[k].mvpMat = Prj * mView * mWorld;
-                ubocity[k].mMat = mView * mWorld;
-                ubocity[k].nMat = glm::transpose(glm::inverse(ubocity[k].mMat));
+                //ubocity[k].mMat = mView * mWorld;
+                //ubocity[k].nMat = glm::transpose(glm::inverse(ubocity[k].mMat));
                 DScity[k].map(currentImage, &ubocity[k], sizeof(ubocity[k]), 0);
                 gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
                 gubocity[k].lightColor = glm::vec4(1.0f);
+                gubocity[k].lightPos = glm::vec3(30.0f, 30.0f, 20.0f);
+                //gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+                //gubocity[k].lightColor = glm::vec4(1.0f);
                 gubocity[k].eyePos = CamPos;
                 DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
             }

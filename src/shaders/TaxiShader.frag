@@ -11,16 +11,17 @@ layout(binding = 1) uniform sampler2D textureSampler;
 
 layout(binding = 2) uniform GlobalUniformBufferObject {
 	vec3 lightDir;
-	vec3 eyePos;
+	vec3 lightPos;
 	vec4 lightColor;
+	vec3 eyePos;
 } gubo;
 
 vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, vec3 Ms, float gamma) {
 
 	vec3 Diffuse = Md * clamp(dot(N, L), 0.0, 1.0);
-	//vec3 Specular = Ms * vec3(pow(clamp(dot(N, normalize(V + L)), 0.0, 1.0), gamma));
-	
-	return (Diffuse);
+	vec3 Specular = Ms * vec3(pow(clamp(dot(N, normalize(V + L)), 0.0, 1.0), gamma));
+
+	return (Diffuse+Specular);
 
 }
 
@@ -29,13 +30,15 @@ void main() {
 	vec3 Norm = normalize(fragNormal);
 	vec3 ViewerDir = normalize(gubo.eyePos - fragPos);
 	vec3 Albedo = texture(textureSampler, fragUV).rgb;
-	float gamma = 128.0f;
+	float gamma = 128.0f; //prima 128
 	float metallic = 1.0f;
-	vec3 LightDir = normalize(gubo.lightDir);
+	//vec3 LightDir = normalize(gubo.lightDir);
+	vec3 LightDir = normalize(gubo.lightPos);
 	vec3 lightColor = gubo.lightColor.rgb;
 	vec3 Ambient = 0.1f * Albedo;
 
 	vec3 brdf = BRDF(ViewerDir, Norm, LightDir, Albedo, vec3(metallic), gamma);
 
 	outColor = vec4(brdf * lightColor + Ambient, 1.0f); // main color
+
 }

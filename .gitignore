@@ -57,3 +57,6 @@ src/MeshLoader
 .idea/*
 src/.idea/*
 src/.vscode/settings.json
+src/compileMac
+src/shaders/compile.sh
+src/shaders/compile.sh
