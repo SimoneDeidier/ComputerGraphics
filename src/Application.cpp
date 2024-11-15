@@ -16,6 +16,8 @@ struct GlobalUniformBufferObject {
 	alignas(16) glm::vec3 lightDir;
 	alignas(16) glm::vec4 lightColor;
 	alignas(16) glm::vec3 eyePos;
+    alignas(4) float gamma;
+    alignas(4) float metallic;
 };
 
 struct Vertex {
@@ -109,8 +111,8 @@ protected:
                                 sizeof(glm::vec3), NORMAL}
                 });
 
-        P.init(this, &VD, "shaders/TaxiVert.spv", "shaders/TaxiFrag.spv", {&DSL});
-        Pcity.init(this, &VDcity, "shaders/TaxiVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
+        P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
+        Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
 
         Mtaxi.init(this, &VD, "Models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
 
@@ -264,15 +266,17 @@ protected:
         glm::mat4 mWorld;
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
-
     
         uboTaxi.mvpMat = Prj * mView * mWorld;
         uboTaxi.mMat = glm::mat4(1);
         uboTaxi.nMat = glm::inverse(glm::transpose(uboTaxi.mMat));
         DStaxi.map(currentImage, &uboTaxi, sizeof(uboTaxi), 0);
-        guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+        //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+        guboTaxi.lightDir = glm::vec3(0.5f, 1.0f, 0.5f);
         guboTaxi.lightColor = glm::vec4(1.0f);
         guboTaxi.eyePos = CamPos;
+        guboTaxi.gamma = 128.0f;
+        guboTaxi.metallic = 1.0f;
         DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
 
         nlohmann::json js;
@@ -295,9 +299,12 @@ protected:
                 ubocity[k].nMat = glm::inverse(glm::transpose(ubocity[k].mMat));
                 ubocity[k].mvpMat = Prj * mView * mWorld;
                 DScity[k].map(currentImage, &ubocity[k], sizeof(ubocity[k]), 0);
-                gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+                //gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+                gubocity[k].lightDir = glm::vec3(0.5f, 1.0f, 0.5f);;
                 gubocity[k].lightColor = glm::vec4(1.0f);
                 gubocity[k].eyePos = CamPos;
+                gubocity[k].gamma = 128.0f;
+                gubocity[k].metallic = 0.1f;
                 DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
             }
 
