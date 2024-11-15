@@ -59,17 +59,19 @@ src/compile
 src/shaders/compileShader
 
 # Output files
-src/MeshLoader
+src/Application
 
 # IDE files
 .idea/*
 src/.idea/*
-src/.vscode/settings.json
-.vscode/settings.json
+.vscode/*
+src/.vscode/*
 
 # Other compile files
 src/compileMac
-src/shaders/compile.sh
+src/shaders/compile
+src/*.sh
+src/shaders/*.sh
 
 # Shader output files
 src/shaders/*.spv
