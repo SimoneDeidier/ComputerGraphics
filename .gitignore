@@ -50,13 +50,26 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# MacOS specific files
 .DS_Store
+
+# Simo compile files
 src/compile
 src/shaders/compileShader
+
+# Output files
 src/MeshLoader
+
+# IDE files
 .idea/*
 src/.idea/*
 src/.vscode/settings.json
+.vscode/settings.json
+
+# Other compile files
 src/compileMac
 src/shaders/compile.sh
-src/shaders/compile.sh
+
+# Shader output files
+src/shaders/*.spv

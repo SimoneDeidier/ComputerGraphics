@@ -11,7 +11,6 @@ layout(binding = 1) uniform sampler2D textureSampler;
 
 layout(binding = 2) uniform GlobalUniformBufferObject {
 	vec3 lightDir;
-	vec3 lightPos;
 	vec4 lightColor;
 	vec3 eyePos;
 } gubo;
@@ -32,8 +31,7 @@ void main() {
 	vec3 Albedo = texture(textureSampler, fragUV).rgb;
 	float gamma = 128.0f; //prima 128
 	float metallic = 1.0f;
-	//vec3 LightDir = normalize(gubo.lightDir);
-	vec3 LightDir = normalize(gubo.lightPos);
+	vec3 LightDir = normalize(gubo.lightDir);
 	vec3 lightColor = gubo.lightColor.rgb;
 	vec3 Ambient = 0.1f * Albedo;
 
