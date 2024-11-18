@@ -34,19 +34,20 @@ void main() {
 	vec3 Albedo = texture(textureSampler, fragUV).rgb;
 	vec3 LightDir = normalize(gubo.lightDir);
 	vec3 lightColor = gubo.lightColor.rgb;
+	vec3 Ambient = 0.05 * Albedo;
 
 	vec3 brdf = BRDF(ViewerDir, Norm, LightDir, Albedo, vec3(gubo.metallic), gubo.gamma);
 
 	// Ambient light
-	const vec3 cxp = vec3(0.0, 0.0, 0.5); // Darker blue
+	/*const vec3 cxp = vec3(0.0, 0.0, 0.5); // Darker blue
 	const vec3 cxn = vec3(0.0, 0.0, 0.5); // Darker blue
 	const vec3 cyp = vec3(0.5, 0.5, 1.0); // Light blue
 	const vec3 cyn = vec3(0.1, 0.1, 0.1); // Dark dark grey
 	const vec3 czp = vec3(0.0, 0.0, 0.5); // Darker blue
 	const vec3 czn = vec3(0.0, 0.0, 0.5); // Darker blue
 
-	vec3 Ambient = ((Norm.x > 0 ? cxp : cxn) * (Norm.x * Norm.x) + (Norm.y > 0 ? cyp : cyn) * (Norm.y * Norm.y) + (Norm.z > 0 ? czp : czn) * (Norm.z * Norm.z)); 
+	vec3 Ambient = 0.05 * ((Norm.x > 0 ? cxp : cxn) * (Norm.x * Norm.x) + (Norm.y > 0 ? cyp : cyn) * (Norm.y * Norm.y) + (Norm.z > 0 ? czp : czn) * (Norm.z * Norm.z));*/
 
-	outColor = vec4(brdf * lightColor + 0.05 * Ambient, 1.0); // main color
+	outColor = vec4(brdf * lightColor + Ambient, 1.0); // main color
 
 }

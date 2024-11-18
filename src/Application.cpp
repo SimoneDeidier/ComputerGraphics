@@ -113,6 +113,7 @@ protected:
 
         P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
+        Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
 
         Mtaxi.init(this, &VD, "Models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
 
@@ -240,7 +241,7 @@ protected:
         }
         
         const float ROT_SPEED = glm::radians(240.0f);
-        const float MOVE_SPEED = 4.0f;
+        const float MOVE_SPEED = 7.5f;
 
         CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
         CamBeta = CamBeta - ROT_SPEED * deltaT * r.x;
@@ -266,13 +267,15 @@ protected:
         glm::mat4 mWorld;
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
+        //glm::vec3 sunPos = glm::vec3(5.5f, 30.0f, 7.5f);
+        glm::vec3 sunPos = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
     
         uboTaxi.mvpMat = Prj * mView * mWorld;
         uboTaxi.mMat = glm::mat4(1);
         uboTaxi.nMat = glm::inverse(glm::transpose(uboTaxi.mMat));
         DStaxi.map(currentImage, &uboTaxi, sizeof(uboTaxi), 0);
         //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
-        guboTaxi.lightDir = glm::vec3(0.5f, 1.0f, 0.5f);
+        guboTaxi.lightDir = sunPos;
         guboTaxi.lightColor = glm::vec4(1.0f);
         guboTaxi.eyePos = CamPos;
         guboTaxi.gamma = 128.0f;
@@ -300,7 +303,7 @@ protected:
                 ubocity[k].mvpMat = Prj * mView * mWorld;
                 DScity[k].map(currentImage, &ubocity[k], sizeof(ubocity[k]), 0);
                 //gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
-                gubocity[k].lightDir = glm::vec3(0.5f, 1.0f, 0.5f);;
+                gubocity[k].lightDir = sunPos;
                 gubocity[k].lightColor = glm::vec4(1.0f);
                 gubocity[k].eyePos = CamPos;
                 gubocity[k].gamma = 128.0f;
