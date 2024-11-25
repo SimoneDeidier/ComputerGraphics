@@ -278,12 +278,29 @@ protected:
             taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
         }
 
+
         //calcolo posizione camera per lookAt, keeping into account the current SteeringAng
         float x, y;
         // Calculate the camera position around the taxi in a circular path
         float radius = 5.0f;
-        x = -radius * sin(steeringAng);
+        /*x = -radius * sin(steeringAng);
         y = -radius * cos(steeringAng);
+        camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
+        glm::mat4 mView = glm::lookAt(camPos,
+            taxiPos,
+            glm::vec3(0, 1, 0));*/
+
+        static float camOffsetAngle = 0.0f;
+        const float camRotationSpeed = glm::radians(90.0f);
+
+        // Update camera offset angle based on mouse movement
+        if (r.y != 0.0f) {
+            camOffsetAngle += camRotationSpeed * deltaT * r.y;
+        }
+
+        // Calculate the camera position around the taxi in a circular path with optional offset angle from the user
+        x = -radius * sin(steeringAng + camOffsetAngle);
+        y = -radius * cos(steeringAng + camOffsetAngle);
         camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
         glm::mat4 mView = glm::lookAt(camPos,
             taxiPos,
