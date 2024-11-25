@@ -3,13 +3,14 @@
 #include "headers/Starter.hpp"
 #include <iostream>
 #include <fstream>
+#include <corecrt_math_defines.h> //TODO: remove. A fix for windows not being able to find M_PI
 #define MESH 209
 
 // float : alignas(4), vec2  : alignas(8), vec3, vec4, mat3, mat4  : alignas(16)
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
     alignas(16) glm::mat4 mMat;
-    alignas(16) glm::mat4 nMat;
+    alignas(16) glm::mat4 nMat; 
 };
 
 struct GlobalUniformBufferObject {
@@ -52,9 +53,10 @@ protected:
     GlobalUniformBufferObject gubocity[MESH];
 
     // Other application parameters
-    glm::vec3 CamPos = glm::vec3(0.0, 1.5, 7.0); //initial pos of camera?
-    float CamAlpha = 0.0f;
-    float CamBeta = 0.0f;
+	glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
+    glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
+    //float CamAlpha = 0.0f;
+    //float CamBeta = 0.0f;
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -213,10 +215,10 @@ protected:
         static bool autoTime = true;
         static float cTime = 0.0f;
         const float turnTime = 72.0f;
-		const float angTurnTimeFact = 2.0f * M_PI / turnTime;
+        const float angTurnTimeFact = 2.0f * M_PI / turnTime;
 
         // Standard procedure to quit when the ESC key is pressed
-        if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
@@ -229,55 +231,92 @@ protected:
         // It fills the float point variable passed in its first parameter with the time
         // since the last call to the procedure.
         // It fills vec3 in the second parameters, with three values in the -1,1 range corresponding
-        // to motion (with left stick of the gamepad, or ASWD + RF keys on the keyboard)
+        // to motion (with left stick of the gamepad, or WASD + RF keys on the keyboard)
         // It fills vec3 in the third parameters, with three values in the -1,1 range corresponding
         // to motion (with right stick of the gamepad, or Arrow keys + QE keys on the keyboard, or mouse)
         // If fills the last boolean variable with true if fire has been pressed:
         //          SPACE on the keyboard, A or B button on the Gamepad, Right mouse button
 
-        if(autoTime) {
+        if (autoTime) {
             cTime += deltaT;
             cTime = (cTime > turnTime) ? (cTime - turnTime) : cTime;
         }
-        
-        const float ROT_SPEED = glm::radians(240.0f);
-        const float MOVE_SPEED = 7.5f;
 
-        CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
-        CamBeta = CamBeta - ROT_SPEED * deltaT * r.x;
+        /* free floating camera
+        const float ROT_SPEED2 = glm::radians(240.0f);
+        const float MOVE_SPEED2 = 7.5f;
+
+        CamAlpha = CamAlpha - ROT_SPEED2 * deltaT * r.y;
+        CamBeta = CamBeta - ROT_SPEED2 * deltaT * r.x;
         CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
             (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
 
         glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
         glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
-        CamPos = CamPos + MOVE_SPEED * m.x * ux * deltaT;
-        CamPos = CamPos + MOVE_SPEED * m.y * glm::vec3(0, 1, 0) * deltaT;
-        CamPos = CamPos + MOVE_SPEED * m.z * uz * deltaT;
+        CamPos = CamPos + MOVE_SPEED2 * m.x * ux * deltaT;
+        CamPos = CamPos + MOVE_SPEED2 * m.y * glm::vec3(0, 1, 0) * deltaT;
+        CamPos = CamPos + MOVE_SPEED2 * m.z * uz * deltaT;
+
+        glm::mat4 mView = glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
+            glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
+            glm::translate(glm::mat4(1.0), -CamPos); //View matrix
+        */
+
+        // EXTRA - se muovo la telecamera con il mouse, poi il tot per essere dietro il taxi si sposta
+        // EXTRA - troppo "statica" la telecamera, sarebbe bello come quella del prof che ha un movimento 
+        // che tipo si allontana mentre si accelera
+        // EXTRA - damped speed?
+
+
+        static float steeringAng = 0.0f;
+        const float steeringSpeed = glm::radians(45.0f);
+        const float moveSpeed = 5.0f;
+
+        float speed = moveSpeed * deltaT * m.z;
+        if (speed != 0.0f) {
+            steeringAng += (speed > 0 ? -m.x : m.x) * steeringSpeed * deltaT;
+            taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
+        }
+
+        //calcolo posizione camera per lookAt, keeping into account the current SteeringAng
+        float x, y;
+        // Calculate the camera position around the taxi in a circular path
+        float radius = 5.0f;
+        x = -radius * sin(steeringAng);
+        y = -radius * cos(steeringAng);
+        camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
+        glm::mat4 mView = glm::lookAt(camPos,
+            taxiPos,
+            glm::vec3(0, 1, 0));
+        //REMEMBER: primo parametro: spostamento dx e sx, secondo parametro: altezza su e giù, terzo avanti e indietro
+        
         
         const float nearPlane = 0.1f;
         const float farPlane = 250.0f;
         glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
-        Prj[1][1] *= -1;
-
-        glm::mat4 mView =  glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
-                        glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
-                        glm::translate(glm::mat4(1.0), -CamPos);
+        Prj[1][1] *= -1; //Projection matrix
 
 
-        glm::mat4 mWorld;
+		glm::mat4 mWorld; //World matrix
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
         //glm::vec3 sunPos = glm::vec3(5.5f, 30.0f, 7.5f);
         glm::vec3 sunPos = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
-    
-        uboTaxi.mvpMat = Prj * mView * mWorld;
-        uboTaxi.mMat = glm::mat4(1);
+        
+		
+        glm::mat4 mWorldTaxi =
+            glm::translate(glm::mat4(1.0), taxiPos) *
+            glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
+
+
+        uboTaxi.mvpMat = Prj * mView * mWorldTaxi;
+        uboTaxi.mMat = glm::mat4(1.0f);
         uboTaxi.nMat = glm::inverse(glm::transpose(uboTaxi.mMat));
         DStaxi.map(currentImage, &uboTaxi, sizeof(uboTaxi), 0);
         //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
         guboTaxi.lightDir = sunPos;
         guboTaxi.lightColor = glm::vec4(1.0f);
-        guboTaxi.eyePos = CamPos;
+        guboTaxi.eyePos = camPos;
         guboTaxi.gamma = 128.0f;
         guboTaxi.metallic = 1.0f;
         DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
@@ -305,7 +344,7 @@ protected:
                 //gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
                 gubocity[k].lightDir = sunPos;
                 gubocity[k].lightColor = glm::vec4(1.0f);
-                gubocity[k].eyePos = CamPos;
+                gubocity[k].eyePos = camPos;
                 gubocity[k].gamma = 128.0f;
                 gubocity[k].metallic = 0.1f;
                 DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
