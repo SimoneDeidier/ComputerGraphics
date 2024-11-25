@@ -262,7 +262,6 @@ protected:
             glm::translate(glm::mat4(1.0), -CamPos); //View matrix
         */
 
-        // EXTRA - se muovo la telecamera con il mouse, poi il tot per essere dietro il taxi si sposta
         // EXTRA - troppo "statica" la telecamera, sarebbe bello come quella del prof che ha un movimento 
         // che tipo si allontana mentre si accelera
         // EXTRA - damped speed?
@@ -270,9 +269,13 @@ protected:
 
         static float steeringAng = 0.0f;
         const float steeringSpeed = glm::radians(45.0f);
-        const float moveSpeed = 5.0f;
+        const float moveSpeed = 7.5f;
 
-        float speed = moveSpeed * deltaT * m.z;
+        static float currentSpeed = 0.0f;
+        float targetSpeed = moveSpeed * m.z;
+        const float dampingFactor = 3.0f; // Adjust this value to control the damping effect
+        currentSpeed += (targetSpeed - currentSpeed) * dampingFactor * deltaT;
+        float speed = currentSpeed * deltaT;
         if (speed != 0.0f) {
             steeringAng += (speed > 0 ? -m.x : m.x) * steeringSpeed * deltaT;
             taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
