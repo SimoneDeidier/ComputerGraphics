@@ -53,10 +53,13 @@ protected:
     GlobalUniformBufferObject gubocity[MESH];
 
     // Other application parameters
+    int currScene = 0;
 	glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
+    glm::vec3 camPosInPhotoMode;
     glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
-    //float CamAlpha = 0.0f;
-    //float CamBeta = 0.0f;
+    float CamAlpha = 0.0f;
+    float CamBeta = 0.0f;
+    bool alreadyInPhotoMode = false;
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -211,6 +214,8 @@ protected:
 
     // main application loop
     void updateUniformBuffer(uint32_t currentImage) {
+        static bool debounce = false;
+        static int curDebounce = 0;
 
         static bool autoTime = true;
         static float cTime = 0.0f;
@@ -221,6 +226,26 @@ protected:
         if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
+
+        if(glfwGetKey(window, GLFW_KEY_SPACE)) {
+			if(!debounce) {
+				debounce = true;
+				curDebounce = GLFW_KEY_SPACE;
+				if(currScene==0) {
+                    currScene = 1;
+                } else {
+                    currScene = 0;
+				}
+				std::cout << "Scene : " << currScene << "\n";
+
+				RebuildPipeline();
+			}
+		} else {
+			if((curDebounce == GLFW_KEY_SPACE) && debounce) {
+				debounce = false;
+				curDebounce = 0;
+			}
+		}
 
         // Integration with the timers and the controllers
         float deltaT;
@@ -242,88 +267,86 @@ protected:
             cTime = (cTime > turnTime) ? (cTime - turnTime) : cTime;
         }
 
-        /* free floating camera
-        const float ROT_SPEED2 = glm::radians(240.0f);
-        const float MOVE_SPEED2 = 7.5f;
-
-        CamAlpha = CamAlpha - ROT_SPEED2 * deltaT * r.y;
-        CamBeta = CamBeta - ROT_SPEED2 * deltaT * r.x;
-        CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
-            (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
-
-        glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
-        glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
-        CamPos = CamPos + MOVE_SPEED2 * m.x * ux * deltaT;
-        CamPos = CamPos + MOVE_SPEED2 * m.y * glm::vec3(0, 1, 0) * deltaT;
-        CamPos = CamPos + MOVE_SPEED2 * m.z * uz * deltaT;
-
-        glm::mat4 mView = glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
-            glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
-            glm::translate(glm::mat4(1.0), -CamPos); //View matrix
-        */
-
-        // EXTRA - troppo "statica" la telecamera, sarebbe bello come quella del prof che ha un movimento 
-        // che tipo si allontana mentre si accelera
-        // EXTRA - damped speed?
-
-
         static float steeringAng = 0.0f;
-        const float steeringSpeed = glm::radians(45.0f);
-        const float moveSpeed = 7.5f;
+        glm::mat4 mView;
 
-        static float currentSpeed = 0.0f;
-        float targetSpeed = moveSpeed * m.z;
-        const float dampingFactor = 3.0f; // Adjust this value to control the damping effect
-        currentSpeed += (targetSpeed - currentSpeed) * dampingFactor * deltaT;
-        float speed = currentSpeed * deltaT;
-        if (speed != 0.0f) {
-            steeringAng += (speed > 0 ? -m.x : m.x) * steeringSpeed * deltaT;
-            taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
+        if(currScene == 0) {
+            alreadyInPhotoMode = false;
+            // Third person view
+            const float steeringSpeed = glm::radians(45.0f);
+            const float moveSpeed = 7.5f;
+
+            static float currentSpeed = 0.0f;
+            float targetSpeed = moveSpeed * m.z;
+            const float dampingFactor = 3.0f; // Adjust this value to control the damping effect
+            currentSpeed += (targetSpeed - currentSpeed) * dampingFactor * deltaT;
+            float speed = currentSpeed * deltaT;
+            if (speed != 0.0f) {
+                steeringAng += (speed > 0 ? -m.x : m.x) * steeringSpeed * deltaT;
+                taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
+            }
+
+            //update camera position for lookAt view, keeping into account the current SteeringAng
+            float x, y;
+            float radius = 5.0f;
+            static float camOffsetAngle = 0.0f;
+            const float camRotationSpeed = glm::radians(90.0f);
+
+            // Update camera offset angle based on mouse movement
+            if (r.y != 0.0f) {
+                camOffsetAngle += camRotationSpeed * deltaT * r.y;
+            }
+
+            // Calculate the camera position around the taxi in a circular path with optional offset angle from the user
+            x = -radius * sin(steeringAng + camOffsetAngle);
+            y = -radius * cos(steeringAng + camOffsetAngle);
+            camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
+            mView = glm::lookAt(camPos,
+                taxiPos,
+                glm::vec3(0, 1, 0));
+            //REMEMBER: primo parametro: spostamento dx e sx, secondo parametro: altezza su e giù, terzo avanti e indietro
+        } else if (currScene == 1){
+            // Photo mode
+            if(!alreadyInPhotoMode) {
+                //TODO: set the camera orientation towards the taxi
+                camPosInPhotoMode = camPos;
+                alreadyInPhotoMode = true;
+            }
+            const float ROT_SPEED2 = glm::radians(240.0f);
+            const float MOVE_SPEED2 = 7.5f;
+
+            CamAlpha = CamAlpha - ROT_SPEED2 * deltaT * r.y;
+            CamBeta = CamBeta - ROT_SPEED2 * deltaT * r.x;
+            CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
+                (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
+
+            glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
+            glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
+            camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * m.x * ux * deltaT;
+            camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * m.y * glm::vec3(0, 1, 0) * deltaT;
+            camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * m.z * uz * deltaT;
+
+            mView = glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
+                glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
+                glm::translate(glm::mat4(1.0), -camPosInPhotoMode); //View matrix
+
+            
         }
 
-
-        //calcolo posizione camera per lookAt, keeping into account the current SteeringAng
-        float x, y;
-        // Calculate the camera position around the taxi in a circular path
-        float radius = 5.0f;
-        /*x = -radius * sin(steeringAng);
-        y = -radius * cos(steeringAng);
-        camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
-        glm::mat4 mView = glm::lookAt(camPos,
-            taxiPos,
-            glm::vec3(0, 1, 0));*/
-
-        static float camOffsetAngle = 0.0f;
-        const float camRotationSpeed = glm::radians(90.0f);
-
-        // Update camera offset angle based on mouse movement
-        if (r.y != 0.0f) {
-            camOffsetAngle += camRotationSpeed * deltaT * r.y;
-        }
-
-        // Calculate the camera position around the taxi in a circular path with optional offset angle from the user
-        x = -radius * sin(steeringAng + camOffsetAngle);
-        y = -radius * cos(steeringAng + camOffsetAngle);
-        camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
-        glm::mat4 mView = glm::lookAt(camPos,
-            taxiPos,
-            glm::vec3(0, 1, 0));
-        //REMEMBER: primo parametro: spostamento dx e sx, secondo parametro: altezza su e giù, terzo avanti e indietro
-        
-        
-        const float nearPlane = 0.1f;
-        const float farPlane = 250.0f;
+        const float nearPlane = 1.0f;
+        const float farPlane = 150.0f;
         glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
         Prj[1][1] *= -1; //Projection matrix
 
 
-		glm::mat4 mWorld; //World matrix
+        glm::mat4 mWorld; //World matrix for city
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
+
 
         //glm::vec3 sunPos = glm::vec3(5.5f, 30.0f, 7.5f);
         glm::vec3 sunPos = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
         
-		
+
         glm::mat4 mWorldTaxi =
             glm::translate(glm::mat4(1.0), taxiPos) *
             glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
