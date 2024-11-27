@@ -1,10 +1,15 @@
 // This has been adapted from the Vulkan tutorial
-
 #include "headers/Starter.hpp"
+#include "headers/TextMaker.hpp"
 #include <iostream>
 #include <fstream>
 #include <corecrt_math_defines.h> //TODO: remove. A fix for windows not being able to find M_PI
 #define MESH 209
+
+std::vector<SingleText> outText = {
+	{2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
+	{2, {"Photo mode", "Press SPACE to access third person view", "",""}, 0, 0}
+};
 
 // float : alignas(4), vec2  : alignas(8), vec3, vec4, mat3, mat4  : alignas(16)
 struct UniformBufferObject {
@@ -39,6 +44,8 @@ protected:
 
     Pipeline P, Pcity;
 
+    TextMaker txt;
+
     Model<Vertex>  Mtaxi;
     Model<Vertex> Mcity[MESH];
 
@@ -72,8 +79,8 @@ protected:
 
         // Descriptor pool sizes
         uniformBlocksInPool =  (2 * MESH) + 2;
-        texturesInPool = MESH + 1;
-        setsInPool = MESH + 1;
+        texturesInPool = MESH + 1 +1;
+        setsInPool = MESH + 1 +1;
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -123,6 +130,7 @@ protected:
         Mtaxi.init(this, &VD, "Models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
 
         Tcity.init(this,"textures/Textures_City.png");
+        txt.init(this, &outText);
 
         nlohmann::json js;
         std::ifstream ifs("models/city.json");
@@ -164,6 +172,7 @@ protected:
                     {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
             });
         }
+        txt.pipelinesAndDescriptorSetsInit();	
     }
 
     void pipelinesAndDescriptorSetsCleanup() {
@@ -175,6 +184,7 @@ protected:
         for(int i = 0; i < MESH; i++) {
             DScity[i].cleanup();
         }
+        txt.pipelinesAndDescriptorSetsCleanup();
     }
 
     void localCleanup() {
@@ -192,6 +202,7 @@ protected:
 
         P.destroy();
         Pcity.destroy();
+        txt.localCleanup();	
     }
 
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
@@ -210,6 +221,7 @@ protected:
             vkCmdDrawIndexed(commandBuffer,
                              static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
         }
+        txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
 
     // main application loop
@@ -306,6 +318,7 @@ protected:
                 glm::vec3(0, 1, 0));
             //REMEMBER: primo parametro: spostamento dx e sx, secondo parametro: altezza su e giù, terzo avanti e indietro
         } else if (currScene == 1){
+
             // Photo mode
             if(!alreadyInPhotoMode) {
                 //TODO: set the camera orientation towards the taxi
