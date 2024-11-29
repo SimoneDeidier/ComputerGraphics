@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <fstream>
 #include <array>
+#include <cmath>
+#include <math.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
@@ -18,6 +20,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/transform2.hpp>
 
 #include <chrono>
 
@@ -42,6 +45,20 @@
 #define SINFL_IMPLEMENTATION
 #include <sinfl.h>
 
+// For compile compatibility issues
+#define M_E			2.7182818284590452354	/* e */
+#define M_LOG2E		1.4426950408889634074	/* log_2 e */
+#define M_LOG10E	0.43429448190325182765	/* log_10 e */
+#define M_LN2		0.69314718055994530942	/* log_e 2 */
+#define M_LN10		2.30258509299404568402	/* log_e 10 */
+#define M_PI		3.14159265358979323846	/* pi */
+#define M_PI_2		1.57079632679489661923	/* pi/2 */
+#define M_PI_4		0.78539816339744830962	/* pi/4 */
+#define M_1_PI		0.31830988618379067154	/* 1/pi */
+#define M_2_PI		0.63661977236758134308	/* 2/pi */
+#define M_2_SQRTPI	1.12837916709551257390	/* 2/sqrt(pi) */
+#define M_SQRT2		1.41421356237309504880	/* sqrt(2) */
+#define M_SQRT1_2	0.70710678118654752440	/* 1/sqrt(2) */
 
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -206,7 +223,6 @@ struct VertexDescriptor {
 
 enum ModelType {OBJ, GLTF, MGCG};
 
-template <class Vert>
 class Model {
 	BaseProject *BP;
 	
@@ -217,7 +233,7 @@ class Model {
 	VertexDescriptor *VD;
 
 	public:
-	std::vector<Vert> vertices{};
+	std::vector<unsigned char> vertices{};
 	std::vector<uint32_t> indices{};
 	void loadModelOBJ(std::string file);
 	void loadModelGLTF(std::string file, bool encoded);
@@ -240,7 +256,7 @@ struct Texture {
 	int imgs;
 	static const int maxImgs = 6;
 	
-	void createTextureImage(const char *const files[], VkFormat Fmt);
+	void createTextureImage(std::string files[], VkFormat Fmt);
 	void createTextureImageView(VkFormat Fmt);
 	void createTextureSampler(VkFilter magFilter,
 							 VkFilter minFilter,
@@ -252,8 +268,8 @@ struct Texture {
 							 float maxLod
 							);
 
-	void init(BaseProject *bp, const char * file, VkFormat Fmt, bool initSampler);
-	void initCubic(BaseProject *bp, const char * files[6]);
+	void init(BaseProject *bp, std::string file, VkFormat Fmt, bool initSampler);
+	void initCubic(BaseProject *bp, std::string files[6]);
 	void cleanup();
 };
 
@@ -330,7 +346,7 @@ struct DescriptorSet {
 // MAIN ! 
 class BaseProject {
 	friend class VertexDescriptor;
-	template <class Vert> friend class Model;
+	friend class Model;
 	friend class Texture;
 	friend class Pipeline;
 	friend class DescriptorSetLayout;
@@ -829,6 +845,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 		deviceFeatures.sampleRateShading = VK_TRUE;
+		deviceFeatures.fillModeNonSolid  = VK_TRUE;
 		
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -881,7 +898,8 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
 		createInfo.imageExtent = extent;
 		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+							    VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 		uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(),
@@ -1773,7 +1791,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 					m.x += state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
 				}
 				if(fabs(state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]) > deadZone) {
-					m.z -= state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+					m.z += state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
 				}
 				if(fabs(state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER]) > deadZone) {
 					m.y -= state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER];
@@ -1845,10 +1863,10 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 			m.x = 1.0f;
 		}
 		if(glfwGetKey(window, GLFW_KEY_S)) {
-			m.z = -1.0f;
+			m.z = 1.0f;
 		}
 		if(glfwGetKey(window, GLFW_KEY_W)) {
-			m.z = 1.0f;
+			m.z = -1.0f;
 		}
 		if(glfwGetKey(window, GLFW_KEY_R)) {
 			m.y = 1.0f;
@@ -1857,7 +1875,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 			m.y = -1.0f;
 		}
 		
-		fire = glfwGetKey(window, GLFW_KEY_SPACE) | glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+		fire = glfwGetKey(window, GLFW_KEY_SPACE) | (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
 		handleGamePad(GLFW_JOYSTICK_1,m,r,fire);
 		handleGamePad(GLFW_JOYSTICK_2,m,r,fire);
 		handleGamePad(GLFW_JOYSTICK_3,m,r,fire);
@@ -1891,6 +1909,440 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 				std::cout << v[i/4][i%4] << ((i<15) ? ", " : ");\n");
 			}
 	}
+	void printQuat(const char *Name, glm::quat q) {
+		std::cout << "glm::vec3 " << Name << " = glm::vec3(" << q[0] << ", " << q[1] << ", " << q[2] << ", " << q[3] << ");\n";
+	}
+
+	// to support screenshot
+	// Taken from the Sasha Willem sample by copy&past
+	// This could be better integrated in the code, but for the moment,
+	// i cannot afford to do it, so it stays like this, even if it is awful!	
+	private:
+	inline VkCommandBufferBeginInfo vks_initializers_commandBufferBeginInfo()
+	{
+		VkCommandBufferBeginInfo cmdBufferBeginInfo {};
+		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		return cmdBufferBeginInfo;
+	}
+
+	inline VkCommandBufferAllocateInfo vks_initializers_commandBufferAllocateInfo(
+		VkCommandPool commandPool, 
+		VkCommandBufferLevel level, 
+		uint32_t bufferCount)
+	{
+		VkCommandBufferAllocateInfo commandBufferAllocateInfo {};
+		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		commandBufferAllocateInfo.commandPool = commandPool;
+		commandBufferAllocateInfo.level = level;
+		commandBufferAllocateInfo.commandBufferCount = bufferCount;
+		return commandBufferAllocateInfo;
+	}
+		
+	VkCommandBuffer vulkanDevice_createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin)
+	{
+		VkResult result;
+
+		VkCommandBufferAllocateInfo cmdBufAllocateInfo = vks_initializers_commandBufferAllocateInfo(pool, level, 1);
+		VkCommandBuffer cmdBuffer;
+		result = vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, &cmdBuffer);
+		if(result != VK_SUCCESS) {
+		 	PrintVkError(result);
+			throw std::runtime_error("failed to create screenshot!");
+		}
+		// If requested, also start recording for the new command buffer
+		if (begin)
+		{
+			VkCommandBufferBeginInfo cmdBufInfo = vks_initializers_commandBufferBeginInfo();
+			result = vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo);
+			if(result != VK_SUCCESS) {
+				PrintVkError(result);
+				throw std::runtime_error("failed to create screenshot!");
+			}
+		}
+		return cmdBuffer;
+	}
+
+	inline VkFenceCreateInfo vks_initializers_fenceCreateInfo(VkFenceCreateFlags flags = 0)
+	{
+		VkFenceCreateInfo fenceCreateInfo {};
+		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceCreateInfo.flags = flags;
+		return fenceCreateInfo;
+	}
+
+	inline VkSubmitInfo vks_initializers_submitInfo()
+	{
+		VkSubmitInfo submitInfo {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		return submitInfo;
+	}
+	
+	// Custom define for better code readability
+	#define VK_FLAGS_NONE 0
+	// Default fence timeout in nanoseconds
+	#define DEFAULT_FENCE_TIMEOUT 100000000000		
+
+	void vulkanDevice_flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free)
+	{
+		VkResult result;
+
+		if (commandBuffer == VK_NULL_HANDLE)
+		{
+			return;
+		}
+
+		result = vkEndCommandBuffer(commandBuffer);
+		if(result != VK_SUCCESS) {
+			PrintVkError(result);
+			throw std::runtime_error("failed to create screenshot!");
+		}
+
+		VkSubmitInfo submitInfo = vks_initializers_submitInfo();
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		// Create fence to ensure that the command buffer has finished executing
+		VkFenceCreateInfo fenceInfo = vks_initializers_fenceCreateInfo(VK_FLAGS_NONE);
+		VkFence fence;
+		result = vkCreateFence(device, &fenceInfo, nullptr, &fence);
+		if(result != VK_SUCCESS) {
+			PrintVkError(result);
+			throw std::runtime_error("failed to create screenshot!");
+		}
+		// Submit to the queue
+		result = vkQueueSubmit(queue, 1, &submitInfo, fence);
+		if(result != VK_SUCCESS) {
+			PrintVkError(result);
+			throw std::runtime_error("failed to create screenshot!");
+		}
+		// Wait for the fence to signal that command buffer has finished executing
+		result = vkWaitForFences(device, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT);
+		if(result != VK_SUCCESS) {
+			PrintVkError(result);
+			throw std::runtime_error("failed to create screenshot!");
+		}
+		vkDestroyFence(device, fence, nullptr);
+		if (free)
+		{
+			vkFreeCommandBuffers(device, pool, 1, &commandBuffer);
+		}
+	}	
+
+	inline VkMemoryAllocateInfo vks_initializers_memoryAllocateInfo()
+	{
+		VkMemoryAllocateInfo memAllocInfo {};
+		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		return memAllocInfo;
+	}
+
+	inline VkImageCreateInfo vks_initializers_imageCreateInfo()
+	{
+		VkImageCreateInfo imageCreateInfo {};
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		return imageCreateInfo;
+	}
+	
+	inline VkImageMemoryBarrier vks_initializers_imageMemoryBarrier()
+	{
+		VkImageMemoryBarrier imageMemoryBarrier {};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		return imageMemoryBarrier;
+	}
+		
+	void vks_tools_insertImageMemoryBarrier(
+		VkCommandBuffer cmdbuffer,
+		VkImage image,
+		VkAccessFlags srcAccessMask,
+		VkAccessFlags dstAccessMask,
+		VkImageLayout oldImageLayout,
+		VkImageLayout newImageLayout,
+		VkPipelineStageFlags srcStageMask,
+		VkPipelineStageFlags dstStageMask,
+		VkImageSubresourceRange subresourceRange)
+	{
+		VkImageMemoryBarrier imageMemoryBarrier = vks_initializers_imageMemoryBarrier();
+		imageMemoryBarrier.srcAccessMask = srcAccessMask;
+		imageMemoryBarrier.dstAccessMask = dstAccessMask;
+		imageMemoryBarrier.oldLayout = oldImageLayout;
+		imageMemoryBarrier.newLayout = newImageLayout;
+		imageMemoryBarrier.image = image;
+		imageMemoryBarrier.subresourceRange = subresourceRange;
+
+		vkCmdPipelineBarrier(
+			cmdbuffer,
+			srcStageMask,
+			dstStageMask,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &imageMemoryBarrier);
+	}
+	
+	public:
+	bool screenshotSaved = false;
+	
+	void saveScreenshot(const char *filename, int currentBuffer) {
+		VkResult result;
+		uint32_t width = swapChainExtent.width;
+		uint32_t height = swapChainExtent.height;
+		
+		screenshotSaved = false;
+		bool supportsBlit = true;
+
+
+		// Check blit support for source and destination
+		VkFormatProperties formatProps;
+
+		// Check if the device supports blitting from optimal images (the swapchain images are in optimal format)
+		vkGetPhysicalDeviceFormatProperties(physicalDevice, swapChainImageFormat, &formatProps);
+		if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT)) {
+			std::cerr << "Device does not support blitting from optimal tiled images, using copy instead of blit!" << std::endl;
+			supportsBlit = false;
+		}
+
+		// Check if the device supports blitting to linear images
+		vkGetPhysicalDeviceFormatProperties(physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProps);
+		if (!(formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
+			std::cerr << "Device does not support blitting to linear tiled images, using copy instead of blit!" << std::endl;
+			supportsBlit = false;
+		}
+
+		// Source for the copy is the last rendered swapchain image
+		VkImage srcImage = swapChainImages[currentBuffer];
+
+		// Create the linear tiled destination image to copy to and to read the memory from
+		VkImageCreateInfo imageCreateCI(vks_initializers_imageCreateInfo());
+		imageCreateCI.imageType = VK_IMAGE_TYPE_2D;
+		// Note that vkCmdBlitImage (if supported) will also do format conversions if the swapchain color format would differ
+		imageCreateCI.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageCreateCI.extent.width = width;
+		imageCreateCI.extent.height = height;
+		imageCreateCI.extent.depth = 1;
+		imageCreateCI.arrayLayers = 1;
+		imageCreateCI.mipLevels = 1;
+		imageCreateCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageCreateCI.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateCI.tiling = VK_IMAGE_TILING_LINEAR;
+		imageCreateCI.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		// Create the image
+		VkImage dstImage;
+		result = vkCreateImage(device, &imageCreateCI, nullptr, &dstImage);
+		if(result != VK_SUCCESS) {
+		 	PrintVkError(result);
+			throw std::runtime_error("failed to create screenshot!");
+		}
+		// Create memory to back up the image
+		VkMemoryRequirements memRequirements;
+		VkMemoryAllocateInfo memAllocInfo(vks_initializers_memoryAllocateInfo());
+		VkDeviceMemory dstImageMemory;
+		vkGetImageMemoryRequirements(device, dstImage, &memRequirements);
+		memAllocInfo.allocationSize = memRequirements.size;
+		// Memory must be host visible to copy from
+		memAllocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		result = vkAllocateMemory(device, &memAllocInfo, nullptr, &dstImageMemory);
+		if(result != VK_SUCCESS) {
+		 	PrintVkError(result);
+			throw std::runtime_error("failed to create screenshot!!");
+		}
+		result = vkBindImageMemory(device, dstImage, dstImageMemory, 0);
+		if(result != VK_SUCCESS) {
+		 	PrintVkError(result);
+			throw std::runtime_error("failed to create screenshot!!");
+		}
+
+		// Do the actual blit from the swapchain image to our host visible destination image
+		VkCommandBuffer copyCmd = vulkanDevice_createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandPool, true);
+
+		// Transition destination image to transfer destination layout
+		vks_tools_insertImageMemoryBarrier(
+			copyCmd,
+			dstImage,
+			0,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		// Transition swapchain image from present to transfer source layout
+		vks_tools_insertImageMemoryBarrier(
+			copyCmd,
+			srcImage,
+			VK_ACCESS_MEMORY_READ_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		// If source and destination support blit we'll blit as this also does automatic format conversion (e.g. from BGR to RGB)
+		if (supportsBlit)
+		{
+			// Define the region to blit (we will blit the whole swapchain image)
+			VkOffset3D blitSize;
+			blitSize.x = width;
+			blitSize.y = height;
+			blitSize.z = 1;
+			VkImageBlit imageBlitRegion{};
+			imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBlitRegion.srcSubresource.layerCount = 1;
+			imageBlitRegion.srcOffsets[1] = blitSize;
+			imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBlitRegion.dstSubresource.layerCount = 1;
+			imageBlitRegion.dstOffsets[1] = blitSize;
+
+			// Issue the blit command
+			vkCmdBlitImage(
+				copyCmd,
+				srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageBlitRegion,
+				VK_FILTER_NEAREST);
+		}
+		else
+		{
+			// Otherwise use image copy (requires us to manually flip components)
+			VkImageCopy imageCopyRegion{};
+			imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageCopyRegion.srcSubresource.layerCount = 1;
+			imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageCopyRegion.dstSubresource.layerCount = 1;
+			imageCopyRegion.extent.width = width;
+			imageCopyRegion.extent.height = height;
+			imageCopyRegion.extent.depth = 1;
+
+			// Issue the copy command
+			vkCmdCopyImage(
+				copyCmd,
+				srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageCopyRegion);
+		}
+
+		// Transition destination image to general layout, which is the required layout for mapping the image memory later on
+		vks_tools_insertImageMemoryBarrier(
+			copyCmd,
+			dstImage,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		// Transition back the swap chain image after the blit is done
+		vks_tools_insertImageMemoryBarrier(
+			copyCmd,
+			srcImage,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		vulkanDevice_flushCommandBuffer(copyCmd, graphicsQueue, commandPool, true);
+
+		// Get layout of the image (including row pitch)
+		VkImageSubresource subResource { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
+		VkSubresourceLayout subResourceLayout;
+		vkGetImageSubresourceLayout(device, dstImage, &subResource, &subResourceLayout);
+
+		// Map image memory so we can start copying from it
+		const char* data;
+		vkMapMemory(device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
+		data += subResourceLayout.offset;
+
+/*		std::ofstream file(filename, std::ios::out | std::ios::binary);
+
+		// ppm header
+		file << "P6\n" << width << "\n" << height << "\n" << 255 << "\n";
+
+		// If source is BGR (destination is always RGB) and we can't use blit (which does automatic conversion), we'll have to manually swizzle color components
+		bool colorSwizzle = false;
+		// Check if source is BGR
+		// Note: Not complete, only contains most common and basic BGR surface formats for demonstration purposes
+		if (!supportsBlit)
+		{
+			std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
+			colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), swapChainImageFormat) != formatsBGR.end());
+		}
+
+		// ppm binary pixel data
+		for (uint32_t y = 0; y < height; y++)
+		{
+			unsigned int *row = (unsigned int*)data;
+			for (uint32_t x = 0; x < width; x++)
+			{
+				if (colorSwizzle)
+				{
+					file.write((char*)row+2, 1);
+					file.write((char*)row+1, 1);
+					file.write((char*)row, 1);
+				}
+				else
+				{
+					file.write((char*)row, 3);
+				}
+				row++;
+			}
+			data += subResourceLayout.rowPitch;
+		}
+		file.close();*/
+		
+		char *pixelArray;
+		pixelArray = (char *)malloc(width * height * 3);
+		// If source is BGR (destination is always RGB) and we can't use blit (which does automatic conversion), we'll have to manually swizzle color components
+		bool colorSwizzle = false;
+		// Check if source is BGR
+		// Note: Not complete, only contains most common and basic BGR surface formats for demonstration purposes
+		if (!supportsBlit)
+		{
+			std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
+			colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), swapChainImageFormat) != formatsBGR.end());
+		}
+
+		int j = 0;
+		for (uint32_t y = 0; y < height; y++)
+		{
+			unsigned int *row = (unsigned int*)data;
+			for (uint32_t x = 0; x < width; x++)
+			{
+				if (colorSwizzle)
+				{
+					pixelArray[j++] = ((char*)row)[2];
+					pixelArray[j++] = ((char*)row)[1];
+					pixelArray[j++] = ((char*)row)[0];
+				}
+				else
+				{
+					pixelArray[j++] = ((char*)row)[0];
+					pixelArray[j++] = ((char*)row)[1];
+					pixelArray[j++] = ((char*)row)[2];
+				}
+				row++;
+			}
+			data += subResourceLayout.rowPitch;
+		}
+		stbi_write_png(filename, width, height, 3, pixelArray, width*3);
+		free(pixelArray);
+
+		std::cout << "Screenshot saved to disk" << std::endl;
+
+		// Clean up resources
+		vkUnmapMemory(device, dstImageMemory);
+		vkFreeMemory(device, dstImageMemory, nullptr);
+		vkDestroyImage(device, dstImage, nullptr);
+
+		screenshotSaved = true;
+	}	
 };
 
 
@@ -2011,8 +2463,7 @@ std::vector<VkVertexInputAttributeDescription> VertexDescriptor::getAttributeDes
 
 
 
-template <class Vert>
-void Model<Vert>::loadModelOBJ(std::string file) {
+void Model::loadModelOBJ(std::string file) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
@@ -2024,20 +2475,21 @@ void Model<Vert>::loadModelOBJ(std::string file) {
 		throw std::runtime_error(warn + err);
 	}
 	
-	std::cout << "Building\n";	
+//	std::cout << "Building\n";	
 //	std::cout << "Position " << VD->Position.hasIt << "," << VD->Position.offset << "\n";	
 //	std::cout << "UV " << VD->UV.hasIt << "," << VD->UV.offset << "\n";	
-//	std::cout << "Normal " << VD->Normal.hasIt << "," << VD->Normal.offset << "\n";	
+//	std::cout << "Normal " << VD->Normal.hasIt << "," << VD->Normal.offset << "\n";
+	int mainStride = VD->Bindings[0].stride;
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
-			Vert vertex{};
+			std::vector<unsigned char> vertex(mainStride, 0);
 			glm::vec3 pos = {
 				attrib.vertices[3 * index.vertex_index + 0],
 				attrib.vertices[3 * index.vertex_index + 1],
 				attrib.vertices[3 * index.vertex_index + 2]
 			};
 			if(VD->Position.hasIt) {
-				glm::vec3 *o = (glm::vec3 *)((char*)(&vertex) + VD->Position.offset);
+				glm::vec3 *o = (glm::vec3 *)((char*)(&vertex[0]) + VD->Position.offset);
 				*o = pos;
 			}
 			
@@ -2047,7 +2499,7 @@ void Model<Vert>::loadModelOBJ(std::string file) {
 				attrib.colors[3 * index.vertex_index + 2]
 			};
 			if(VD->Color.hasIt) {
-				glm::vec3 *o = (glm::vec3 *)((char*)(&vertex) + VD->Color.offset);
+				glm::vec3 *o = (glm::vec3 *)((char*)(&vertex[0]) + VD->Color.offset);
 				*o = color;
 			}
 			
@@ -2056,7 +2508,7 @@ void Model<Vert>::loadModelOBJ(std::string file) {
 				1 - attrib.texcoords[2 * index.texcoord_index + 1] 
 			};
 			if(VD->UV.hasIt) {
-				glm::vec2 *o = (glm::vec2 *)((char*)(&vertex) + VD->UV.offset);
+				glm::vec2 *o = (glm::vec2 *)((char*)(&vertex[0]) + VD->UV.offset);
 				*o = texCoord;
 			}
 
@@ -2066,25 +2518,26 @@ void Model<Vert>::loadModelOBJ(std::string file) {
 				attrib.normals[3 * index.normal_index + 2]
 			};
 			if(VD->Normal.hasIt) {
-				glm::vec3 *o = (glm::vec3 *)((char*)(&vertex) + VD->Normal.offset);
+				glm::vec3 *o = (glm::vec3 *)((char*)(&vertex[0]) + VD->Normal.offset);
 				*o = norm;
 			}
 			
-			vertices.push_back(vertex);
-			indices.push_back(vertices.size()-1);
+			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
+			indices.push_back((vertices.size()/mainStride)-1);
 		}
 	}
-	std::cout << "[OBJ] Vertices: "<< vertices.size() << "\n";
-	std::cout << "Indices: "<< indices.size() << "\n";
+	std::cout << "[OBJ] Vertices: "<< (vertices.size()/mainStride);
+	std::cout << " Indices: "<< indices.size() << "\n";
 	
 }
 
-template <class Vert>
-void Model<Vert>::loadModelGLTF(std::string file, bool encoded) {
+void Model::loadModelGLTF(std::string file, bool encoded) {
 	tinygltf::Model model;
 	tinygltf::TinyGLTF loader;
 	std::string warn, err;
 	
+	int mainStride = VD->Bindings[0].stride;
+
 	std::cout << "Loading : " << file << (encoded ? "[MGCG]" : "[GLTF]") << "\n";	
 	if(encoded) {
 		auto modelString = readFile(file);
@@ -2202,9 +2655,12 @@ void Model<Vert>::loadModelGLTF(std::string file, bool encoded) {
 					std::cout << "Warning: vertex layout has UV, but file hasn't\n";
 				}
 			}
-			
+
+//std::cout << "making vertex array. Stride:" << mainStride << "\n";
 			for(int i = 0; i < cntTot; i++) {
-				Vert vertex{};
+				std::vector<unsigned char> vertex(mainStride, 0);
+//std::cout << vertices.size() << "," << vertex.size() << "," << &vertex << " " << &vertex[0] << " ";
+//std::cout << i << "\n";
 				
 				if((i < cntPos) && meshHasPos && VD->Position.hasIt) {
 					glm::vec3 pos = {
@@ -2212,17 +2668,20 @@ void Model<Vert>::loadModelGLTF(std::string file, bool encoded) {
 						bufferPos[3 * i + 1],
 						bufferPos[3 * i + 2]
 					};
-					glm::vec3 *o = (glm::vec3 *)((char*)(&vertex) + VD->Position.offset);
+//std::cout << "Pos: " <<	VD->Position.offset << "\n";
+					glm::vec3 *o = (glm::vec3 *)((char*)(&vertex[0]) + VD->Position.offset);
+//std::cout << "at: " << o << "\n";
 					*o = pos;
+//std::cout << "Copied: " << o->x << "\n";
 				}
-	
 				if((i < cntNorm) && meshHasNorm && VD->Normal.hasIt) {
 					glm::vec3 normal = {
 						bufferNormals[3 * i + 0],
 						bufferNormals[3 * i + 1],
 						bufferNormals[3 * i + 2]
 					};
-					glm::vec3 *o = (glm::vec3 *)((char*)(&vertex) + VD->Normal.offset);
+//std::cout << "Nor: " <<	VD->Normal.offset << "\n";
+					glm::vec3 *o = (glm::vec3 *)((char*)(&vertex[0]) + VD->Normal.offset);
 					*o = normal;
 				}
 
@@ -2233,7 +2692,8 @@ void Model<Vert>::loadModelGLTF(std::string file, bool encoded) {
 						bufferTangents[4 * i + 2],
 						bufferTangents[4 * i + 3]
 					};
-					glm::vec4 *o = (glm::vec4 *)((char*)(&vertex) + VD->Tangent.offset);
+//std::cout << "Tan: " <<	VD->Tangent.offset << "\n";
+					glm::vec4 *o = (glm::vec4 *)((char*)(&vertex[0]) + VD->Tangent.offset);
 					*o = tangent;
 				}
 				
@@ -2242,11 +2702,14 @@ void Model<Vert>::loadModelGLTF(std::string file, bool encoded) {
 						bufferTexCoords[2 * i + 0],
 						bufferTexCoords[2 * i + 1] 
 					};
-					glm::vec2 *o = (glm::vec2 *)((char*)(&vertex) + VD->UV.offset);
+//std::cout << "UV : " <<	VD->UV.offset << "\n";
+					glm::vec2 *o = (glm::vec2 *)((char*)(&vertex[0]) + VD->UV.offset);
 					*o = texCoord;
 				}
 
-				vertices.push_back(vertex);					
+//std::cout << vertices.size() << "," << vertex.size() << " Inserting\n";
+				vertices.insert(vertices.end(), vertex.begin(), vertex.end());
+//std::cout << vertices.size() << " Inserted\n";
 			} 
 
 			const tinygltf::Accessor &accessor = model.accessors[primitive.indices];
@@ -2277,13 +2740,13 @@ void Model<Vert>::loadModelGLTF(std::string file, bool encoded) {
 		}
 	}
 
-	std::cout << (encoded ? "[MGCG]" : "[GLTF]") << " Vertices: " << vertices.size()
-			  << "\nIndices: " << indices.size() << "\n";
+	std::cout << (encoded ? "[MGCG]" : "[GLTF]") << " Vertices: " << (vertices.size()/mainStride)
+			  << " Indices: " << indices.size() << "\n";
 }
 
-template <class Vert>
-void Model<Vert>::createVertexBuffer() {
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+void Model::createVertexBuffer() {
+//	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	VkDeviceSize bufferSize = vertices.size();
 
 	BP->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
 						VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -2296,8 +2759,7 @@ void Model<Vert>::createVertexBuffer() {
 	vkUnmapMemory(BP->device, vertexBufferMemory);			
 }
 
-template <class Vert>
-void Model<Vert>::createIndexBuffer() {
+void Model::createIndexBuffer() {
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
 	BP->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -2311,18 +2773,17 @@ void Model<Vert>::createIndexBuffer() {
 	vkUnmapMemory(BP->device, indexBufferMemory);
 }
 
-template <class Vert>
-void Model<Vert>::initMesh(BaseProject *bp, VertexDescriptor *vd) {
+void Model::initMesh(BaseProject *bp, VertexDescriptor *vd) {
 	BP = bp;
 	VD = vd;
-	std::cout << "[Manual] Vertices: " << vertices.size()
-			  << "\nIndices: " << indices.size() << "\n";
+	int mainStride = VD->Bindings[0].stride;
+	std::cout << "[Manual] Vertices: " << (vertices.size()/mainStride)
+			  << " Indices: " << indices.size() << "\n";
 	createVertexBuffer();
 	createIndexBuffer();
 }
 
-template <class Vert>
-void Model<Vert>::init(BaseProject *bp, VertexDescriptor *vd, std::string file, ModelType MT) {
+void Model::init(BaseProject *bp, VertexDescriptor *vd, std::string file, ModelType MT) {
 	BP = bp;
 	VD = vd;
 	if(MT == OBJ) {
@@ -2337,16 +2798,14 @@ void Model<Vert>::init(BaseProject *bp, VertexDescriptor *vd, std::string file, 
 	createIndexBuffer();
 }
 
-template <class Vert>
-void Model<Vert>::cleanup() {
+void Model::cleanup() {
    	vkDestroyBuffer(BP->device, indexBuffer, nullptr);
    	vkFreeMemory(BP->device, indexBufferMemory, nullptr);
 	vkDestroyBuffer(BP->device, vertexBuffer, nullptr);
    	vkFreeMemory(BP->device, vertexBufferMemory, nullptr);
 }
 
-template <class Vert>
-void Model<Vert>::bind(VkCommandBuffer commandBuffer) {
+void Model::bind(VkCommandBuffer commandBuffer) {
 	VkBuffer vertexBuffers[] = {vertexBuffer};
 	// property .vertexBuffer of models, contains the VkBuffer handle to its vertex buffer
 	VkDeviceSize offsets[] = {0};
@@ -2361,13 +2820,13 @@ void Model<Vert>::bind(VkCommandBuffer commandBuffer) {
 
 
 
-void Texture::createTextureImage(const char *const files[], VkFormat Fmt = VK_FORMAT_R8G8B8A8_SRGB) {
+void Texture::createTextureImage(std::string files[], VkFormat Fmt = VK_FORMAT_R8G8B8A8_SRGB) {
 	int texWidth, texHeight, texChannels;
 	int curWidth = -1, curHeight = -1, curChannels = -1;
 	stbi_uc* pixels[maxImgs];
 	
 	for(int i = 0; i < imgs; i++) {
-	 	pixels[i] = stbi_load(files[i], &texWidth, &texHeight,
+	 	pixels[i] = stbi_load(files[i].c_str(), &texWidth, &texHeight,
 						&texChannels, STBI_rgb_alpha);
 		if (!pixels[i]) {
 			std::cout << "Not found: " << files[i] << "\n";
@@ -2476,8 +2935,8 @@ void Texture::createTextureSampler(
 	
 
 
-void Texture::init(BaseProject *bp, const char *  file, VkFormat Fmt = VK_FORMAT_R8G8B8A8_SRGB, bool initSampler = true) {
-	const char *files[1] = {file};
+void Texture::init(BaseProject *bp, std::string file, VkFormat Fmt = VK_FORMAT_R8G8B8A8_SRGB, bool initSampler = true) {
+	std::string files[1] = {file};
 	BP = bp;
 	imgs = 1;
 	createTextureImage(files, Fmt);
@@ -2488,7 +2947,7 @@ void Texture::init(BaseProject *bp, const char *  file, VkFormat Fmt = VK_FORMAT
 }
 
 
-void Texture::initCubic(BaseProject *bp, const char * files[6]) {
+void Texture::initCubic(BaseProject *bp, std::string files[6]) {
 	BP = bp;
 	imgs = 6;
 	createTextureImage(files);

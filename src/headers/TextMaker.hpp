@@ -46,7 +46,7 @@ struct TextMaker {
 
 	DescriptorSetLayout DSL;
 	Pipeline P;
-	Model<TextVertex> M;
+	Model M;
 	Texture T;
 	DescriptorSet DS;
 	
@@ -133,47 +133,50 @@ struct TextMaker {
 //std::cout << k << " " << j << " " << i << " " << ib << " " << c << "\n";
 						CharData d = Fonts[FontId].P[c];
 						
-						TextVertex vertex{};
+						int mainStride = VD.Bindings[0].stride;
+						std::vector<unsigned char> vertex(mainStride, 0);
+						TextVertex *V_vertex = (TextVertex *)(&vertex[0]);
 			
-						vertex.pos = {
+						V_vertex->pos = {
 							(float)(tpx + d.xoffset) * PtoTsx + PtoTdx,
 							(float)(tpy + d.yoffset) * PtoTsy + PtoTdy
 						};						
-						vertex.texCoord = {
+						V_vertex->texCoord = {
 							(float)d.x / texW,
 							(float)d.y / texH 
-						};			
-						M.vertices.push_back(vertex);
+						};
+						M.vertices.insert(M.vertices.end(), vertex.begin(), vertex.end());
+						// M.vertices.push_back(vertex);
 				
-						vertex.pos = {
+						V_vertex->pos = {
 							(float)(tpx + d.xoffset + d.width) * PtoTsx + PtoTdx,
 							(float)(float)(tpy + d.yoffset) * PtoTsy + PtoTdy
 						};						
-						vertex.texCoord = {
+						V_vertex->texCoord = {
 							(float)(float)(d.x + d.width) / texW,
 							(float)d.y / texH 
 						};
-						M.vertices.push_back(vertex);
+						M.vertices.insert(M.vertices.end(), vertex.begin(), vertex.end());
 			
-						vertex.pos = {
+						V_vertex->pos = {
 							(float)(tpx + d.xoffset) * PtoTsx + PtoTdx,
 							(float)(tpy + d.yoffset + d.height) * PtoTsy + PtoTdy
 						};						
-						vertex.texCoord = {
+						V_vertex->texCoord = {
 							(float)(d.x ) / texW,
 							(float)(d.y + d.height) / texH 
 						};
-						M.vertices.push_back(vertex);
+						M.vertices.insert(M.vertices.end(), vertex.begin(), vertex.end());
 			
-						vertex.pos = {
+						V_vertex->pos = {
 							(float)(tpx + d.xoffset + d.width) * PtoTsx + PtoTdx,
 							(float)(tpy + d.yoffset + d.height) * PtoTsy + PtoTdy
 						};						
-						vertex.texCoord = {
+						V_vertex->texCoord = {
 							(float)(d.x + d.width) / texW,
 							(float)(d.y + d.height) / texH 
 						};
-						M.vertices.push_back(vertex);
+						M.vertices.insert(M.vertices.end(), vertex.begin(), vertex.end());
 									
 						M.indices[ib + 0] = 4 * k + 0;
 						M.indices[ib + 1] = 4 * k + 1;
@@ -193,9 +196,11 @@ struct TextMaker {
 			tpx = 0;
 			tpy = 0;
 			Txt.len = ib - Txt.start;
-		}		
-		std::cout << "Text: " << M.vertices.size()
-				  << ", I: " << M.indices.size() << "\n";
+		}
+		
+//		std::cout << "[Text] Vertices: " << (M.vertices.size()/VD.Bindings[0].stride)
+//				  << ", Indices: " << M.indices.size() << "\n";
+		std::cout << "[Text] ";
 	}
 
 	void createTextDescriptorSets() {

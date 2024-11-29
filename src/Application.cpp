@@ -3,7 +3,6 @@
 #include "headers/TextMaker.hpp"
 #include <iostream>
 #include <fstream>
-#include <corecrt_math_defines.h> //TODO: remove. A fix for windows not being able to find M_PI
 #define MESH 209
 
 std::vector<SingleText> outText = {
@@ -46,8 +45,8 @@ protected:
 
     TextMaker txt;
 
-    Model<Vertex>  Mtaxi;
-    Model<Vertex> Mcity[MESH];
+    Model  Mtaxi;
+    Model Mcity[MESH];
 
     DescriptorSet DStaxi, DScity[MESH];
 
@@ -216,7 +215,7 @@ protected:
                          static_cast<uint32_t>(Mtaxi.indices.size()), 1, 0, 0, 0);
 
         for(int i = 0; i < MESH; i++) {
-            DScity[i].bind(commandBuffer, P, 0, currentImage);
+            DScity[i].bind(commandBuffer, Pcity, 0, currentImage);
             Mcity[i].bind(commandBuffer);
             vkCmdDrawIndexed(commandBuffer,
                              static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
@@ -289,7 +288,7 @@ protected:
             const float moveSpeed = 7.5f;
 
             static float currentSpeed = 0.0f;
-            float targetSpeed = moveSpeed * m.z;
+            float targetSpeed = moveSpeed * -m.z;
             const float dampingFactor = 3.0f; // Adjust this value to control the damping effect
             currentSpeed += (targetSpeed - currentSpeed) * dampingFactor * deltaT;
             float speed = currentSpeed * deltaT;
@@ -337,7 +336,7 @@ protected:
             glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
             camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * m.x * ux * deltaT;
             camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * m.y * glm::vec3(0, 1, 0) * deltaT;
-            camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * m.z * uz * deltaT;
+            camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * -m.z * uz * deltaT;
 
             mView = glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
                 glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
@@ -347,7 +346,7 @@ protected:
         }
 
         const float nearPlane = 1.0f;
-        const float farPlane = 150.0f;
+        const float farPlane = 100.0f;
         glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
         Prj[1][1] *= -1; //Projection matrix
 
