@@ -37,25 +37,25 @@ protected:
     // aspect ratio
     float Ar;
 
-    DescriptorSetLayout DSL,DSLcity;
+    DescriptorSetLayout DSL,DSLcity, DSLsky;
 
-    VertexDescriptor VD, VDcity;
+    VertexDescriptor VD, VDcity, VDsky;
 
-    Pipeline P, Pcity;
+    Pipeline P, Pcity, Psky;
 
     TextMaker txt;
 
-    Model  Mtaxi;
+    Model  Mtaxi, Msky;
     Model Mcity[MESH];
 
-    DescriptorSet DStaxi, DScity[MESH];
+    DescriptorSet DStaxi, DScity[MESH], DSsky;
 
-    Texture Tcity;
+    Texture Tcity, Tsky;
 
 
-    UniformBufferObject uboTaxi;
+    UniformBufferObject uboTaxi, uboSky;
     UniformBufferObject ubocity[MESH];
-    GlobalUniformBufferObject guboTaxi;
+    GlobalUniformBufferObject guboTaxi,guboSky;
     GlobalUniformBufferObject gubocity[MESH];
 
     // Other application parameters
@@ -77,9 +77,9 @@ protected:
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool =  (2 * MESH) + 2;
-        texturesInPool = MESH + 1 +1;
-        setsInPool = MESH + 1 +1;
+        uniformBlocksInPool =  (2 * MESH) + 2+2;
+        texturesInPool = MESH + 1 +1+1; //city, taxi, text, sky
+        setsInPool = MESH + 1 +1+1;
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -96,6 +96,11 @@ protected:
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
         });
         DSLcity.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+        });
+        DSLsky.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
@@ -121,14 +126,29 @@ protected:
                         {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                 sizeof(glm::vec3), NORMAL}
                 });
+        VDsky.init(this, {
+                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                                    sizeof(glm::vec3), POSITION},
+                            {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                                    sizeof(glm::vec2), UV},
+                            {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                                    sizeof(glm::vec3), NORMAL}
+                    });
 
         P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
         Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+        Psky.init(this, &VDsky, "shaders/SkyVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
+        Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false); //todo cosa dovevamo fare quando telecamera dentro una stanza
 
-        Mtaxi.init(this, &VD, "Models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
+
+        Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
+        Msky.init(this, &VDsky, "models/Sphere.obj", OBJ);
 
         Tcity.init(this,"textures/Textures_City.png");
+        Tsky.init(this, "textures/images.png");
         txt.init(this, &outText);
 
         nlohmann::json js;
@@ -157,6 +177,7 @@ protected:
 
         P.create();
         Pcity.create();
+        Psky.create();
 
         DStaxi.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
@@ -171,24 +192,35 @@ protected:
                     {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
             });
         }
+
+        DSsky.init(this, &DSLsky, {
+                {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+                {1, TEXTURE, 0, &Tsky},
+                {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+        });
         txt.pipelinesAndDescriptorSetsInit();	
     }
 
     void pipelinesAndDescriptorSetsCleanup() {
         P.cleanup();
         Pcity.cleanup();
+        Psky.cleanup();
 
         DStaxi.cleanup();
 
         for(int i = 0; i < MESH; i++) {
             DScity[i].cleanup();
         }
+
+        DSsky.cleanup();
+
         txt.pipelinesAndDescriptorSetsCleanup();
     }
 
     void localCleanup() {
 
         Tcity.cleanup();
+        Tsky.cleanup();
 
         Mtaxi.cleanup();
 
@@ -196,23 +228,29 @@ protected:
             Mcity[i].cleanup();
         }
 
+        Msky.cleanup();
+
         DSL.cleanup();
         DSLcity.cleanup();
+        DSLsky.cleanup();
 
         P.destroy();
         Pcity.destroy();
+        Psky.destroy();
+
         txt.localCleanup();	
     }
 
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
         P.bind(commandBuffer);
-        Pcity.bind(commandBuffer);
 
         DStaxi.bind(commandBuffer, P, 0, currentImage);
         Mtaxi.bind(commandBuffer);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(Mtaxi.indices.size()), 1, 0, 0, 0);
+
+        Pcity.bind(commandBuffer);
 
         for(int i = 0; i < MESH; i++) {
             DScity[i].bind(commandBuffer, Pcity, 0, currentImage);
@@ -220,6 +258,14 @@ protected:
             vkCmdDrawIndexed(commandBuffer,
                              static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
         }
+
+        Psky.bind(commandBuffer);
+
+        DSsky.bind(commandBuffer, Psky, 0, currentImage);
+        Msky.bind(commandBuffer);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(Msky.indices.size()), 1, 0, 0, 0);
+
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
 
@@ -346,7 +392,7 @@ protected:
         }
 
         const float nearPlane = 1.0f;
-        const float farPlane = 100.0f;
+        const float farPlane = 250.0f;
         glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
         Prj[1][1] *= -1; //Projection matrix
 
@@ -375,6 +421,19 @@ protected:
         guboTaxi.gamma = 128.0f;
         guboTaxi.metallic = 1.0f;
         DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
+
+        glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), glm::vec3(40.0f, 20.0f, -75.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(180.0f, 50.0f, 180.0f));
+        uboSky.mvpMat = Prj * mView * (scaleMat);
+        uboSky.mMat = glm::mat4(1.0f);
+        uboSky.nMat = glm::inverse(glm::transpose(uboSky.mMat));
+        DSsky.map(currentImage, &uboSky, sizeof(uboSky), 0);
+        //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+        guboSky.lightDir = sunPos;
+        guboSky.lightColor = glm::vec4(1.0f);
+        guboSky.eyePos = camPos;
+        guboSky.gamma = 128.0f;
+        guboSky.metallic = 1.0f;
+        DSsky.map(currentImage, &guboSky, sizeof(guboSky), 2);
 
         nlohmann::json js;
         std::ifstream ifs2("models/city.json");
