@@ -19,24 +19,23 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 
 // Colori per i vari momenti della giornata
 vec3 dayColor = vec3(0.5, 0.7, 1.0);  // Colore del cielo di giorno
-vec3 sunsetColor = vec3(1.0, 0.5, 0.0);  // Colore del cielo al tramonto
-vec3 nightColor = vec3(0.0, 0.0, 0.2);  // Colore del cielo di notte
+vec3 sunsetColor = vec3(1.0, 0.3, 0.0);  // Colore del cielo al tramonto
+vec3 nightColor = vec3(0.0, 0.0, 1.0);  // Colore del cielo di notte
 
 // Funzione per calcolare il colore del cielo in base alla direzione della luce
 vec3 calculateSkyColor(vec3 lightDir) {
-    // Calcola l'angolo tra la direzione della luce e il vettore "su" (0,1,0)
-    float elevation = dot(normalize(lightDir), vec3(0.0, 0.0, 1.0));
 
-    // Se l'elevazione è alta (sole in alto), il cielo è azzurro (giorno)
-    if (elevation > 0.7) {
+    float elevation = dot(normalize(lightDir), vec3(0.0, 1.0, 0.0));
+    if (elevation > 0.4) {
         return dayColor;
     }
-    // Se l'elevazione è media (tramonto), il cielo è arancione
-    else if (elevation > 0.2) {
-        return mix(dayColor, sunsetColor, (0.7 - elevation) * 5.0);  // Aggiungi una transizione più graduale
+    else if (elevation >0) {
+        return mix(dayColor, sunsetColor, 0.7);  //transizione più graduale
     }
-    // Se l'elevazione è bassa (notte), il cielo è scuro
-    else {
+    else if (elevation > -0.4) {
+        return mix(nightColor, sunsetColor, 0.5);
+    }
+    else{
         return nightColor;
     }
 }
@@ -51,7 +50,7 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, vec3 Ms, float gamma) {
 void main() {
     vec3 Norm = normalize(fragNormal);
     vec3 ViewerDir = normalize(gubo.eyePos - fragPos);
-    vec3 Albedo = texture(textureSampler, fragUV).rgb;  // Campiona la texture
+    vec3 Albedo = texture(textureSampler, fragUV).rgb;
     vec3 LightDir = normalize(gubo.lightDir);
     vec3 lightColor = gubo.lightColor.rgb;
     vec3 Ambient = 0.05 * Albedo;
@@ -62,8 +61,7 @@ void main() {
     vec3 skyColor = calculateSkyColor(gubo.lightDir);
 
     // Mescola il colore della texture con il colore del cielo
-    vec3 finalColor = mix(Albedo, skyColor, 0.3);  // Aggiungi un peso per la mescolanza (0.3 è solo un esempio)
+    vec3 finalColor = mix(Albedo, skyColor, 0.8);
 
-    // Usa il colore finale per il rendering
-    outColor = vec4(brdf * lightColor + finalColor + Ambient, 1.0);  // Colore finale con mix texture + cielo dinamico
+    outColor = vec4(brdf * lightColor + finalColor + Ambient, 1.0);
 }

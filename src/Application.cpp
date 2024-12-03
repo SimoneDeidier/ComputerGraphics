@@ -402,8 +402,13 @@ protected:
 
 
         //glm::vec3 sunPos = glm::vec3(5.5f, 30.0f, 7.5f);
-        glm::vec3 sunPos = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
-        
+        //glm::vec3 sunPos = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+
+        glm::vec3 sunPos = glm::vec3(cos(cTime * angTurnTimeFact), // x
+                sin(cTime * angTurnTimeFact), // y
+                sin(glm::radians(90.0f))              // z (fisso)
+        );
+
 
         glm::mat4 mWorldTaxi =
             glm::translate(glm::mat4(1.0), taxiPos) *
