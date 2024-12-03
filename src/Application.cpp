@@ -37,25 +37,25 @@ protected:
     // aspect ratio
     float Ar;
 
-    DescriptorSetLayout DSL,DSLcity, DSLsky;
+    DescriptorSetLayout DSL,DSLcity, DSLsky, DSLcars;
 
-    VertexDescriptor VD, VDcity, VDsky;
+    VertexDescriptor VD, VDcity, VDsky, VDcars;
 
-    Pipeline P, Pcity, Psky;
+    Pipeline P, Pcity, Psky, Pcars;
 
     TextMaker txt;
 
-    Model  Mtaxi, Msky;
+    Model  Mtaxi, Msky, Mcars;
     Model Mcity[MESH];
 
-    DescriptorSet DStaxi, DScity[MESH], DSsky;
+    DescriptorSet DStaxi, DScity[MESH], DSsky, DScars;
 
     Texture Tcity, Tsky;
 
 
-    UniformBufferObject uboTaxi, uboSky;
+    UniformBufferObject uboTaxi, uboSky, uboCars;
     UniformBufferObject ubocity[MESH];
-    GlobalUniformBufferObject guboTaxi,guboSky;
+    GlobalUniformBufferObject guboTaxi,guboSky, guboCars;
     GlobalUniformBufferObject gubocity[MESH];
 
     // Other application parameters
@@ -63,6 +63,7 @@ protected:
 	glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
     glm::vec3 camPosInPhotoMode;
     glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
+    glm::vec3 carPos = glm::vec3(-5.0, -0.2, 0.0); //initial pos of car
     float CamAlpha = 0.0f;
     float CamBeta = 0.0f;
     bool alreadyInPhotoMode = false;
@@ -77,9 +78,9 @@ protected:
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool =  (2 * MESH) + 2+2;
-        texturesInPool = MESH + 1 +1+1; //city, taxi, text, sky
-        setsInPool = MESH + 1 +1+1;
+        uniformBlocksInPool =  (2 * MESH) + 2+2+2;
+        texturesInPool = MESH + 1 +1+1+1; //city, taxi, text, sky, autonomous cars
+        setsInPool = MESH + 1 +1+1+1;
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -101,6 +102,11 @@ protected:
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
         });
         DSLsky.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+        });
+        DSLcars.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
@@ -136,16 +142,28 @@ protected:
                             {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                     sizeof(glm::vec3), NORMAL}
                     });
+        VDcars.init(this, {
+                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+                           {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                                   sizeof(glm::vec3), POSITION},
+                           {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                                   sizeof(glm::vec2), UV},
+                           {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                                   sizeof(glm::vec3), NORMAL}
+                   });
 
         P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
         Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
         Psky.init(this, &VDsky, "shaders/SkyVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
         Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false); //todo cosa dovevamo fare quando telecamera dentro una stanza
+        Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcars});
 
 
         Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
         Msky.init(this, &VDsky, "models/Sphere.obj", OBJ);
+        Mcars.init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
 
         Tcity.init(this,"textures/Textures_City.png");
         Tsky.init(this, "textures/images.png");
@@ -178,6 +196,7 @@ protected:
         P.create();
         Pcity.create();
         Psky.create();
+        Pcars.create();
 
         DStaxi.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
@@ -198,13 +217,22 @@ protected:
                 {1, TEXTURE, 0, &Tsky},
                 {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
         });
+
+        DScars.init(this, &DSLcars, {
+                {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+                {1, TEXTURE, 0, &Tcity},
+                {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+        });
+
         txt.pipelinesAndDescriptorSetsInit();	
     }
 
     void pipelinesAndDescriptorSetsCleanup() {
+
         P.cleanup();
         Pcity.cleanup();
         Psky.cleanup();
+        Pcars.cleanup();
 
         DStaxi.cleanup();
 
@@ -213,6 +241,7 @@ protected:
         }
 
         DSsky.cleanup();
+        DScars.cleanup();
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -229,14 +258,17 @@ protected:
         }
 
         Msky.cleanup();
+        Mcars.cleanup();
 
         DSL.cleanup();
         DSLcity.cleanup();
         DSLsky.cleanup();
+        DSLcars.cleanup();
 
         P.destroy();
         Pcity.destroy();
         Psky.destroy();
+        Pcars.destroy();
 
         txt.localCleanup();	
     }
@@ -265,6 +297,14 @@ protected:
         Msky.bind(commandBuffer);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(Msky.indices.size()), 1, 0, 0, 0);
+
+        Pcars.bind(commandBuffer);
+
+        DScars.bind(commandBuffer, Pcars, 0, currentImage);
+        Mcars.bind(commandBuffer);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(Mcars.indices.size()), 1, 0, 0, 0);
+
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -414,6 +454,9 @@ protected:
             glm::translate(glm::mat4(1.0), taxiPos) *
             glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
 
+        glm::mat4 mWorldCar =
+                glm::translate(glm::mat4(1.0), carPos);
+
 
         uboTaxi.mvpMat = Prj * mView * mWorldTaxi;
         uboTaxi.mMat = glm::mat4(1.0f);
@@ -426,6 +469,17 @@ protected:
         guboTaxi.gamma = 128.0f;
         guboTaxi.metallic = 1.0f;
         DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
+
+        uboCars.mvpMat = Prj * mView * mWorldCar;
+        uboCars.mMat = glm::mat4(1.0f);
+        uboCars.nMat = glm::inverse(glm::transpose(uboCars.mMat));
+        DScars.map(currentImage, &uboCars, sizeof(uboCars), 0);
+        guboCars.lightDir = sunPos;
+        guboCars.lightColor = glm::vec4(1.0f);
+        guboCars.eyePos = camPos;
+        guboCars.gamma = 128.0f;
+        guboCars.metallic = 1.0f;
+        DScars.map(currentImage, &guboCars, sizeof(guboCars), 2);
 
         glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), glm::vec3(40.0f, 20.0f, -75.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(195.0f, 50.0f, 195.0f));
         uboSky.mvpMat = Prj * mView * (scaleMat);
