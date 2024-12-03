@@ -1,5 +1,6 @@
 {
   "models": [
+    {"id": "plane", "model": "models/tile_for_home_1x1_006.mgcg", "format": "MGCG"},
     {"id": "r1a", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
     {"id": "r2a", "model": "models/road_tile_1x1_007.mgcg", "format": "MGCG"},
     {"id": "r3a", "model": "models/road_tile_1x1_001.mgcg", "format": "MGCG"},
@@ -214,6 +215,17 @@
     {"id": "t0", "texture": "textures/Textures_City.png"}
   ],
   "instances": [
+    {
+      "id": "plane",
+      "model": "plane",
+      "texture": "t0",
+      "transform": [
+        50, 0, 0, 0,
+        0, 50, 0, -1,
+        0, 0, 50, -50,
+        0, 0, 0, 1
+      ]
+    },
     {
       "id": "r1a",
       "model": "r1a",

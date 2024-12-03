@@ -3,7 +3,7 @@
 #include "headers/TextMaker.hpp"
 #include <iostream>
 #include <fstream>
-#define MESH 209
+#define MESH 210
 
 std::vector<SingleText> outText = {
 	{2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
@@ -392,7 +392,7 @@ protected:
         }
 
         const float nearPlane = 1.0f;
-        const float farPlane = 250.0f;
+        const float farPlane = 270.0f;
         glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
         Prj[1][1] *= -1; //Projection matrix
 
@@ -427,7 +427,7 @@ protected:
         guboTaxi.metallic = 1.0f;
         DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
 
-        glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), glm::vec3(40.0f, 20.0f, -75.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(180.0f, 50.0f, 180.0f));
+        glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), glm::vec3(40.0f, 20.0f, -75.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(195.0f, 50.0f, 195.0f));
         uboSky.mvpMat = Prj * mView * (scaleMat);
         uboSky.mMat = glm::mat4(1.0f);
         uboSky.nMat = glm::inverse(glm::transpose(uboSky.mMat));
