@@ -162,7 +162,7 @@ protected:
 
 
         Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
-        Msky.init(this, &VDsky, "models/Sphere.obj", OBJ);
+        Msky.init(this, &VDsky, "models/Sphere2.obj", OBJ);
         Mcars.init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
 
         Tcity.init(this,"textures/Textures_City.png");
