@@ -3,7 +3,11 @@
 #include "headers/TextMaker.hpp"
 #include <iostream>
 #include <fstream>
+
 #define MESH 210
+#define SPHERES 36
+
+#define DEBUG 1
 
 std::vector<SingleText> outText = {
 	{2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
@@ -58,6 +62,15 @@ protected:
     GlobalUniformBufferObject guboTaxi,guboSky, guboCars;
     GlobalUniformBufferObject gubocity[MESH];
 
+    #if DEBUG
+        DescriptorSetLayout DSLsphere;
+        VertexDescriptor VDsphere;
+        Pipeline Psphere;
+        Model Msphere[SPHERES];
+        DescriptorSet DSsphere[SPHERES];
+        UniformBufferObject ubosphere[SPHERES];
+    #endif
+
     // Other application parameters
     int currScene = 0;
 	glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
@@ -78,9 +91,9 @@ protected:
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool =  (2 * MESH) + 2+2+2;
+        uniformBlocksInPool =  (2 * MESH) + 2+2+2 + 2*36; // 2*36 DEBUG
         texturesInPool = MESH + 1 +1+1+1; //city, taxi, text, sky, autonomous cars
-        setsInPool = MESH + 1 +1+1+1;
+        setsInPool = MESH + 1 +1+1+1 + 36; // 36 DEBUG
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -111,6 +124,12 @@ protected:
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
         });
+
+        #if DEBUG
+            DSLsphere.init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+            });
+        #endif
 
         VD.init(this, {
                 {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -153,6 +172,19 @@ protected:
                                    sizeof(glm::vec3), NORMAL}
                    });
 
+        #if DEBUG
+            VDsphere.init(this, {
+                    {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            }, {
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                                    sizeof(glm::vec3), POSITION},
+                            {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                                    sizeof(glm::vec2), UV},
+                            {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                                    sizeof(glm::vec3), NORMAL}
+                    });
+        #endif
+
         P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
         Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
@@ -160,10 +192,20 @@ protected:
         Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false); //todo cosa dovevamo fare quando telecamera dentro una stanza
         Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcars});
 
+        #if DEBUG
+            Psphere.init(this, &VDsphere, "shaders/BaseVert.spv", "shaders/DEBUGFrag.spv", {&DSLsphere}); 
+        #endif
+
 
         Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
         Msky.init(this, &VDsky, "models/Sphere2.obj", OBJ);
         Mcars.init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
+
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
+                Msphere[i].init(this, &VDsphere, "models/Sphere2.obj", OBJ);
+            }
+        #endif
 
         Tcity.init(this,"textures/Textures_City.png");
         Tsky.init(this, "textures/images.png");
@@ -198,6 +240,10 @@ protected:
         Psky.create();
         Pcars.create();
 
+        #if DEBUG
+            Psphere.create();
+        #endif
+
         DStaxi.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                 {1, TEXTURE, 0, &Tcity},
@@ -224,6 +270,14 @@ protected:
                 {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
         });
 
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
+                DSsphere[i].init(this, &DSLsphere, {
+                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr}
+                });
+            }
+        #endif
+
         txt.pipelinesAndDescriptorSetsInit();	
     }
 
@@ -234,6 +288,10 @@ protected:
         Psky.cleanup();
         Pcars.cleanup();
 
+        #if DEBUG
+            Psphere.cleanup();
+        #endif
+
         DStaxi.cleanup();
 
         for(int i = 0; i < MESH; i++) {
@@ -242,6 +300,12 @@ protected:
 
         DSsky.cleanup();
         DScars.cleanup();
+
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
+                DSsphere[i].cleanup();
+            }
+        #endif
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -260,15 +324,29 @@ protected:
         Msky.cleanup();
         Mcars.cleanup();
 
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
+                Msphere[i].cleanup();
+            }
+        #endif
+
         DSL.cleanup();
         DSLcity.cleanup();
         DSLsky.cleanup();
         DSLcars.cleanup();
 
+        #if DEBUG
+            DSLsphere.cleanup();
+        #endif
+
         P.destroy();
         Pcity.destroy();
         Psky.destroy();
         Pcars.destroy();
+
+        #if DEBUG
+            Psphere.destroy();
+        #endif
 
         txt.localCleanup();	
     }
@@ -305,6 +383,16 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(Mcars.indices.size()), 1, 0, 0, 0);
 
+        #if DEBUG
+            Psphere.bind(commandBuffer);
+
+            for (int i = 0; i < SPHERES; i++) {
+                DSsphere[i].bind(commandBuffer, Psphere, 0, currentImage);
+                Msphere[i].bind(commandBuffer);
+                vkCmdDrawIndexed(commandBuffer,
+                                 static_cast<uint32_t>(Msphere[i].indices.size()), 1, 0, 0, 0);
+            }
+        #endif
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -505,6 +593,7 @@ protected:
             ifs2>>j;
 
             float TMj[16];
+            std::vector<glm::mat4> streetlightPositions;
 
             for(int k = 0; k < MESH; k++) {
                 nlohmann::json TMjson = j["instances"][k]["transform"];
@@ -521,7 +610,30 @@ protected:
                 gubocity[k].gamma = 128.0f;
                 gubocity[k].metallic = 0.1f;
                 DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
+
+                // Check if the current model is a streetlight
+                std::string modelName = j["models"][k]["model"];
+                if (modelName == "models/road_tile_1x1_001.mgcg") {
+                    glm::mat4 position = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                    position = glm::translate(position, glm::vec3(3.75f, 4.25f, -0.75f)); // Adjust position
+                    streetlightPositions.push_back(position);
+                } else if (modelName == "models/road_tile_1x1_006.mgcg" || modelName == "models/road_tile_1x1_008.mgcg") {
+                    glm::mat4 position = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                    streetlightPositions.push_back(position);
+                }
             }
+
+            #if DEBUG
+                for (size_t i = 0; i < streetlightPositions.size(); ++i) {
+                    glm::mat4 mWorldSphere = streetlightPositions[i];
+                    ubosphere[i].mvpMat = Prj * mView * mWorldSphere;
+                    ubosphere[i].mMat = glm::mat4(1.0f);
+                    ubosphere[i].nMat = glm::inverse(glm::transpose(ubosphere[i].mMat));
+                    DSsphere[i].map(currentImage, &ubosphere[i], sizeof(ubosphere[i]), 0);
+                }
+            #endif
+
+
 
         }catch (const nlohmann::json::exception& e) {
             std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
