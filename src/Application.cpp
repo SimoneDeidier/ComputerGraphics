@@ -77,8 +77,9 @@ protected:
 	glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
     glm::vec3 camPosInPhotoMode;
     glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
-    glm::vec3 carPos = glm::vec3(5.0, -0.2, 36.0); //initial pos of car
+
     glm::vec3 carPos1 = glm::vec3(-72.0, -0.2, 36.0);
+    glm::vec3 carPos2 = glm::vec3(5.0, -0.2, 36.0); //initial pos of car
     glm::vec3 carPos3 = glm::vec3(72.0, -0.2, 36.0);
     glm::vec3 carPos4 = glm::vec3(-36.0, -0.2, -108.0);
     glm::vec3 carPos5 = glm::vec3(36.0, -0.2, -108.0);
@@ -86,15 +87,16 @@ protected:
     glm::vec3 carPos7 = glm::vec3(-36.0, -0.2, -112.0);
     glm::vec3 carPos8 = glm::vec3(36.0, -0.2, -112.0);
     glm::vec3 carPos9 = glm::vec3(108.0, -0.2, -112.0);
-    std::vector<glm::vec3> wayPoints={glm::vec3(3.0f, -0.2f, 33.0f),
-                                      glm::vec3(3.0f, -0.2f, -33.0f),
-                                      glm::vec3(69.0f, -0.2f, -33.0f),
-                                      glm::vec3(69.0f, -0.2f, 33.0f)};
+
 
     std::vector<glm::vec3> wayPoints1={glm::vec3(-69.0f, -0.2f, 33.0f),
                                       glm::vec3(-69.0f, -0.2f, -33.0f),
                                       glm::vec3(-3.0f, -0.2f, -33.0f),
                                       glm::vec3(-3.0f, -0.2f, 33.0f)};
+    std::vector<glm::vec3> wayPoints2={glm::vec3(3.0f, -0.2f, 33.0f),
+                                      glm::vec3(3.0f, -0.2f, -33.0f),
+                                      glm::vec3(69.0f, -0.2f, -33.0f),
+                                      glm::vec3(69.0f, -0.2f, 33.0f)};
     std::vector<glm::vec3> wayPoints3={glm::vec3(75.0f, -0.2f, 33.0f),
                                        glm::vec3(75.0f, -0.2f, -33.0f),
                                        glm::vec3(141.0f, -0.2f, -33.0f),
@@ -107,10 +109,10 @@ protected:
                                        glm::vec3(69.0f, -0.2f, -39.0f),
                                        glm::vec3(3.0f, -0.2f, -39.0f),
                                        glm::vec3(3.0f, -0.2f, -105.0f)};
-    std::vector<glm::vec3> wayPoints6={glm::vec3(141.0f, -0.2f, 33.0f),
-                                       glm::vec3(141.0f, -0.2f, -33.0f),
-                                       glm::vec3(75.0f, -0.2f, -33.0f),
-                                       glm::vec3(75.0f, -0.2f, 33.0f)};
+    std::vector<glm::vec3> wayPoints6={glm::vec3(141.0f, -0.2f, -105.0f),
+                                       glm::vec3(141.0f, -0.2f, -39.0f),
+                                       glm::vec3(75.0f, -0.2f, -39.0f),
+                                       glm::vec3(75.0f, -0.2f, -105.0f)};
     std::vector<glm::vec3> wayPoints7={glm::vec3(-69.0f, -0.2f, -111.0f),
                                        glm::vec3(-69.0f, -0.2f, -177.0f),
                                        glm::vec3(-3.0f, -0.2f, -177.0f),
@@ -123,8 +125,9 @@ protected:
                                        glm::vec3(75.0f, -0.2f, -177.0f),
                                        glm::vec3(141.0f, -0.2f, -177.0f),
                                        glm::vec3(141.0f, -0.2f, -111.0f)};
-    int currentPoint=0;
+
     int currentPoint1=0;
+    int currentPoint2=0;
     int currentPoint3=0;
     int currentPoint4=0;
     int currentPoint5=0;
@@ -255,14 +258,14 @@ protected:
         Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
         Msky.init(this, &VDsky, "models/Sphere2.obj", OBJ);
         Mcars[0].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-        Mcars[1].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-        Mcars[2].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-        Mcars[3].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-        Mcars[4].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-        Mcars[5].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
+        Mcars[1].init(this, &VDcars, "models/transport_cool_003_transport_cool_003.001.mgcg" , MGCG);
+        Mcars[2].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg" , MGCG);
+        Mcars[3].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg" , MGCG);
+        Mcars[4].init(this, &VDcars, "models/transport_jeep_001_transport_jeep_001.001.mgcg" , MGCG);
+        Mcars[5].init(this, &VDcars, "models/transport_jeep_010_transport_jeep_010.001.mgcg" , MGCG);
         Mcars[6].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-        Mcars[7].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-        Mcars[8].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
+        Mcars[7].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg" , MGCG);
+        Mcars[8].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg" , MGCG);
 
         #if DEBUG
             for (int i = 0; i < SPHERES; i++) {
@@ -480,8 +483,9 @@ protected:
         static float cTime = 0.0f;
         const float turnTime = 72.0f;
         const float angTurnTimeFact = 2.0f * M_PI / turnTime;
-        glm::vec3 direction = glm::normalize(wayPoints[currentPoint] - carPos);
+
         glm::vec3 direction1 = glm::normalize(wayPoints1[currentPoint1] - carPos1);
+        glm::vec3 direction2 = glm::normalize(wayPoints2[currentPoint2] - carPos2);
         glm::vec3 direction3 = glm::normalize(wayPoints3[currentPoint3] - carPos3);
         glm::vec3 direction4 = glm::normalize(wayPoints4[currentPoint4] - carPos4);
         glm::vec3 direction5 = glm::normalize(wayPoints5[currentPoint5] - carPos5);
@@ -537,22 +541,28 @@ protected:
             cTime = (cTime > turnTime) ? (cTime - turnTime) : cTime;
         }
 
-        carPos += direction * speedCar * deltaT;
-        if (glm::distance(carPos, wayPoints[currentPoint]) < 0.1f) {
-            currentPoint = (currentPoint + 1) % wayPoints.size();
-        }
-        static float steeringAngCar = 0.0f;
-        float targetSteering = atan2(direction.x, direction.z);
-        steeringAngCar += (targetSteering - steeringAngCar) * 0.1f;
-        //carPos += glm::vec3(speedCar * sin(steeringAngCar), 0.0f, speedCar * cos(steeringAngCar)) * deltaT;
 
         carPos1 += direction1 * speedCar * deltaT;
-        if (glm::distance(carPos1, wayPoints1[currentPoint1]) < 0.1f) {
+        if (glm::distance(carPos1, wayPoints1[currentPoint1]) < 0.25f) {
             currentPoint1 = (currentPoint1 + 1) % wayPoints1.size();
         }
         static float steeringAngCar1 = 0.0f;
         float targetSteering1 = atan2(direction1.x, direction1.z);
-        steeringAngCar1 += (targetSteering1 - steeringAngCar1) * 0.1f;
+        //steeringAngCar1 += (targetSteering1 - steeringAngCar1) * 0.1f;
+        float angleDifference1 = targetSteering1 - steeringAngCar1;
+        angleDifference1 = fmod(angleDifference1 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar1 += angleDifference1 * 0.1f;
+
+        carPos2 += direction2 * speedCar * deltaT;
+        if (glm::distance(carPos2, wayPoints2[currentPoint2]) < 0.1f) {
+            currentPoint2 = (currentPoint2 + 1) % wayPoints2.size();
+        }
+        static float steeringAngCar2 = 0.0f;
+        float targetSteering2 = atan2(direction2.x, direction2.z);
+        float angleDifference2 = targetSteering2 - steeringAngCar2;
+        angleDifference2 = fmod(angleDifference2 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar2 += angleDifference2 * 0.1f;
+        //carPos += glm::vec3(speedCar * sin(steeringAngCar), 0.0f, speedCar * cos(steeringAngCar)) * deltaT;
 
         carPos3 += direction3 * speedCar * deltaT;
         if (glm::distance(carPos3, wayPoints3[currentPoint3]) < 0.1f) {
@@ -560,7 +570,9 @@ protected:
         }
         static float steeringAngCar3 = 0.0f;
         float targetSteering3 = atan2(direction3.x, direction3.z);
-        steeringAngCar3 += (targetSteering3 - steeringAngCar3) * 0.1f;
+        float angleDifference3 = targetSteering3 - steeringAngCar3;
+        angleDifference3 = fmod(angleDifference3 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar3 += angleDifference3 * 0.1f;
 
         carPos4 += direction4 * speedCar * deltaT;
         if (glm::distance(carPos4, wayPoints4[currentPoint4]) < 0.1f) {
@@ -568,7 +580,9 @@ protected:
         }
         static float steeringAngCar4 = 0.0f;
         float targetSteering4 = atan2(direction4.x, direction4.z);
-        steeringAngCar4 += (targetSteering4 - steeringAngCar4) * 0.1f;
+        float angleDifference4 = targetSteering4 - steeringAngCar4;
+        angleDifference4 = fmod(angleDifference4 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar4 += angleDifference4 * 0.1f;
 
         carPos5 += direction5 * speedCar * deltaT;
         if (glm::distance(carPos5, wayPoints5[currentPoint5]) < 0.1f) {
@@ -576,7 +590,9 @@ protected:
         }
         static float steeringAngCar5 = 0.0f;
         float targetSteering5 = atan2(direction5.x, direction5.z);
-        steeringAngCar5 += (targetSteering5 - steeringAngCar5) * 0.1f;
+        float angleDifference5 = targetSteering5 - steeringAngCar5;
+        angleDifference5 = fmod(angleDifference5 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar5 += angleDifference5 * 0.1f;
 
         carPos6 += direction6 * speedCar * deltaT;
         if (glm::distance(carPos6, wayPoints6[currentPoint6]) < 0.1f) {
@@ -584,7 +600,9 @@ protected:
         }
         static float steeringAngCar6 = 0.0f;
         float targetSteering6 = atan2(direction6.x, direction6.z);
-        steeringAngCar6 += (targetSteering6 - steeringAngCar6) * 0.1f;
+        float angleDifference6 = targetSteering6 - steeringAngCar6;
+        angleDifference6 = fmod(angleDifference6 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar6 += angleDifference6 * 0.1f;
 
         carPos7 += direction7 * speedCar * deltaT;
         if (glm::distance(carPos7, wayPoints7[currentPoint7]) < 0.1f) {
@@ -592,7 +610,9 @@ protected:
         }
         static float steeringAngCar7 = 0.0f;
         float targetSteering7 = atan2(direction7.x, direction7.z);
-        steeringAngCar7 += (targetSteering7 - steeringAngCar7) * 0.1f;
+        float angleDifference7 = targetSteering7 - steeringAngCar7;
+        angleDifference7 = fmod(angleDifference7 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar7 += angleDifference7 * 0.1f;
 
         carPos8 += direction8 * speedCar * deltaT;
         if (glm::distance(carPos8, wayPoints8[currentPoint8]) < 0.1f) {
@@ -600,7 +620,9 @@ protected:
         }
         static float steeringAngCar8 = 0.0f;
         float targetSteering8 = atan2(direction8.x, direction8.z);
-        steeringAngCar8 += (targetSteering8 - steeringAngCar8) * 0.1f;
+        float angleDifference8 = targetSteering8 - steeringAngCar8;
+        angleDifference8 = fmod(angleDifference8 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar8 += angleDifference8 * 0.1f;
 
         carPos9 += direction9 * speedCar * deltaT;
         if (glm::distance(carPos9, wayPoints9[currentPoint9]) < 0.1f) {
@@ -608,7 +630,9 @@ protected:
         }
         static float steeringAngCar9 = 0.0f;
         float targetSteering9 = atan2(direction9.x, direction9.z);
-        steeringAngCar9 += (targetSteering9 - steeringAngCar9) * 0.1f;
+        float angleDifference9 = targetSteering9 - steeringAngCar9;
+        angleDifference9 = fmod(angleDifference9 + M_PI, 2.0f * M_PI) - M_PI;
+        steeringAngCar9 += angleDifference9 * 0.1f;
 
         static float steeringAng = 0.0f;
         glm::mat4 mView;
@@ -678,7 +702,7 @@ protected:
         }
 
         const float nearPlane = 1.0f;
-        const float farPlane = 270.0f;
+        const float farPlane = 280.0f;
         glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
         Prj[1][1] *= -1; //Projection matrix
 
@@ -700,12 +724,13 @@ protected:
             glm::translate(glm::mat4(1.0), taxiPos) *
             glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
 
-        glm::mat4 mWorldCar =
-                glm::translate(glm::mat4(1.0), carPos)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar, glm::vec3(0, 1, 0));
+
         glm::mat4 mWorldCar1 =
                 glm::translate(glm::mat4(1.0), carPos1)*
                 glm::rotate(glm::mat4(1.0), steeringAngCar1, glm::vec3(0, 1, 0));
+        glm::mat4 mWorldCar2 =
+                glm::translate(glm::mat4(1.0), carPos2)*
+                glm::rotate(glm::mat4(1.0), steeringAngCar2, glm::vec3(0, 1, 0));
         glm::mat4 mWorldCar3 =
                 glm::translate(glm::mat4(1.0), carPos3)*
                 glm::rotate(glm::mat4(1.0), steeringAngCar3, glm::vec3(0, 1, 0));
@@ -752,7 +777,7 @@ protected:
         guboCars[0].metallic = 1.0f;
         DScars[0].map(currentImage, &guboCars[0], sizeof(guboCars[0]), 2);
 
-        uboCars[1].mvpMat = Prj * mView * mWorldCar;
+        uboCars[1].mvpMat = Prj * mView * mWorldCar2;
         uboCars[1].mMat = glm::mat4(1.0f);
         uboCars[1].nMat = glm::inverse(glm::transpose(uboCars[1].mMat));
         DScars[1].map(currentImage, &uboCars[1], sizeof(uboCars[1]), 0);
