@@ -77,6 +77,11 @@ protected:
     glm::vec3 camPosInPhotoMode;
     glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
     glm::vec3 carPos = glm::vec3(-5.0, -0.2, 0.0); //initial pos of car
+    std::vector<glm::vec3> wayPoints={glm::vec3(0.0f, 0.0f, 0.0f),
+                                      glm::vec3(0.0f, 0.0f, -20.0f),
+                                      glm::vec3(20.0f, 0.0f, -20.0f),
+                                      glm::vec3(20.0f, 0.0f, 0.0f)};
+    int currentPoint=0;
     float CamAlpha = 0.0f;
     float CamBeta = 0.0f;
     bool alreadyInPhotoMode = false;
@@ -406,6 +411,8 @@ protected:
         static float cTime = 0.0f;
         const float turnTime = 72.0f;
         const float angTurnTimeFact = 2.0f * M_PI / turnTime;
+        glm::vec3 direction = glm::normalize(wayPoints[currentPoint] - carPos);
+        float speedCar= 2.0f;
 
         // Standard procedure to quit when the ESC key is pressed
         if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
@@ -451,6 +458,16 @@ protected:
             cTime += deltaT;
             cTime = (cTime > turnTime) ? (cTime - turnTime) : cTime;
         }
+
+        carPos += direction * speedCar * deltaT;
+        if (glm::distance(carPos, wayPoints[currentPoint]) < 0.1f) {
+            currentPoint = (currentPoint + 1) % wayPoints.size();
+        }
+
+        static float steeringAngCar = 0.0f;
+        float targetSteering = atan2(direction.x, direction.z);
+        steeringAngCar += (targetSteering - steeringAngCar) * 0.1f;
+        //carPos += glm::vec3(speedCar * sin(steeringAngCar), 0.0f, speedCar * cos(steeringAngCar)) * deltaT;
 
         static float steeringAng = 0.0f;
         glm::mat4 mView;
@@ -543,7 +560,8 @@ protected:
             glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
 
         glm::mat4 mWorldCar =
-                glm::translate(glm::mat4(1.0), carPos);
+                glm::translate(glm::mat4(1.0), carPos)*
+                glm::rotate(glm::mat4(1.0), steeringAngCar, glm::vec3(0, 1, 0));
 
 
         uboTaxi.mvpMat = Prj * mView * mWorldTaxi;
