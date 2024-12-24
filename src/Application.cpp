@@ -6,9 +6,9 @@
 
 #define MESH 210
 #define CARS 9
-#define SPHERES 36
+#define SPHERES 37
 
-#define DEBUG 1
+#define DEBUG 0
 
 std::vector<SingleText> outText = {
 	{2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
@@ -149,9 +149,9 @@ protected:
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool =  (2 * MESH) + 2+2+2*CARS + 2*36; // 2*36 DEBUG
+        uniformBlocksInPool =  (2 * MESH) + 2+2+2*CARS + (DEBUG ? 2 * SPHERES : 0);
         texturesInPool = MESH + 1 +1+1+CARS; //city, taxi, text, sky, autonomous cars
-        setsInPool = MESH + 1 +1+1+CARS + 36; // 36 DEBUG
+        setsInPool = MESH + 1 +1+1+CARS + (DEBUG ? SPHERES : 0);
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -714,10 +714,19 @@ protected:
         //glm::vec3 sunPos = glm::vec3(5.5f, 30.0f, 7.5f);
         //glm::vec3 sunPos = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
 
-        glm::vec3 sunPos = glm::vec3(cos(cTime * angTurnTimeFact), // x
-                sin(cTime * angTurnTimeFact), // y
-                sin(glm::radians(90.0f))              // z (fisso)
+        glm::vec3 sunPos = glm::vec3(100.0f * cos(cTime * angTurnTimeFact), // x
+                100.0f * sin(cTime * angTurnTimeFact), // y
+                100.0f * sin(glm::radians(90.0f))              // z (fisso)
         );
+
+        #if DEBUG
+            int index = SPHERES - 1;
+            glm::mat4 mWorldSphere = glm::translate(glm::mat4(1.0f), sunPos);
+            ubosphere[index].mvpMat = Prj * mView * mWorldSphere;
+            ubosphere[index].mMat = mWorldSphere;
+            ubosphere[index].nMat = glm::inverse(glm::transpose(ubosphere[index].mMat));
+            DSsphere[index].map(currentImage, &ubosphere[index], sizeof(ubosphere[index]), 0);
+        #endif
 
 
         glm::mat4 mWorldTaxi =
@@ -908,13 +917,22 @@ protected:
                 DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
 
                 // Check if the current model is a streetlight
+                // X ==> verso del taxi
+                // Y ==> verso l'alto
+                // Z ==> verso destra
                 std::string modelName = j["models"][k]["model"];
                 if (modelName == "models/road_tile_1x1_001.mgcg") {
                     glm::mat4 position = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
                     position = glm::translate(position, glm::vec3(3.75f, 4.25f, -0.75f)); // Adjust position
                     streetlightPositions.push_back(position);
-                } else if (modelName == "models/road_tile_1x1_006.mgcg" || modelName == "models/road_tile_1x1_008.mgcg") {
+                } else if (modelName == "models/road_tile_1x1_006.mgcg") {
                     glm::mat4 position = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                    position = glm::translate(position, glm::vec3(2.0f, 2.0f, 0.0f)); // Adjust position
+                    streetlightPositions.push_back(position);
+                }
+                else if (modelName == "models/road_tile_1x1_008.mgcg") {
+                    glm::mat4 position = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                    // position = glm::translate(position, glm::vec3(3.75f, 4.25f, -0.75f)); // Adjust position
                     streetlightPositions.push_back(position);
                 }
             }
