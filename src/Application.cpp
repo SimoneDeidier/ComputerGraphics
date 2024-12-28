@@ -51,17 +51,17 @@ protected:
 
     TextMaker txt;
 
-    Model  Mtaxi, Msky, Mcars[CARS], Mpeople[PEOPLE];
+    Model  Mtaxi[8], Msky, Mcars[CARS], Mpeople[PEOPLE];
     Model Mcity[MESH];
 
-    DescriptorSet DStaxi, DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE];
+    DescriptorSet DStaxi[8], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE];
 
-    Texture Tcity, Tsky, Tpeople;
+    Texture Tcity, Tsky, Tpeople, Ttaxy;
 
 
-    UniformBufferObject uboTaxi, uboSky, uboCars[CARS];
+    UniformBufferObject uboTaxi[8], uboSky, uboCars[CARS];
     UniformBufferObject ubocity[MESH], uboPeople[PEOPLE];
-    GlobalUniformBufferObject guboTaxi,guboSky, guboCars[CARS];
+    GlobalUniformBufferObject guboTaxi[8],guboSky, guboCars[CARS];
     GlobalUniformBufferObject gubocity[MESH], guboPeople[PEOPLE];
 
 #if DEBUG
@@ -150,9 +150,9 @@ protected:
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool =  (2 * MESH) + 2+2+2*CARS+2*PEOPLE + (DEBUG ? 2 * SPHERES : 0);
-        texturesInPool = MESH + 1 +1+1+CARS+PEOPLE; //city, taxi, text, sky, autonomous cars, people
-        setsInPool = MESH + 1 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0);
+        uniformBlocksInPool =  (2 * MESH) + 16+2+2*CARS+2*PEOPLE + (DEBUG ? 2 * SPHERES : 0);
+        texturesInPool = MESH + 8 +1+1+CARS+PEOPLE; //city, taxi, text, sky, autonomous cars, people
+        setsInPool = MESH + 8 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0);
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -272,8 +272,15 @@ protected:
 #endif
 
 
-        Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
-        //Mtaxi.init(this, &VD, "models/uploads-files-2104560-Humano_01Business_01_30K.obj", OBJ );
+        //Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
+        Mtaxi[0].init(this, &VD, "models/Car_Hatch_C_DoorR.obj", OBJ );
+        Mtaxi[1].init(this, &VD, "models/Car_Hatch_C_Extern.obj", OBJ );
+        Mtaxi[2].init(this, &VD, "models/Car_Hatch_C_Intern_no-steer.obj", OBJ );
+        Mtaxi[3].init(this, &VD, "models/Car_Hatch_C_Steer.obj", OBJ );
+        Mtaxi[4].init(this, &VD, "models/Car_Hatch_C_WheelBL_Origin_at_center.obj", OBJ );
+        Mtaxi[5].init(this, &VD, "models/Car_Hatch_C_WheelBR_Origin_at_center.obj", OBJ );
+        Mtaxi[6].init(this, &VD, "models/Car_Hatch_C_WheelFL_Origin_at_center.obj", OBJ );
+        Mtaxi[7].init(this, &VD, "models/Car_Hatch_C_WheelFR_Origin_at_center.obj", OBJ );
         Msky.init(this, &VDsky, "models/Sphere2.obj", OBJ);
         Mcars[0].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
         Mcars[1].init(this, &VDcars, "models/transport_cool_003_transport_cool_003.001.mgcg" , MGCG);
@@ -294,6 +301,7 @@ protected:
         Tcity.init(this,"textures/Textures_City.png");
         Tsky.init(this, "textures/images.png");
         Tpeople.init(this, "textures/Humano_01Business_01_Diffuse04.jpg");
+        Ttaxy.init(this, "textures/VehiclePack_baseColor.png");
 
         txt.init(this, &outText);
 
@@ -352,11 +360,13 @@ protected:
         Psphere.create();
 #endif
 
-        DStaxi.init(this, &DSL, {
-                {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                {1, TEXTURE, 0, &Tcity},
-                {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
-        });
+        for(int i = 0; i<8; i++){
+            DStaxi[i].init(this, &DSL, {
+                    {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+                    {1, TEXTURE, 0, &Ttaxy},
+                    {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+            });
+        }
 
         for(int i = 0; i < MESH; i++) {
             DScity[i].init(this, &DSLcity, {
@@ -410,7 +420,9 @@ protected:
         Psphere.cleanup();
 #endif
 
-        DStaxi.cleanup();
+        for(int i = 0; i < 8; i++) {
+            DStaxi[i].cleanup();
+        }
 
         for(int i = 0; i < MESH; i++) {
             DScity[i].cleanup();
@@ -440,8 +452,11 @@ protected:
         Tcity.cleanup();
         Tsky.cleanup();
         Tpeople.cleanup();
+        Ttaxy.cleanup();
 
-        Mtaxi.cleanup();
+        for(int i = 0; i < 8; i++) {
+            Mtaxi[i].cleanup();
+        }
 
         for(int i = 0; i < MESH; i++) {
             Mcity[i].cleanup();
@@ -489,10 +504,13 @@ protected:
 
         P.bind(commandBuffer);
 
-        DStaxi.bind(commandBuffer, P, 0, currentImage);
-        Mtaxi.bind(commandBuffer);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(Mtaxi.indices.size()), 1, 0, 0, 0);
+        for(int i = 0; i < 8; i++){
+            DStaxi[i].bind(commandBuffer, P, 0, currentImage);
+            Mtaxi[i].bind(commandBuffer);
+            vkCmdDrawIndexed(commandBuffer,
+                             static_cast<uint32_t>(Mtaxi[i].indices.size()), 1, 0, 0, 0);
+        }
+
 
         Pcity.bind(commandBuffer);
 
@@ -832,17 +850,19 @@ protected:
                 glm::rotate(glm::mat4(1.0), steeringAngCar9, glm::vec3(0, 1, 0));
 
 
-        uboTaxi.mvpMat = Prj * mView * mWorldTaxi;
-        uboTaxi.mMat = glm::mat4(1.0f);
-        uboTaxi.nMat = glm::inverse(glm::transpose(uboTaxi.mMat));
-        DStaxi.map(currentImage, &uboTaxi, sizeof(uboTaxi), 0);
-        //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
-        guboTaxi.lightDir = sunPos;
-        guboTaxi.lightColor = glm::vec4(1.0f);
-        guboTaxi.eyePos = camPos;
-        guboTaxi.gamma = 128.0f;
-        guboTaxi.metallic = 1.0f;
-        DStaxi.map(currentImage, &guboTaxi, sizeof(guboTaxi), 2);
+        for(int i=0; i<8; i++){
+            uboTaxi[i].mvpMat = Prj * mView * mWorldTaxi;
+            uboTaxi[i].mMat = glm::mat4(1.0f);
+            uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
+            DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);
+            //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+            guboTaxi[i].lightDir = sunPos;
+            guboTaxi[i].lightColor = glm::vec4(1.0f);
+            guboTaxi[i].eyePos = camPos;
+            guboTaxi[i].gamma = 128.0f;
+            guboTaxi[i].metallic = 1.0f;
+            DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
+        }
 
         uboCars[0].mvpMat = Prj * mView * mWorldCar1;
         uboCars[0].mMat = glm::mat4(1.0f);
