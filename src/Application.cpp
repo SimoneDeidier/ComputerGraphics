@@ -293,7 +293,7 @@ protected:
 
         Tcity.init(this,"textures/Textures_City.png");
         Tsky.init(this, "textures/images.png");
-        Tpeople.init(this, "textures/Textures_City.png");
+        Tpeople.init(this, "textures/Humano_01Business_01_Diffuse04.jpg");
 
         txt.init(this, &outText);
 
