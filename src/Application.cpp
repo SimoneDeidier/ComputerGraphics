@@ -7,25 +7,26 @@
 #define MESH 210
 #define CARS 9
 #define SPHERES 37
+#define PEOPLE 40
 
 #define DEBUG 0
 
 std::vector<SingleText> outText = {
-	{2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
-	{2, {"Photo mode", "Press SPACE to access third person view", "",""}, 0, 0}
+        {2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
+        {2, {"Photo mode", "Press SPACE to access third person view", "",""}, 0, 0}
 };
 
 // float : alignas(4), vec2  : alignas(8), vec3, vec4, mat3, mat4  : alignas(16)
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
     alignas(16) glm::mat4 mMat;
-    alignas(16) glm::mat4 nMat; 
+    alignas(16) glm::mat4 nMat;
 };
 
 struct GlobalUniformBufferObject {
-	alignas(16) glm::vec3 lightDir;
-	alignas(16) glm::vec4 lightColor;
-	alignas(16) glm::vec3 eyePos;
+    alignas(16) glm::vec3 lightDir;
+    alignas(16) glm::vec4 lightColor;
+    alignas(16) glm::vec3 eyePos;
     alignas(4) float gamma;
     alignas(4) float metallic;
 };
@@ -42,39 +43,39 @@ protected:
     // aspect ratio
     float Ar;
 
-    DescriptorSetLayout DSL,DSLcity, DSLsky, DSLcars;
+    DescriptorSetLayout DSL,DSLcity, DSLsky, DSLcars, DSLpeople;
 
-    VertexDescriptor VD, VDcity, VDsky, VDcars;
+    VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople;
 
-    Pipeline P, Pcity, Psky, Pcars;
+    Pipeline P, Pcity, Psky, Pcars, Ppeople;
 
     TextMaker txt;
 
-    Model  Mtaxi, Msky, Mcars[CARS];
+    Model  Mtaxi, Msky, Mcars[CARS], Mpeople[PEOPLE];
     Model Mcity[MESH];
 
-    DescriptorSet DStaxi, DScity[MESH], DSsky, DScars[CARS];
+    DescriptorSet DStaxi, DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE];
 
-    Texture Tcity, Tsky;
+    Texture Tcity, Tsky, Tpeople;
 
 
     UniformBufferObject uboTaxi, uboSky, uboCars[CARS];
-    UniformBufferObject ubocity[MESH];
+    UniformBufferObject ubocity[MESH], uboPeople[PEOPLE];
     GlobalUniformBufferObject guboTaxi,guboSky, guboCars[CARS];
-    GlobalUniformBufferObject gubocity[MESH];
+    GlobalUniformBufferObject gubocity[MESH], guboPeople[PEOPLE];
 
-    #if DEBUG
-        DescriptorSetLayout DSLsphere;
+#if DEBUG
+    DescriptorSetLayout DSLsphere;
         VertexDescriptor VDsphere;
         Pipeline Psphere;
         Model Msphere[SPHERES];
         DescriptorSet DSsphere[SPHERES];
         UniformBufferObject ubosphere[SPHERES];
-    #endif
+#endif
 
     // Other application parameters
     int currScene = 0;
-	glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
+    glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
     glm::vec3 camPosInPhotoMode;
     glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
 
@@ -90,13 +91,13 @@ protected:
 
 
     std::vector<glm::vec3> wayPoints1={glm::vec3(-69.0f, -0.2f, 33.0f),
-                                      glm::vec3(-69.0f, -0.2f, -33.0f),
-                                      glm::vec3(-3.0f, -0.2f, -33.0f),
-                                      glm::vec3(-3.0f, -0.2f, 33.0f)};
+                                       glm::vec3(-69.0f, -0.2f, -33.0f),
+                                       glm::vec3(-3.0f, -0.2f, -33.0f),
+                                       glm::vec3(-3.0f, -0.2f, 33.0f)};
     std::vector<glm::vec3> wayPoints2={glm::vec3(3.0f, -0.2f, 33.0f),
-                                      glm::vec3(3.0f, -0.2f, -33.0f),
-                                      glm::vec3(69.0f, -0.2f, -33.0f),
-                                      glm::vec3(69.0f, -0.2f, 33.0f)};
+                                       glm::vec3(3.0f, -0.2f, -33.0f),
+                                       glm::vec3(69.0f, -0.2f, -33.0f),
+                                       glm::vec3(69.0f, -0.2f, 33.0f)};
     std::vector<glm::vec3> wayPoints3={glm::vec3(75.0f, -0.2f, 33.0f),
                                        glm::vec3(75.0f, -0.2f, -33.0f),
                                        glm::vec3(141.0f, -0.2f, -33.0f),
@@ -149,9 +150,9 @@ protected:
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
         // Descriptor pool sizes
-        uniformBlocksInPool =  (2 * MESH) + 2+2+2*CARS + (DEBUG ? 2 * SPHERES : 0);
-        texturesInPool = MESH + 1 +1+1+CARS; //city, taxi, text, sky, autonomous cars
-        setsInPool = MESH + 1 +1+1+CARS + (DEBUG ? SPHERES : 0);
+        uniformBlocksInPool =  (2 * MESH) + 2+2+2*CARS+2*PEOPLE + (DEBUG ? 2 * SPHERES : 0);
+        texturesInPool = MESH + 1 +1+1+CARS+PEOPLE; //city, taxi, text, sky, autonomous cars, people
+        setsInPool = MESH + 1 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0);
 
         Ar = (float)windowWidth / (float)windowHeight;
     }
@@ -182,12 +183,17 @@ protected:
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
         });
+        DSLpeople.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+        });
 
-        #if DEBUG
-            DSLsphere.init(this, {
+#if DEBUG
+        DSLsphere.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
-        #endif
+#endif
 
         VD.init(this, {
                 {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -202,16 +208,6 @@ protected:
         VDcity.init(this, {
                 {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
         }, {
-                        {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                                sizeof(glm::vec3), POSITION},
-                        {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                                sizeof(glm::vec2), UV},
-                        {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
-                                sizeof(glm::vec3), NORMAL}
-                });
-        VDsky.init(this, {
-                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-        }, {
                             {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
                                     sizeof(glm::vec3), POSITION},
                             {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
@@ -219,7 +215,7 @@ protected:
                             {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                     sizeof(glm::vec3), NORMAL}
                     });
-        VDcars.init(this, {
+        VDsky.init(this, {
                 {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
         }, {
                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
@@ -229,9 +225,29 @@ protected:
                            {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                    sizeof(glm::vec3), NORMAL}
                    });
+        VDcars.init(this, {
+                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                                    sizeof(glm::vec3), POSITION},
+                            {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                                    sizeof(glm::vec2), UV},
+                            {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                                    sizeof(glm::vec3), NORMAL}
+                    });
+        VDpeople.init(this, {
+                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+                              {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                                      sizeof(glm::vec3), POSITION},
+                              {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                                      sizeof(glm::vec2), UV},
+                              {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                                      sizeof(glm::vec3), NORMAL}
+                      });
 
-        #if DEBUG
-            VDsphere.init(this, {
+#if DEBUG
+        VDsphere.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
                             {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
@@ -241,7 +257,7 @@ protected:
                             {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                     sizeof(glm::vec3), NORMAL}
                     });
-        #endif
+#endif
 
         P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
@@ -249,13 +265,15 @@ protected:
         Psky.init(this, &VDsky, "shaders/SkyVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
         Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false); //todo cosa dovevamo fare quando telecamera dentro una stanza
         Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcars});
+        Ppeople.init(this, &VDpeople, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLpeople});
 
-        #if DEBUG
-            Psphere.init(this, &VDsphere, "shaders/BaseVert.spv", "shaders/DEBUGFrag.spv", {&DSLsphere}); 
-        #endif
+#if DEBUG
+        Psphere.init(this, &VDsphere, "shaders/BaseVert.spv", "shaders/DEBUGFrag.spv", {&DSLsphere});
+#endif
 
 
         Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
+        //Mtaxi.init(this, &VD, "models/uploads-files-2104560-Humano_01Business_01_30K.obj", OBJ );
         Msky.init(this, &VDsky, "models/Sphere2.obj", OBJ);
         Mcars[0].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
         Mcars[1].init(this, &VDcars, "models/transport_cool_003_transport_cool_003.001.mgcg" , MGCG);
@@ -267,14 +285,16 @@ protected:
         Mcars[7].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg" , MGCG);
         Mcars[8].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg" , MGCG);
 
-        #if DEBUG
-            for (int i = 0; i < SPHERES; i++) {
+#if DEBUG
+        for (int i = 0; i < SPHERES; i++) {
                 Msphere[i].init(this, &VDsphere, "models/Sphere2.obj", OBJ);
             }
-        #endif
+#endif
 
         Tcity.init(this,"textures/Textures_City.png");
         Tsky.init(this, "textures/images.png");
+        Tpeople.init(this, "textures/Textures_City.png");
+
         txt.init(this, &outText);
 
         nlohmann::json js;
@@ -297,6 +317,27 @@ protected:
         }catch (const nlohmann::json::exception& e) {
             std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
         }
+
+        nlohmann::json js2;
+        std::ifstream ifs2("models/people.json");
+        if (!ifs2.is_open()) {
+            std::cout << "[ ERROR ]: Scene file not found!" << std::endl;
+            exit(-1);
+        }
+        try{
+            json j2;
+            ifs2>>j2;
+
+            for(int k = 0; k < PEOPLE; k++) {
+                std::string modelPath= j2["models"][k]["model"];
+                std::string format = j2["models"][k]["format"];
+
+                Mpeople[k].init(this, &VDpeople, modelPath, (format[0] == 'O') ? OBJ : ((format[0] == 'G') ? GLTF : MGCG));
+
+            }
+        }catch (const nlohmann::json::exception& e) {
+            std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
+        }
     }
 
     void pipelinesAndDescriptorSetsInit() {
@@ -305,10 +346,11 @@ protected:
         Pcity.create();
         Psky.create();
         Pcars.create();
+        Ppeople.create();
 
-        #if DEBUG
-            Psphere.create();
-        #endif
+#if DEBUG
+        Psphere.create();
+#endif
 
         DStaxi.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
@@ -337,16 +379,23 @@ protected:
                     {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
             });
         }
+        for(int i = 0; i < PEOPLE; i++) {
+            DSpeople[i].init(this, &DSLpeople, {
+                    {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+                    {1, TEXTURE, 0, &Tpeople},
+                    {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+            });
+        }
 
-        #if DEBUG
-            for (int i = 0; i < SPHERES; i++) {
+#if DEBUG
+        for (int i = 0; i < SPHERES; i++) {
                 DSsphere[i].init(this, &DSLsphere, {
                         {0, UNIFORM, sizeof(UniformBufferObject), nullptr}
                 });
             }
-        #endif
+#endif
 
-        txt.pipelinesAndDescriptorSetsInit();	
+        txt.pipelinesAndDescriptorSetsInit();
     }
 
     void pipelinesAndDescriptorSetsCleanup() {
@@ -355,10 +404,11 @@ protected:
         Pcity.cleanup();
         Psky.cleanup();
         Pcars.cleanup();
+        Ppeople.cleanup();
 
-        #if DEBUG
-            Psphere.cleanup();
-        #endif
+#if DEBUG
+        Psphere.cleanup();
+#endif
 
         DStaxi.cleanup();
 
@@ -372,11 +422,15 @@ protected:
             DScars[i].cleanup();
         }
 
-        #if DEBUG
-            for (int i = 0; i < SPHERES; i++) {
+        for(int i = 0; i < PEOPLE; i++) {
+            DSpeople[i].cleanup();
+        }
+
+#if DEBUG
+        for (int i = 0; i < SPHERES; i++) {
                 DSsphere[i].cleanup();
             }
-        #endif
+#endif
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -385,6 +439,7 @@ protected:
 
         Tcity.cleanup();
         Tsky.cleanup();
+        Tpeople.cleanup();
 
         Mtaxi.cleanup();
 
@@ -397,32 +452,37 @@ protected:
         for(int i = 0; i < CARS; i++) {
             Mcars[i].cleanup();
         }
+        for(int i = 0; i < PEOPLE; i++) {
+            Mpeople[i].cleanup();
+        }
 
-        #if DEBUG
-            for (int i = 0; i < SPHERES; i++) {
+#if DEBUG
+        for (int i = 0; i < SPHERES; i++) {
                 Msphere[i].cleanup();
             }
-        #endif
+#endif
 
         DSL.cleanup();
         DSLcity.cleanup();
         DSLsky.cleanup();
         DSLcars.cleanup();
+        DSLpeople.cleanup();
 
-        #if DEBUG
-            DSLsphere.cleanup();
-        #endif
+#if DEBUG
+        DSLsphere.cleanup();
+#endif
 
         P.destroy();
         Pcity.destroy();
         Psky.destroy();
         Pcars.destroy();
+        Ppeople.destroy();
 
-        #if DEBUG
-            Psphere.destroy();
-        #endif
+#if DEBUG
+        Psphere.destroy();
+#endif
 
-        txt.localCleanup();	
+        txt.localCleanup();
     }
 
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
@@ -459,9 +519,18 @@ protected:
                              static_cast<uint32_t>(Mcars[i].indices.size()), 1, 0, 0, 0);
         }
 
+        Ppeople.bind(commandBuffer);
 
-        #if DEBUG
-            Psphere.bind(commandBuffer);
+        for(int i = 0; i < PEOPLE; i++) {
+            DSpeople[i].bind(commandBuffer, Ppeople, 0, currentImage);
+            Mpeople[i].bind(commandBuffer);
+            vkCmdDrawIndexed(commandBuffer,
+                             static_cast<uint32_t>(Mpeople[i].indices.size()), 1, 0, 0, 0);
+        }
+
+
+#if DEBUG
+        Psphere.bind(commandBuffer);
 
             for (int i = 0; i < SPHERES; i++) {
                 DSsphere[i].bind(commandBuffer, Psphere, 0, currentImage);
@@ -469,7 +538,7 @@ protected:
                 vkCmdDrawIndexed(commandBuffer,
                                  static_cast<uint32_t>(Msphere[i].indices.size()), 1, 0, 0, 0);
             }
-        #endif
+#endif
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -502,24 +571,24 @@ protected:
         }
 
         if(glfwGetKey(window, GLFW_KEY_SPACE)) {
-			if(!debounce) {
-				debounce = true;
-				curDebounce = GLFW_KEY_SPACE;
-				if(currScene==0) {
+            if(!debounce) {
+                debounce = true;
+                curDebounce = GLFW_KEY_SPACE;
+                if(currScene==0) {
                     currScene = 1;
                 } else {
                     currScene = 0;
-				}
-				std::cout << "Scene : " << currScene << "\n";
+                }
+                std::cout << "Scene : " << currScene << "\n";
 
-				RebuildPipeline();
-			}
-		} else {
-			if((curDebounce == GLFW_KEY_SPACE) && debounce) {
-				debounce = false;
-				curDebounce = 0;
-			}
-		}
+                RebuildPipeline();
+            }
+        } else {
+            if((curDebounce == GLFW_KEY_SPACE) && debounce) {
+                debounce = false;
+                curDebounce = 0;
+            }
+        }
 
         // Integration with the timers and the controllers
         float deltaT;
@@ -669,8 +738,8 @@ protected:
             y = -radius * cos(steeringAng + camOffsetAngle);
             camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
             mView = glm::lookAt(camPos,
-                taxiPos,
-                glm::vec3(0, 1, 0));
+                                taxiPos,
+                                glm::vec3(0, 1, 0));
             //REMEMBER: primo parametro: spostamento dx e sx, secondo parametro: altezza su e giù, terzo avanti e indietro
         } else if (currScene == 1){
 
@@ -686,7 +755,7 @@ protected:
             CamAlpha = CamAlpha - ROT_SPEED2 * deltaT * r.y;
             CamBeta = CamBeta - ROT_SPEED2 * deltaT * r.x;
             CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
-                (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
+                      (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
 
             glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
             glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
@@ -695,10 +764,10 @@ protected:
             camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * -m.z * uz * deltaT;
 
             mView = glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
-                glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
-                glm::translate(glm::mat4(1.0), -camPosInPhotoMode); //View matrix
+                    glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
+                    glm::translate(glm::mat4(1.0), -camPosInPhotoMode); //View matrix
 
-            
+
         }
 
         const float nearPlane = 1.0f;
@@ -715,23 +784,23 @@ protected:
         //glm::vec3 sunPos = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
 
         glm::vec3 sunPos = glm::vec3(100.0f * cos(cTime * angTurnTimeFact), // x
-                100.0f * sin(cTime * angTurnTimeFact), // y
-                100.0f * sin(glm::radians(90.0f))              // z (fisso)
+                                     100.0f * sin(cTime * angTurnTimeFact), // y
+                                     100.0f * sin(glm::radians(90.0f))              // z (fisso)
         );
 
-        #if DEBUG
-            int index = SPHERES - 1;
+#if DEBUG
+        int index = SPHERES - 1;
             glm::mat4 mWorldSphere = glm::translate(glm::mat4(1.0f), sunPos);
             ubosphere[index].mvpMat = Prj * mView * mWorldSphere;
             ubosphere[index].mMat = mWorldSphere;
             ubosphere[index].nMat = glm::inverse(glm::transpose(ubosphere[index].mMat));
             DSsphere[index].map(currentImage, &ubosphere[index], sizeof(ubosphere[index]), 0);
-        #endif
+#endif
 
 
         glm::mat4 mWorldTaxi =
-            glm::translate(glm::mat4(1.0), taxiPos) *
-            glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
+                glm::translate(glm::mat4(1.0), taxiPos) *
+                glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
 
 
         glm::mat4 mWorldCar1 =
@@ -937,17 +1006,53 @@ protected:
                 }
             }
 
-            #if DEBUG
-                for (size_t i = 0; i < streetlightPositions.size(); ++i) {
+#if DEBUG
+            for (size_t i = 0; i < streetlightPositions.size(); ++i) {
                     glm::mat4 mWorldSphere = streetlightPositions[i];
                     ubosphere[i].mvpMat = Prj * mView * mWorldSphere;
                     ubosphere[i].mMat = glm::mat4(1.0f);
                     ubosphere[i].nMat = glm::inverse(glm::transpose(ubosphere[i].mMat));
                     DSsphere[i].map(currentImage, &ubosphere[i], sizeof(ubosphere[i]), 0);
                 }
-            #endif
+#endif
 
 
+
+        }catch (const nlohmann::json::exception& e) {
+            std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
+        }
+
+        nlohmann::json js3;
+        std::ifstream ifs3("models/people.json");
+        if (!ifs3.is_open()) {
+            std::cout << "[ ERROR ]: Scene file not found!" << std::endl;
+            exit(-1);
+        }
+        try{
+            json j3;
+            ifs3>>j3;
+
+            float TMj[16];
+
+            for(int k = 0; k < PEOPLE; k++) {
+                nlohmann::json TMjson = j3["instances"][k]["transform"];
+
+                for(int l = 0; l < 16; l++) {TMj[l] = TMjson[l];}
+
+                mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                uboPeople[k].mMat = glm::mat4(1);
+                uboPeople[k].nMat = glm::inverse(glm::transpose(uboPeople[k].mMat));
+                uboPeople[k].mvpMat = Prj * mView * mWorld;
+                DSpeople[k].map(currentImage, &uboPeople[k], sizeof(uboPeople[k]), 0);
+                //gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
+                guboPeople[k].lightDir = sunPos;
+                guboPeople[k].lightColor = glm::vec4(1.0f);
+                guboPeople[k].eyePos = camPos;
+                guboPeople[k].gamma = 128.0f;
+                guboPeople[k].metallic = 0.1f;
+                DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
+
+            }
 
         }catch (const nlohmann::json::exception& e) {
             std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
