@@ -7,7 +7,7 @@
 #define MESH 210
 #define CARS 9
 #define SPHERES 37
-#define PEOPLE 40
+#define PEOPLE 45
 
 #define DEBUG 0
 
