@@ -9,6 +9,7 @@
 #define SPHERES 2
 #define STREET_LIGHT_COUNT 36
 #define PEOPLE 45
+#define TAXI_ELEMENTS 8
 
 #define DEBUG 0
 
@@ -73,17 +74,17 @@ protected:
 
     TextMaker txt;
 
-    Model  Mtaxi[8], Msky, Mcars[CARS], Mpeople[PEOPLE];
+    Model  Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE];
     Model Mcity[MESH];
 
-    DescriptorSet DStaxi[8], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE];
+    DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE];
 
     Texture Tcity, Tsky, Tpeople, Ttaxy;
 
-    UniformBufferObject uboTaxi[8], uboSky, uboCars[CARS], ubocity[MESH], uboPeople[PEOPLE];
+    UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSky, uboCars[CARS], ubocity[MESH], uboPeople[PEOPLE];
     GlobalUniformBufferObject guboCars[CARS], gubocity[MESH], guboPeople[PEOPLE];
     SkyGUBO guboSky;
-    TaxiGUBO guboTaxi[8];
+    TaxiGUBO guboTaxi[TAXI_ELEMENTS];
 
     #if DEBUG
         DescriptorSetLayout DSLsphere;
@@ -100,15 +101,15 @@ protected:
     glm::vec3 camPosInPhotoMode;
     glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
 
-    glm::vec3 carPos1 = glm::vec3(-72.0, -0.2, 36.0);
-    glm::vec3 carPos2 = glm::vec3(5.0, -0.2, 36.0); //initial pos of car
-    glm::vec3 carPos3 = glm::vec3(72.0, -0.2, 36.0);
-    glm::vec3 carPos4 = glm::vec3(-36.0, -0.2, -108.0);
-    glm::vec3 carPos5 = glm::vec3(36.0, -0.2, -108.0);
-    glm::vec3 carPos6 = glm::vec3(108.0, -0.2, -108.0);
-    glm::vec3 carPos7 = glm::vec3(-36.0, -0.2, -112.0);
-    glm::vec3 carPos8 = glm::vec3(36.0, -0.2, -112.0);
-    glm::vec3 carPos9 = glm::vec3(108.0, -0.2, -112.0);
+    glm::vec3 carPositions[CARS] = {glm::vec3(-72.0, -0.2, 36.0), //initial pos of car
+                                 glm::vec3(5.0, -0.2, 36.0),
+                                 glm::vec3(72.0, -0.2, 36.0),
+                                 glm::vec3(-36.0, -0.2, -108.0),
+                                 glm::vec3(36.0, -0.2, -108.0),
+                                 glm::vec3(108.0, -0.2, -108.0),
+                                 glm::vec3(-36.0, -0.2, -112.0),
+                                 glm::vec3(36.0, -0.2, -112.0),
+                                 glm::vec3(108.0, -0.2, -112.0)};
 
 
     std::vector<glm::vec3> wayPoints1={glm::vec3(-69.0f, -0.2f, 33.0f),
@@ -147,16 +148,9 @@ protected:
                                        glm::vec3(75.0f, -0.2f, -177.0f),
                                        glm::vec3(141.0f, -0.2f, -177.0f),
                                        glm::vec3(141.0f, -0.2f, -111.0f)};
+    std::vector<glm::vec3> wayPoints[CARS] = {wayPoints1, wayPoints2, wayPoints3, wayPoints4, wayPoints5, wayPoints6, wayPoints7, wayPoints8, wayPoints9};
 
-    int currentPoint1=0;
-    int currentPoint2=0;
-    int currentPoint3=0;
-    int currentPoint4=0;
-    int currentPoint5=0;
-    int currentPoint6=0;
-    int currentPoint7=0;
-    int currentPoint8=0;
-    int currentPoint9=0;
+    int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
     float CamAlpha = 0.0f;
     float CamBeta = 0.0f;
     bool alreadyInPhotoMode = false;
@@ -165,8 +159,8 @@ protected:
     // Here you set the main application parameters
     void setWindowParameters() {
 
-        windowWidth = 1280;
-        windowHeight = 720;
+        windowWidth = 1920;
+        windowHeight = 1080;
         windowTitle = "Computer graphics' project";
         windowResizable = GLFW_TRUE;
         initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
@@ -211,11 +205,11 @@ protected:
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
         });
 
-#if DEBUG
-        DSLsphere.init(this, {
+        #if DEBUG
+            DSLsphere.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
-#endif
+        #endif
 
         VD.init(this, {
                 {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -268,8 +262,8 @@ protected:
                                       sizeof(glm::vec3), NORMAL}
                       });
 
-#if DEBUG
-        VDsphere.init(this, {
+        #if DEBUG
+            VDsphere.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
                             {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
@@ -279,7 +273,7 @@ protected:
                             {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                     sizeof(glm::vec3), NORMAL}
                     });
-#endif
+        #endif
 
         P.init(this, &VD, "shaders/BaseVert.spv", "shaders/Taxi2Frag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
@@ -289,9 +283,9 @@ protected:
         Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcars});
         Ppeople.init(this, &VDpeople, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLpeople});
 
-#if DEBUG
-        Psphere.init(this, &VDsphere, "shaders/BaseVert.spv", "shaders/DEBUGFrag.spv", {&DSLsphere});
-#endif
+        #if DEBUG
+            Psphere.init(this, &VDsphere, "shaders/BaseVert.spv", "shaders/DEBUGFrag.spv", {&DSLsphere});
+        #endif
 
 
         //Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
@@ -314,11 +308,11 @@ protected:
         Mcars[7].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg" , MGCG);
         Mcars[8].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg" , MGCG);
 
-#if DEBUG
-        for (int i = 0; i < SPHERES; i++) {
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
                 Msphere[i].init(this, &VDsphere, "models/Sphere2.obj", OBJ);
             }
-#endif
+        #endif
 
         Tcity.init(this,"textures/Textures_City.png");
         Tsky.init(this, "textures/images.png");
@@ -380,9 +374,9 @@ protected:
         Pcars.create();
         Ppeople.create();
 
-#if DEBUG
-        Psphere.create();
-#endif
+        #if DEBUG
+            Psphere.create();
+        #endif
 
         for(int i = 0; i<8; i++){
             DStaxi[i].init(this, &DSL, {
@@ -421,13 +415,13 @@ protected:
             });
         }
 
-#if DEBUG
-        for (int i = 0; i < SPHERES; i++) {
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
                 DSsphere[i].init(this, &DSLsphere, {
                         {0, UNIFORM, sizeof(UniformBufferObject), nullptr}
                 });
             }
-#endif
+        #endif
 
         txt.pipelinesAndDescriptorSetsInit();
     }
@@ -440,9 +434,9 @@ protected:
         Pcars.cleanup();
         Ppeople.cleanup();
 
-#if DEBUG
-        Psphere.cleanup();
-#endif
+        #if DEBUG
+            Psphere.cleanup();
+        #endif
 
         for(int i = 0; i < 8; i++) {
             DStaxi[i].cleanup();
@@ -462,11 +456,11 @@ protected:
             DSpeople[i].cleanup();
         }
 
-#if DEBUG
-        for (int i = 0; i < SPHERES; i++) {
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
                 DSsphere[i].cleanup();
             }
-#endif
+        #endif
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -495,11 +489,11 @@ protected:
             Mpeople[i].cleanup();
         }
 
-#if DEBUG
-        for (int i = 0; i < SPHERES; i++) {
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
                 Msphere[i].cleanup();
             }
-#endif
+        #endif
 
         DSL.cleanup();
         DSLcity.cleanup();
@@ -507,9 +501,9 @@ protected:
         DSLcars.cleanup();
         DSLpeople.cleanup();
 
-#if DEBUG
-        DSLsphere.cleanup();
-#endif
+        #if DEBUG
+            DSLsphere.cleanup();
+        #endif
 
         P.destroy();
         Pcity.destroy();
@@ -517,9 +511,9 @@ protected:
         Pcars.destroy();
         Ppeople.destroy();
 
-#if DEBUG
-        Psphere.destroy();
-#endif
+        #if DEBUG
+            Psphere.destroy();
+        #endif
 
         txt.localCleanup();
     }
@@ -571,16 +565,16 @@ protected:
         }
 
 
-#if DEBUG
+        #if DEBUG
         Psphere.bind(commandBuffer);
 
             for (int i = 0; i < SPHERES; i++) {
                 DSsphere[i].bind(commandBuffer, Psphere, 0, currentImage);
                 Msphere[i].bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
-                                 static_cast<uint32_t>(Msphere[i].indices.size()), 1, 0, 0, 0);
+                                static_cast<uint32_t>(Msphere[i].indices.size()), 1, 0, 0, 0);
             }
-#endif
+        #endif
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -596,15 +590,10 @@ protected:
         const float turnTime = 72.0f;
         const float angTurnTimeFact = 2.0f * M_PI / turnTime;
 
-        glm::vec3 direction1 = glm::normalize(wayPoints1[currentPoint1] - carPos1);
-        glm::vec3 direction2 = glm::normalize(wayPoints2[currentPoint2] - carPos2);
-        glm::vec3 direction3 = glm::normalize(wayPoints3[currentPoint3] - carPos3);
-        glm::vec3 direction4 = glm::normalize(wayPoints4[currentPoint4] - carPos4);
-        glm::vec3 direction5 = glm::normalize(wayPoints5[currentPoint5] - carPos5);
-        glm::vec3 direction6 = glm::normalize(wayPoints6[currentPoint6] - carPos6);
-        glm::vec3 direction7 = glm::normalize(wayPoints7[currentPoint7] - carPos7);
-        glm::vec3 direction8 = glm::normalize(wayPoints8[currentPoint8] - carPos8);
-        glm::vec3 direction9 = glm::normalize(wayPoints9[currentPoint9] - carPos9);
+        glm::vec3 directions[CARS];
+        for(int i = 0; i < CARS; i++) {
+            directions[i] = glm::normalize(wayPoints[i][currentPoints[i]] - carPositions[i]);
+        }
 
         float speedCar= 4.0f;
 
@@ -653,98 +642,30 @@ protected:
             cTime = (cTime > turnTime) ? (cTime - turnTime) : cTime;
         }
 
+        static float steeringAngCars[CARS];
+        for(int i = 0; i < CARS; i++) {
+            carPositions[i] += directions[i] * speedCar * deltaT;
+            if (glm::distance(carPositions[i], wayPoints[i][currentPoints[i]]) < 0.25f) {
+                currentPoints[i] = (currentPoints[i] + 1) % wayPoints[i].size();
+            }
+            steeringAngCars[i] = 0.0f;
+            float targetSteering = atan2(directions[i].x, directions[i].z);
+            float angleDifference = targetSteering - steeringAngCars[i];
+            angleDifference = fmod(angleDifference + M_PI, 2.0f * M_PI) - M_PI;
+            steeringAngCars[i] += angleDifference * 0.1f;
+        }
 
+        /* CODICE DI MARY
+        
         carPos1 += direction1 * speedCar * deltaT;
         if (glm::distance(carPos1, wayPoints1[currentPoint1]) < 0.25f) {
             currentPoint1 = (currentPoint1 + 1) % wayPoints1.size();
         }
         static float steeringAngCar1 = 0.0f;
         float targetSteering1 = atan2(direction1.x, direction1.z);
-        //steeringAngCar1 += (targetSteering1 - steeringAngCar1) * 0.1f;
         float angleDifference1 = targetSteering1 - steeringAngCar1;
         angleDifference1 = fmod(angleDifference1 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar1 += angleDifference1 * 0.1f;
-
-        carPos2 += direction2 * speedCar * deltaT;
-        if (glm::distance(carPos2, wayPoints2[currentPoint2]) < 0.1f) {
-            currentPoint2 = (currentPoint2 + 1) % wayPoints2.size();
-        }
-        static float steeringAngCar2 = 0.0f;
-        float targetSteering2 = atan2(direction2.x, direction2.z);
-        float angleDifference2 = targetSteering2 - steeringAngCar2;
-        angleDifference2 = fmod(angleDifference2 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar2 += angleDifference2 * 0.1f;
-        //carPos += glm::vec3(speedCar * sin(steeringAngCar), 0.0f, speedCar * cos(steeringAngCar)) * deltaT;
-
-        carPos3 += direction3 * speedCar * deltaT;
-        if (glm::distance(carPos3, wayPoints3[currentPoint3]) < 0.1f) {
-            currentPoint3 = (currentPoint3 + 1) % wayPoints3.size();
-        }
-        static float steeringAngCar3 = 0.0f;
-        float targetSteering3 = atan2(direction3.x, direction3.z);
-        float angleDifference3 = targetSteering3 - steeringAngCar3;
-        angleDifference3 = fmod(angleDifference3 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar3 += angleDifference3 * 0.1f;
-
-        carPos4 += direction4 * speedCar * deltaT;
-        if (glm::distance(carPos4, wayPoints4[currentPoint4]) < 0.1f) {
-            currentPoint4 = (currentPoint4 + 1) % wayPoints4.size();
-        }
-        static float steeringAngCar4 = 0.0f;
-        float targetSteering4 = atan2(direction4.x, direction4.z);
-        float angleDifference4 = targetSteering4 - steeringAngCar4;
-        angleDifference4 = fmod(angleDifference4 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar4 += angleDifference4 * 0.1f;
-
-        carPos5 += direction5 * speedCar * deltaT;
-        if (glm::distance(carPos5, wayPoints5[currentPoint5]) < 0.1f) {
-            currentPoint5 = (currentPoint5 + 1) % wayPoints5.size();
-        }
-        static float steeringAngCar5 = 0.0f;
-        float targetSteering5 = atan2(direction5.x, direction5.z);
-        float angleDifference5 = targetSteering5 - steeringAngCar5;
-        angleDifference5 = fmod(angleDifference5 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar5 += angleDifference5 * 0.1f;
-
-        carPos6 += direction6 * speedCar * deltaT;
-        if (glm::distance(carPos6, wayPoints6[currentPoint6]) < 0.1f) {
-            currentPoint6 = (currentPoint6 + 1) % wayPoints6.size();
-        }
-        static float steeringAngCar6 = 0.0f;
-        float targetSteering6 = atan2(direction6.x, direction6.z);
-        float angleDifference6 = targetSteering6 - steeringAngCar6;
-        angleDifference6 = fmod(angleDifference6 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar6 += angleDifference6 * 0.1f;
-
-        carPos7 += direction7 * speedCar * deltaT;
-        if (glm::distance(carPos7, wayPoints7[currentPoint7]) < 0.1f) {
-            currentPoint7 = (currentPoint7 + 1) % wayPoints7.size();
-        }
-        static float steeringAngCar7 = 0.0f;
-        float targetSteering7 = atan2(direction7.x, direction7.z);
-        float angleDifference7 = targetSteering7 - steeringAngCar7;
-        angleDifference7 = fmod(angleDifference7 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar7 += angleDifference7 * 0.1f;
-
-        carPos8 += direction8 * speedCar * deltaT;
-        if (glm::distance(carPos8, wayPoints8[currentPoint8]) < 0.1f) {
-            currentPoint8 = (currentPoint8 + 1) % wayPoints8.size();
-        }
-        static float steeringAngCar8 = 0.0f;
-        float targetSteering8 = atan2(direction8.x, direction8.z);
-        float angleDifference8 = targetSteering8 - steeringAngCar8;
-        angleDifference8 = fmod(angleDifference8 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar8 += angleDifference8 * 0.1f;
-
-        carPos9 += direction9 * speedCar * deltaT;
-        if (glm::distance(carPos9, wayPoints9[currentPoint9]) < 0.1f) {
-            currentPoint9 = (currentPoint9 + 1) % wayPoints9.size();
-        }
-        static float steeringAngCar9 = 0.0f;
-        float targetSteering9 = atan2(direction9.x, direction9.z);
-        float angleDifference9 = targetSteering9 - steeringAngCar9;
-        angleDifference9 = fmod(angleDifference9 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar9 += angleDifference9 * 0.1f;
+        steeringAngCar1 += angleDifference1 * 0.1f;*/
 
         static float steeringAng = 0.0f;
         glm::mat4 mView;
@@ -835,33 +756,11 @@ protected:
                 glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
 
 
-        glm::mat4 mWorldCar1 =
-                glm::translate(glm::mat4(1.0), carPos1)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar1, glm::vec3(0, 1, 0));
-        glm::mat4 mWorldCar2 =
-                glm::translate(glm::mat4(1.0), carPos2)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar2, glm::vec3(0, 1, 0));
-        glm::mat4 mWorldCar3 =
-                glm::translate(glm::mat4(1.0), carPos3)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar3, glm::vec3(0, 1, 0));
-        glm::mat4 mWorldCar4 =
-                glm::translate(glm::mat4(1.0), carPos4)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar4, glm::vec3(0, 1, 0));
-        glm::mat4 mWorldCar5 =
-                glm::translate(glm::mat4(1.0), carPos5)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar5, glm::vec3(0, 1, 0));
-        glm::mat4 mWorldCar6 =
-                glm::translate(glm::mat4(1.0), carPos6)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar6, glm::vec3(0, 1, 0));
-        glm::mat4 mWorldCar7 =
-                glm::translate(glm::mat4(1.0), carPos7)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar7, glm::vec3(0, 1, 0));
-        glm::mat4 mWorldCar8 =
-                glm::translate(glm::mat4(1.0), carPos8)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar8, glm::vec3(0, 1, 0));
-        glm::mat4 mWorldCar9 =
-                glm::translate(glm::mat4(1.0), carPos9)*
-                glm::rotate(glm::mat4(1.0), steeringAngCar9, glm::vec3(0, 1, 0));
+        glm::mat4 mWorldCars[CARS];
+        for(int i = 0; i < CARS; i++) {
+            mWorldCars[i] = glm::translate(glm::mat4(1.0), carPositions[i]) *
+                            glm::rotate(glm::mat4(1.0), steeringAngCars[i], glm::vec3(0, 1, 0));
+        }
 
         nlohmann::json js;
         std::ifstream ifs2("models/city.json");
@@ -933,110 +832,24 @@ protected:
                 glm::vec3 offset = (i == 0) ? glm::vec3(-0.5f, 0.5f, -1.0f) : glm::vec3(0.5f, 0.5f, -1.0f);
                 glm::mat4 mWorldSphere = glm::scale(glm::translate(mWorldTaxi, offset), glm::vec3(0.1f));
                 uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
-                uboSphere[i].mMat = glm::mat4(1.0f);
+                uboSphere[i].mMat = mWorldSphere;
                 uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
                 DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
             }
         #endif
 
-        uboCars[0].mvpMat = Prj * mView * mWorldCar1;
-        uboCars[0].mMat = mWorldCar1;
-        uboCars[0].nMat = glm::inverse(glm::transpose(uboCars[0].mMat));
-        DScars[0].map(currentImage, &uboCars[0], sizeof(uboCars[0]), 0);
-        guboCars[0].lightDir = sunPos;
-        guboCars[0].lightColor = glm::vec4(1.0f);
-        guboCars[0].eyePos = camPos;
-        guboCars[0].gamma = 128.0f;
-        guboCars[0].metallic = 1.0f;
-        DScars[0].map(currentImage, &guboCars[0], sizeof(guboCars[0]), 2);
-
-        uboCars[1].mvpMat = Prj * mView * mWorldCar2;
-        uboCars[1].mMat = mWorldCar2;
-        uboCars[1].nMat = glm::inverse(glm::transpose(uboCars[1].mMat));
-        DScars[1].map(currentImage, &uboCars[1], sizeof(uboCars[1]), 0);
-        guboCars[1].lightDir = sunPos;
-        guboCars[1].lightColor = glm::vec4(1.0f);
-        guboCars[1].eyePos = camPos;
-        guboCars[1].gamma = 128.0f;
-        guboCars[1].metallic = 1.0f;
-        DScars[1].map(currentImage, &guboCars[1], sizeof(guboCars[1]), 2);
-
-        uboCars[2].mvpMat = Prj * mView * mWorldCar3;
-        uboCars[2].mMat = mWorldCar3;
-        uboCars[2].nMat = glm::inverse(glm::transpose(uboCars[2].mMat));
-        DScars[2].map(currentImage, &uboCars[2], sizeof(uboCars[2]), 0);
-        guboCars[2].lightDir = sunPos;
-        guboCars[2].lightColor = glm::vec4(1.0f);
-        guboCars[2].eyePos = camPos;
-        guboCars[2].gamma = 128.0f;
-        guboCars[2].metallic = 1.0f;
-        DScars[2].map(currentImage, &guboCars[2], sizeof(guboCars[2]), 2);
-
-        uboCars[3].mvpMat = Prj * mView * mWorldCar4;
-        uboCars[3].mMat = mWorldCar4;
-        uboCars[3].nMat = glm::inverse(glm::transpose(uboCars[3].mMat));
-        DScars[3].map(currentImage, &uboCars[3], sizeof(uboCars[3]), 0);
-        guboCars[3].lightDir = sunPos;
-        guboCars[3].lightColor = glm::vec4(1.0f);
-        guboCars[3].eyePos = camPos;
-        guboCars[3].gamma = 128.0f;
-        guboCars[3].metallic = 1.0f;
-        DScars[3].map(currentImage, &guboCars[3], sizeof(guboCars[3]), 2);
-
-        uboCars[4].mvpMat = Prj * mView * mWorldCar5;
-        uboCars[4].mMat = mWorldCar5;
-        uboCars[4].nMat = glm::inverse(glm::transpose(uboCars[4].mMat));
-        DScars[4].map(currentImage, &uboCars[4], sizeof(uboCars[4]), 0);
-        guboCars[4].lightDir = sunPos;
-        guboCars[4].lightColor = glm::vec4(1.0f);
-        guboCars[4].eyePos = camPos;
-        guboCars[4].gamma = 128.0f;
-        guboCars[4].metallic = 1.0f;
-        DScars[4].map(currentImage, &guboCars[4], sizeof(guboCars[4]), 2);
-
-        uboCars[5].mvpMat = Prj * mView * mWorldCar6;
-        uboCars[5].mMat = mWorldCar6;
-        uboCars[5].nMat = glm::inverse(glm::transpose(uboCars[5].mMat));
-        DScars[5].map(currentImage, &uboCars[5], sizeof(uboCars[5]), 0);
-        guboCars[5].lightDir = sunPos;
-        guboCars[5].lightColor = glm::vec4(1.0f);
-        guboCars[5].eyePos = camPos;
-        guboCars[5].gamma = 128.0f;
-        guboCars[5].metallic = 1.0f;
-        DScars[5].map(currentImage, &guboCars[5], sizeof(guboCars[5]), 2);
-
-        uboCars[6].mvpMat = Prj * mView * mWorldCar7;
-        uboCars[6].mMat = mWorldCar7;
-        uboCars[6].nMat = glm::inverse(glm::transpose(uboCars[6].mMat));
-        DScars[6].map(currentImage, &uboCars[6], sizeof(uboCars[6]), 0);
-        guboCars[6].lightDir = sunPos;
-        guboCars[6].lightColor = glm::vec4(1.0f);
-        guboCars[6].eyePos = camPos;
-        guboCars[6].gamma = 128.0f;
-        guboCars[6].metallic = 1.0f;
-        DScars[6].map(currentImage, &guboCars[6], sizeof(guboCars[6]), 2);
-
-        uboCars[7].mvpMat = Prj * mView * mWorldCar8;
-        uboCars[7].mMat = mWorldCar8;
-        uboCars[7].nMat = glm::inverse(glm::transpose(uboCars[7].mMat));
-        DScars[7].map(currentImage, &uboCars[7], sizeof(uboCars[7]), 0);
-        guboCars[7].lightDir = sunPos;
-        guboCars[7].lightColor = glm::vec4(1.0f);
-        guboCars[7].eyePos = camPos;
-        guboCars[7].gamma = 128.0f;
-        guboCars[7].metallic = 1.0f;
-        DScars[7].map(currentImage, &guboCars[7], sizeof(guboCars[7]), 2);
-
-        uboCars[8].mvpMat = Prj * mView * mWorldCar9;
-        uboCars[8].mMat = mWorldCar9;
-        uboCars[8].nMat = glm::inverse(glm::transpose(uboCars[8].mMat));
-        DScars[8].map(currentImage, &uboCars[8], sizeof(uboCars[8]), 0);
-        guboCars[8].lightDir = sunPos;
-        guboCars[8].lightColor = glm::vec4(1.0f);
-        guboCars[8].eyePos = camPos;
-        guboCars[8].gamma = 128.0f;
-        guboCars[8].metallic = 1.0f;
-        DScars[8].map(currentImage, &guboCars[8], sizeof(guboCars[8]), 2);
+        for(int i = 0; i < CARS; i++) {
+            uboCars[i].mvpMat = Prj * mView * mWorldCars[i];
+            uboCars[i].mMat = mWorldCars[i];
+            uboCars[i].nMat = glm::inverse(glm::transpose(uboCars[i].mMat));
+            DScars[i].map(currentImage, &uboCars[i], sizeof(uboCars[i]), 0);
+            guboCars[i].lightDir = sunPos;
+            guboCars[i].lightColor = glm::vec4(1.0f);
+            guboCars[i].eyePos = camPos;
+            guboCars[i].gamma = 128.0f;
+            guboCars[i].metallic = 1.0f;
+            DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
+        }
 
         glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), glm::vec3(40.0f, 20.0f, -75.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(195.0f, 50.0f, 195.0f));
         uboSky.mvpMat = Prj * mView * (scaleMat);
@@ -1047,7 +860,7 @@ protected:
         guboSky.lightColor = glm::vec4(1.0f);
         guboSky.eyePos = camPos;
         guboSky.gamma = 128.0f;
-        guboSky.metallic = 1.0f;
+        guboSky.metallic = 0.1f;
         DSsky.map(currentImage, &guboSky, sizeof(guboSky), 2);
 
         nlohmann::json js3;
