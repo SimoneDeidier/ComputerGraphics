@@ -6,7 +6,7 @@
 
 #define MESH 210
 #define CARS 9
-#define SPHERES 1
+#define SPHERES 2
 #define STREET_LIGHT_COUNT 36
 #define PEOPLE 45
 
@@ -36,8 +36,10 @@ struct TaxiGUBO {
     alignas(16) glm::vec3 lightDir;
     alignas(16) glm::vec4 lightColor;
     //struct { alignas(16) glm::vec3 v; } rearLightPos[2];
-    alignas(16) glm::vec3 rearLightPos;
-    alignas(16) glm::vec4 rearLightCol;
+    alignas(16) glm::vec3 rearLightRPos;
+    alignas(16) glm::vec4 rearLightRCol;
+    alignas(16) glm::vec3 rearLightLPos;
+    alignas(16) glm::vec4 rearLightLCol;
     alignas(16) glm::vec3 eyePos;
     alignas(4) float gamma;
     alignas(4) float metallic;
@@ -910,12 +912,15 @@ protected:
                 glm::vec3 rearLightPos = glm::translate(mWorldTaxi, offset)[3];
                 guboTaxi[i].rearLightPos[j].v = rearLightPos;
             }*/
-            guboTaxi[i].rearLightPos = glm::translate(mWorldTaxi, glm::vec3(-0.5f, 0.5f, -0.75f))[3];
+            guboTaxi[i].rearLightRPos = glm::translate(mWorldTaxi, glm::vec3(-0.5f, 0.5f, -0.75f))[3];
+            guboTaxi[i].rearLightLPos = glm::translate(mWorldTaxi, glm::vec3(0.5f, 0.5f, -0.75f))[3];
             if(isNight) {
-                guboTaxi[i].rearLightCol = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                guboTaxi[i].rearLightRCol = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                guboTaxi[i].rearLightLCol = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
             }
             else {
-                guboTaxi[i].rearLightCol = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                guboTaxi[i].rearLightRCol = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                guboTaxi[i].rearLightLCol = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             }
             guboTaxi[i].eyePos = camPos;
             guboTaxi[i].gamma = 128.0f;
@@ -925,7 +930,7 @@ protected:
 
         #if DEBUG
             for (int i = 0; i < SPHERES; i++) {
-                glm::vec3 offset = (i == 0) ? glm::vec3(-0.5f, 0.5f, -0.75f) : glm::vec3(0.5f, 0.5f, -0.75f);
+                glm::vec3 offset = (i == 0) ? glm::vec3(-0.5f, 0.5f, -1.0f) : glm::vec3(0.5f, 0.5f, -1.0f);
                 glm::mat4 mWorldSphere = glm::scale(glm::translate(mWorldTaxi, offset), glm::vec3(0.1f));
                 uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
                 uboSphere[i].mMat = glm::mat4(1.0f);
