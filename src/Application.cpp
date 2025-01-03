@@ -880,7 +880,7 @@ protected:
                     TMj[l] = TMjson[l];
                 }
                 mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                ubocity[k].mMat = glm::mat4(1);
+                ubocity[k].mMat = mWorld;
                 ubocity[k].nMat = glm::inverse(glm::transpose(ubocity[k].mMat));
                 ubocity[k].mvpMat = Prj * mView * mWorld;
                 DScity[k].map(currentImage, &ubocity[k], sizeof(ubocity[k]), 0);
@@ -900,7 +900,7 @@ protected:
 
         for(int i=0; i<8; i++){
             uboTaxi[i].mvpMat = Prj * mView * mWorldTaxi;
-            uboTaxi[i].mMat = glm::mat4(1.0f);
+            uboTaxi[i].mMat = mWorldTaxi;
             uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
             DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);
             guboTaxi[i].lightDir = sunPos;
@@ -935,7 +935,7 @@ protected:
         #endif
 
         uboCars[0].mvpMat = Prj * mView * mWorldCar1;
-        uboCars[0].mMat = glm::mat4(1.0f);
+        uboCars[0].mMat = mWorldCar1;
         uboCars[0].nMat = glm::inverse(glm::transpose(uboCars[0].mMat));
         DScars[0].map(currentImage, &uboCars[0], sizeof(uboCars[0]), 0);
         guboCars[0].lightDir = sunPos;
@@ -946,7 +946,7 @@ protected:
         DScars[0].map(currentImage, &guboCars[0], sizeof(guboCars[0]), 2);
 
         uboCars[1].mvpMat = Prj * mView * mWorldCar2;
-        uboCars[1].mMat = glm::mat4(1.0f);
+        uboCars[1].mMat = mWorldCar2;
         uboCars[1].nMat = glm::inverse(glm::transpose(uboCars[1].mMat));
         DScars[1].map(currentImage, &uboCars[1], sizeof(uboCars[1]), 0);
         guboCars[1].lightDir = sunPos;
@@ -957,7 +957,7 @@ protected:
         DScars[1].map(currentImage, &guboCars[1], sizeof(guboCars[1]), 2);
 
         uboCars[2].mvpMat = Prj * mView * mWorldCar3;
-        uboCars[2].mMat = glm::mat4(1.0f);
+        uboCars[2].mMat = mWorldCar3;
         uboCars[2].nMat = glm::inverse(glm::transpose(uboCars[2].mMat));
         DScars[2].map(currentImage, &uboCars[2], sizeof(uboCars[2]), 0);
         guboCars[2].lightDir = sunPos;
@@ -968,7 +968,7 @@ protected:
         DScars[2].map(currentImage, &guboCars[2], sizeof(guboCars[2]), 2);
 
         uboCars[3].mvpMat = Prj * mView * mWorldCar4;
-        uboCars[3].mMat = glm::mat4(1.0f);
+        uboCars[3].mMat = mWorldCar4;
         uboCars[3].nMat = glm::inverse(glm::transpose(uboCars[3].mMat));
         DScars[3].map(currentImage, &uboCars[3], sizeof(uboCars[3]), 0);
         guboCars[3].lightDir = sunPos;
@@ -979,7 +979,7 @@ protected:
         DScars[3].map(currentImage, &guboCars[3], sizeof(guboCars[3]), 2);
 
         uboCars[4].mvpMat = Prj * mView * mWorldCar5;
-        uboCars[4].mMat = glm::mat4(1.0f);
+        uboCars[4].mMat = mWorldCar5;
         uboCars[4].nMat = glm::inverse(glm::transpose(uboCars[4].mMat));
         DScars[4].map(currentImage, &uboCars[4], sizeof(uboCars[4]), 0);
         guboCars[4].lightDir = sunPos;
@@ -990,7 +990,7 @@ protected:
         DScars[4].map(currentImage, &guboCars[4], sizeof(guboCars[4]), 2);
 
         uboCars[5].mvpMat = Prj * mView * mWorldCar6;
-        uboCars[5].mMat = glm::mat4(1.0f);
+        uboCars[5].mMat = mWorldCar6;
         uboCars[5].nMat = glm::inverse(glm::transpose(uboCars[5].mMat));
         DScars[5].map(currentImage, &uboCars[5], sizeof(uboCars[5]), 0);
         guboCars[5].lightDir = sunPos;
@@ -1001,7 +1001,7 @@ protected:
         DScars[5].map(currentImage, &guboCars[5], sizeof(guboCars[5]), 2);
 
         uboCars[6].mvpMat = Prj * mView * mWorldCar7;
-        uboCars[6].mMat = glm::mat4(1.0f);
+        uboCars[6].mMat = mWorldCar7;
         uboCars[6].nMat = glm::inverse(glm::transpose(uboCars[6].mMat));
         DScars[6].map(currentImage, &uboCars[6], sizeof(uboCars[6]), 0);
         guboCars[6].lightDir = sunPos;
@@ -1012,7 +1012,7 @@ protected:
         DScars[6].map(currentImage, &guboCars[6], sizeof(guboCars[6]), 2);
 
         uboCars[7].mvpMat = Prj * mView * mWorldCar8;
-        uboCars[7].mMat = glm::mat4(1.0f);
+        uboCars[7].mMat = mWorldCar8;
         uboCars[7].nMat = glm::inverse(glm::transpose(uboCars[7].mMat));
         DScars[7].map(currentImage, &uboCars[7], sizeof(uboCars[7]), 0);
         guboCars[7].lightDir = sunPos;
@@ -1023,7 +1023,7 @@ protected:
         DScars[7].map(currentImage, &guboCars[7], sizeof(guboCars[7]), 2);
 
         uboCars[8].mvpMat = Prj * mView * mWorldCar9;
-        uboCars[8].mMat = glm::mat4(1.0f);
+        uboCars[8].mMat = mWorldCar9;
         uboCars[8].nMat = glm::inverse(glm::transpose(uboCars[8].mMat));
         DScars[8].map(currentImage, &uboCars[8], sizeof(uboCars[8]), 0);
         guboCars[8].lightDir = sunPos;
@@ -1035,7 +1035,7 @@ protected:
 
         glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), glm::vec3(40.0f, 20.0f, -75.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(195.0f, 50.0f, 195.0f));
         uboSky.mvpMat = Prj * mView * (scaleMat);
-        uboSky.mMat = glm::mat4(1.0f);
+        uboSky.mMat = scaleMat;
         uboSky.nMat = glm::inverse(glm::transpose(uboSky.mMat));
         DSsky.map(currentImage, &uboSky, sizeof(uboSky), 0);
         guboSky.lightDir = sunPos;
@@ -1063,7 +1063,7 @@ protected:
                 for(int l = 0; l < 16; l++) {TMj[l] = TMjson[l];}
 
                 mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                uboPeople[k].mMat = glm::mat4(1);
+                uboPeople[k].mMat = mWorld;
                 uboPeople[k].nMat = glm::inverse(glm::transpose(uboPeople[k].mMat));
                 uboPeople[k].mvpMat = Prj * mView * mWorld;
                 DSpeople[k].map(currentImage, &uboPeople[k], sizeof(uboPeople[k]), 0);
