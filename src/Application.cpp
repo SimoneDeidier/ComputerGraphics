@@ -648,11 +648,11 @@ protected:
             if (glm::distance(carPositions[i], wayPoints[i][currentPoints[i]]) < 0.25f) {
                 currentPoints[i] = (currentPoints[i] + 1) % wayPoints[i].size();
             }
-            steeringAngCars[i] = 0.0f;
+            //steeringAngCars[i] = 0.0f;
             float targetSteering = atan2(directions[i].x, directions[i].z);
-            float angleDifference = targetSteering - steeringAngCars[i];
-            angleDifference = fmod(angleDifference + M_PI, 2.0f * M_PI) - M_PI;
-            steeringAngCars[i] += angleDifference * 0.1f;
+            //float angleDifference = targetSteering - steeringAngCars[i];
+            //angleDifference = fmod(angleDifference + M_PI, 2.0f * M_PI) - M_PI;
+            steeringAngCars[i]= fmod(targetSteering + M_PI, 2.0f * M_PI) - M_PI;
         }
 
         /* CODICE DI MARY
