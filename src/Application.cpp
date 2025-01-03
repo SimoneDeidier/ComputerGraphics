@@ -6,7 +6,7 @@
 
 #define MESH 210
 #define CARS 9
-#define SPHERES 0
+#define SPHERES 1
 #define STREET_LIGHT_COUNT 36
 #define PEOPLE 45
 
@@ -27,6 +27,17 @@ struct UniformBufferObject {
 struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir;
     alignas(16) glm::vec4 lightColor;
+    alignas(16) glm::vec3 eyePos;
+    alignas(4) float gamma;
+    alignas(4) float metallic;
+};
+
+struct TaxiGUBO {
+    alignas(16) glm::vec3 lightDir;
+    alignas(16) glm::vec4 lightColor;
+    //struct { alignas(16) glm::vec3 v; } rearLightPos[2];
+    alignas(16) glm::vec3 rearLightPos;
+    alignas(16) glm::vec4 rearLightCol;
     alignas(16) glm::vec3 eyePos;
     alignas(4) float gamma;
     alignas(4) float metallic;
@@ -68,17 +79,18 @@ protected:
     Texture Tcity, Tsky, Tpeople, Ttaxy;
 
     UniformBufferObject uboTaxi[8], uboSky, uboCars[CARS], ubocity[MESH], uboPeople[PEOPLE];
-    GlobalUniformBufferObject guboTaxi[8], guboCars[CARS], gubocity[MESH], guboPeople[PEOPLE];
+    GlobalUniformBufferObject guboCars[CARS], gubocity[MESH], guboPeople[PEOPLE];
     SkyGUBO guboSky;
+    TaxiGUBO guboTaxi[8];
 
-#if DEBUG
-    DescriptorSetLayout DSLsphere;
+    #if DEBUG
+        DescriptorSetLayout DSLsphere;
         VertexDescriptor VDsphere;
         Pipeline Psphere;
         Model Msphere[SPHERES];
         DescriptorSet DSsphere[SPHERES];
-        UniformBufferObject ubosphere[SPHERES];
-#endif
+        UniformBufferObject uboSphere[SPHERES];
+    #endif
 
     // Other application parameters
     int currScene = 0;
@@ -267,7 +279,7 @@ protected:
                     });
 #endif
 
-        P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
+        P.init(this, &VD, "shaders/BaseVert.spv", "shaders/Taxi2Frag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
         Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
         Psky.init(this, &VDsky, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
@@ -374,7 +386,7 @@ protected:
             DStaxi[i].init(this, &DSL, {
                     {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                     {1, TEXTURE, 0, &Ttaxy},
-                    {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+                    {2, UNIFORM, sizeof(TaxiGUBO), nullptr}
             });
         }
 
@@ -891,14 +903,36 @@ protected:
             uboTaxi[i].mMat = glm::mat4(1.0f);
             uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
             DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);
-            //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
             guboTaxi[i].lightDir = sunPos;
             guboTaxi[i].lightColor = glm::vec4(1.0f);
+            /*for(int j = 0; j < 2; j++) {
+                glm::vec3 offset = (j == 0) ? glm::vec3(-0.5f, 0.5f, -0.75f) : glm::vec3(0.5f, 0.5f, -0.75f);
+                glm::vec3 rearLightPos = glm::translate(mWorldTaxi, offset)[3];
+                guboTaxi[i].rearLightPos[j].v = rearLightPos;
+            }*/
+            guboTaxi[i].rearLightPos = glm::translate(mWorldTaxi, glm::vec3(-0.5f, 0.5f, -0.75f))[3];
+            if(isNight) {
+                guboTaxi[i].rearLightCol = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+            }
+            else {
+                guboTaxi[i].rearLightCol = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            }
             guboTaxi[i].eyePos = camPos;
             guboTaxi[i].gamma = 128.0f;
             guboTaxi[i].metallic = 1.0f;
             DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
         }
+
+        #if DEBUG
+            for (int i = 0; i < SPHERES; i++) {
+                glm::vec3 offset = (i == 0) ? glm::vec3(-0.5f, 0.5f, -0.75f) : glm::vec3(0.5f, 0.5f, -0.75f);
+                glm::mat4 mWorldSphere = glm::scale(glm::translate(mWorldTaxi, offset), glm::vec3(0.1f));
+                uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
+                uboSphere[i].mMat = glm::mat4(1.0f);
+                uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
+                DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
+            }
+        #endif
 
         uboCars[0].mvpMat = Prj * mView * mWorldCar1;
         uboCars[0].mMat = glm::mat4(1.0f);
