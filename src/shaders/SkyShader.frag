@@ -64,4 +64,5 @@ void main() {
     vec3 finalColor = mix(Albedo, skyColor, 0.8);
 
     outColor = vec4(brdf * lightColor + finalColor + Ambient, 1.0);
+    
 }

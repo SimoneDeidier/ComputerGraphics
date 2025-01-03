@@ -7,6 +7,7 @@
 #define MESH 210
 #define CARS 9
 #define SPHERES 37
+#define STREET_LIGHT_COUNT 36
 
 #define DEBUG 0
 
@@ -23,8 +24,16 @@ struct UniformBufferObject {
 };
 
 struct GlobalUniformBufferObject {
+    alignas(16) glm::vec3 lightDir;
+    alignas(16) glm::vec4 lightColor;
+    alignas(16) glm::vec3 eyePos;
+    alignas(4) float gamma;
+    alignas(4) float metallic;
+};
+
+struct SkyGUBO {
 	alignas(16) glm::vec3 lightDir;
-	alignas(16) glm::vec4 lightColor;
+    alignas(16) glm::vec4 lightColor;
 	alignas(16) glm::vec3 eyePos;
     alignas(4) float gamma;
     alignas(4) float metallic;
@@ -60,8 +69,9 @@ protected:
 
     UniformBufferObject uboTaxi, uboSky, uboCars[CARS];
     UniformBufferObject ubocity[MESH];
-    GlobalUniformBufferObject guboTaxi,guboSky, guboCars[CARS];
+    GlobalUniformBufferObject guboTaxi, guboCars[CARS];
     GlobalUniformBufferObject gubocity[MESH];
+    SkyGUBO guboSky;
 
     #if DEBUG
         DescriptorSetLayout DSLsphere;
@@ -138,6 +148,7 @@ protected:
     float CamAlpha = 0.0f;
     float CamBeta = 0.0f;
     bool alreadyInPhotoMode = false;
+    bool isNight = false;
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -246,7 +257,7 @@ protected:
         P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
         Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
-        Psky.init(this, &VDsky, "shaders/SkyVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
+        Psky.init(this, &VDsky, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
         Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false); //todo cosa dovevamo fare quando telecamera dentro una stanza
         Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcars});
 
@@ -296,6 +307,7 @@ protected:
             }
         }catch (const nlohmann::json::exception& e) {
             std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
+            exit(1);
         }
     }
 
@@ -327,7 +339,7 @@ protected:
         DSsky.init(this, &DSLsky, {
                 {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                 {1, TEXTURE, 0, &Tsky},
-                {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+                {2, UNIFORM, sizeof(SkyGUBO), nullptr}
         });
 
         for(int i = 0; i < CARS; i++) {
@@ -476,6 +488,7 @@ protected:
 
     // main application loop
     void updateUniformBuffer(uint32_t currentImage) {
+
         static bool debounce = false;
         static int curDebounce = 0;
 
@@ -710,14 +723,13 @@ protected:
         glm::mat4 mWorld; //World matrix for city
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
-
-        //glm::vec3 sunPos = glm::vec3(5.5f, 30.0f, 7.5f);
-        //glm::vec3 sunPos = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
-
         glm::vec3 sunPos = glm::vec3(100.0f * cos(cTime * angTurnTimeFact), // x
                 100.0f * sin(cTime * angTurnTimeFact), // y
                 100.0f * sin(glm::radians(90.0f))              // z (fisso)
         );
+
+        // check when the sun is belowe the horizon
+        isNight = (sunPos.y < 0.0f ? true : false);
 
         #if DEBUG
             int index = SPHERES - 1;
@@ -762,12 +774,47 @@ protected:
                 glm::translate(glm::mat4(1.0), carPos9)*
                 glm::rotate(glm::mat4(1.0), steeringAngCar9, glm::vec3(0, 1, 0));
 
+        nlohmann::json js;
+        std::ifstream ifs2("models/city.json");
+        if (!ifs2.is_open()) {
+            std::cout << "[ ERROR ]: Scene file not found!" << std::endl;
+            exit(-1);
+        }
+        try{
+            json j;
+            ifs2>>j;
+
+            float TMj[16];
+
+            for(int k = 0; k < MESH; k++) {
+
+                nlohmann::json TMjson = j["instances"][k]["transform"];
+                for(int l = 0; l < 16; l++) {
+                    TMj[l] = TMjson[l];
+                }
+                mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                ubocity[k].mMat = glm::mat4(1);
+                ubocity[k].nMat = glm::inverse(glm::transpose(ubocity[k].mMat));
+                ubocity[k].mvpMat = Prj * mView * mWorld;
+                DScity[k].map(currentImage, &ubocity[k], sizeof(ubocity[k]), 0);
+                gubocity[k].lightDir = sunPos;
+                gubocity[k].lightColor = glm::vec4(1.0f);
+                gubocity[k].eyePos = camPos;
+                gubocity[k].gamma = 128.0f;
+                gubocity[k].metallic = 0.1f;
+                DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
+            }
+
+        }
+        catch (const nlohmann::json::exception& e) {
+            std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
+            exit(1);
+        }
 
         uboTaxi.mvpMat = Prj * mView * mWorldTaxi;
         uboTaxi.mMat = glm::mat4(1.0f);
         uboTaxi.nMat = glm::inverse(glm::transpose(uboTaxi.mMat));
         DStaxi.map(currentImage, &uboTaxi, sizeof(uboTaxi), 0);
-        //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
         guboTaxi.lightDir = sunPos;
         guboTaxi.lightColor = glm::vec4(1.0f);
         guboTaxi.eyePos = camPos;
@@ -879,79 +926,12 @@ protected:
         uboSky.mMat = glm::mat4(1.0f);
         uboSky.nMat = glm::inverse(glm::transpose(uboSky.mMat));
         DSsky.map(currentImage, &uboSky, sizeof(uboSky), 0);
-        //guboTaxi.lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
         guboSky.lightDir = sunPos;
         guboSky.lightColor = glm::vec4(1.0f);
         guboSky.eyePos = camPos;
         guboSky.gamma = 128.0f;
         guboSky.metallic = 1.0f;
         DSsky.map(currentImage, &guboSky, sizeof(guboSky), 2);
-
-        nlohmann::json js;
-        std::ifstream ifs2("models/city.json");
-        if (!ifs2.is_open()) {
-            std::cout << "[ ERROR ]: Scene file not found!" << std::endl;
-            exit(-1);
-        }
-        try{
-            json j;
-            ifs2>>j;
-
-            float TMj[16];
-            std::vector<glm::mat4> streetlightPositions;
-
-            for(int k = 0; k < MESH; k++) {
-                nlohmann::json TMjson = j["instances"][k]["transform"];
-                for(int l = 0; l < 16; l++) {TMj[l] = TMjson[l];}
-                mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                ubocity[k].mMat = glm::mat4(1);
-                ubocity[k].nMat = glm::inverse(glm::transpose(ubocity[k].mMat));
-                ubocity[k].mvpMat = Prj * mView * mWorld;
-                DScity[k].map(currentImage, &ubocity[k], sizeof(ubocity[k]), 0);
-                //gubocity[k].lightDir = glm::vec3(cos(glm::radians(135.0f)) * cos(cTime * angTurnTimeFact), sin(glm::radians(135.0f)), cos(glm::radians(135.0f)) * sin(cTime * angTurnTimeFact));
-                gubocity[k].lightDir = sunPos;
-                gubocity[k].lightColor = glm::vec4(1.0f);
-                gubocity[k].eyePos = camPos;
-                gubocity[k].gamma = 128.0f;
-                gubocity[k].metallic = 0.1f;
-                DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
-
-                // Check if the current model is a streetlight
-                // X ==> verso del taxi
-                // Y ==> verso l'alto
-                // Z ==> verso destra
-                std::string modelName = j["models"][k]["model"];
-                if (modelName == "models/road_tile_1x1_001.mgcg") {
-                    glm::mat4 position = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                    position = glm::translate(position, glm::vec3(3.75f, 4.25f, -0.75f)); // Adjust position
-                    streetlightPositions.push_back(position);
-                } else if (modelName == "models/road_tile_1x1_006.mgcg") {
-                    glm::mat4 position = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                    position = glm::translate(position, glm::vec3(2.0f, 2.0f, 0.0f)); // Adjust position
-                    streetlightPositions.push_back(position);
-                }
-                else if (modelName == "models/road_tile_1x1_008.mgcg") {
-                    glm::mat4 position = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                    // position = glm::translate(position, glm::vec3(3.75f, 4.25f, -0.75f)); // Adjust position
-                    streetlightPositions.push_back(position);
-                }
-            }
-
-            #if DEBUG
-                for (size_t i = 0; i < streetlightPositions.size(); ++i) {
-                    glm::mat4 mWorldSphere = streetlightPositions[i];
-                    ubosphere[i].mvpMat = Prj * mView * mWorldSphere;
-                    ubosphere[i].mMat = glm::mat4(1.0f);
-                    ubosphere[i].nMat = glm::inverse(glm::transpose(ubosphere[i].mMat));
-                    DSsphere[i].map(currentImage, &ubosphere[i], sizeof(ubosphere[i]), 0);
-                }
-            #endif
-
-
-
-        }catch (const nlohmann::json::exception& e) {
-            std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
-        }
 
     }
 };
