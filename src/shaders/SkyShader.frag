@@ -64,7 +64,7 @@ void main() {
     vec3 Norm = normalize(fragNormal);
     vec3 ViewerDir = normalize(gubo.eyePos - fragPos);
     vec3 Albedo = texture(textureSampler, fragUV).rgb;
-    vec3 LightDir = normalize(gubo.lightDir);
+    vec3 LightDir = normalize(gubo.lightDir - fragPos);
     vec3 lightColor = gubo.lightColor.rgb;
     vec3 Ambient = 0.05 * Albedo;
 
