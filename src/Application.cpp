@@ -726,11 +726,13 @@ protected:
         glm::mat4 mWorld; //World matrix for city
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
-        glm::vec3 sunPos = glm::vec3(100.0f * cos(cTime * angTurnTimeFact), // x
-                                     100.0f * sin(cTime * angTurnTimeFact), // y
-                                     100.0f * sin(glm::radians(90.0f))              // z (fisso)
+        glm::vec3 sphereCenter = glm::vec3(40.0f, 20.0f, -75.0f);
+        glm::vec3 sunPos = glm::vec3(40.0f + 200.0f * cos(cTime * angTurnTimeFact), // x
+                                     20.0f + 55.0f * sin(cTime * angTurnTimeFact), // y
+                                     -75.0f             // z (fisso)
         );
 
+        //50.0f * sin(glm::radians(90.0f)
         // check when the sun is belowe the horizon
         isNight = (sunPos.y < 0.0f ? true : false);
 
