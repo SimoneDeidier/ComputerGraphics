@@ -1,4 +1,3 @@
-// This has been adapted from the Vulkan tutorial
 #include "headers/Starter.hpp"
 #include "headers/TextMaker.hpp"
 #include <iostream>
@@ -36,7 +35,6 @@ struct GlobalUniformBufferObject {
 struct TaxiGUBO {
     alignas(16) glm::vec3 lightDir;
     alignas(16) glm::vec4 lightColor;
-    //struct { alignas(16) glm::vec3 v; } rearLightPos[2];
     alignas(16) glm::vec3 rearLightRPos;
     alignas(16) glm::vec4 rearLightRCol;
     alignas(16) glm::vec3 rearLightLPos;
@@ -648,24 +646,9 @@ protected:
             if (glm::distance(carPositions[i], wayPoints[i][currentPoints[i]]) < 0.25f) {
                 currentPoints[i] = (currentPoints[i] + 1) % wayPoints[i].size();
             }
-            //steeringAngCars[i] = 0.0f;
             float targetSteering = atan2(directions[i].x, directions[i].z);
-            //float angleDifference = targetSteering - steeringAngCars[i];
-            //angleDifference = fmod(angleDifference + M_PI, 2.0f * M_PI) - M_PI;
             steeringAngCars[i]= fmod(targetSteering + M_PI, 2.0f * M_PI) - M_PI;
         }
-
-        /* CODICE DI MARY
-        
-        carPos1 += direction1 * speedCar * deltaT;
-        if (glm::distance(carPos1, wayPoints1[currentPoint1]) < 0.25f) {
-            currentPoint1 = (currentPoint1 + 1) % wayPoints1.size();
-        }
-        static float steeringAngCar1 = 0.0f;
-        float targetSteering1 = atan2(direction1.x, direction1.z);
-        float angleDifference1 = targetSteering1 - steeringAngCar1;
-        angleDifference1 = fmod(angleDifference1 + M_PI, 2.0f * M_PI) - M_PI;
-        steeringAngCar1 += angleDifference1 * 0.1f;*/
 
         static float steeringAng = 0.0f;
         glm::mat4 mView;
@@ -806,11 +789,6 @@ protected:
             DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);
             guboTaxi[i].lightDir = sunPos;
             guboTaxi[i].lightColor = glm::vec4(1.0f);
-            /*for(int j = 0; j < 2; j++) {
-                glm::vec3 offset = (j == 0) ? glm::vec3(-0.5f, 0.5f, -0.75f) : glm::vec3(0.5f, 0.5f, -0.75f);
-                glm::vec3 rearLightPos = glm::translate(mWorldTaxi, offset)[3];
-                guboTaxi[i].rearLightPos[j].v = rearLightPos;
-            }*/
             guboTaxi[i].rearLightRPos = glm::translate(mWorldTaxi, glm::vec3(-0.5f, 0.5f, -0.75f))[3];
             guboTaxi[i].rearLightLPos = glm::translate(mWorldTaxi, glm::vec3(0.5f, 0.5f, -0.75f))[3];
             if(isNight) {
@@ -829,7 +807,7 @@ protected:
 
         #if DEBUG
             for (int i = 0; i < SPHERES; i++) {
-                glm::vec3 offset = (i == 0) ? glm::vec3(-0.5f, 0.5f, -1.0f) : glm::vec3(0.5f, 0.5f, -1.0f);
+                glm::vec3 offset = (i == 0) ? glm::vec3(-0.6f, 0.6f, 2.6f) : glm::vec3(0.6f, 0.6f, 2.6f);
                 glm::mat4 mWorldSphere = glm::scale(glm::translate(mWorldTaxi, offset), glm::vec3(0.1f));
                 uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
                 uboSphere[i].mMat = mWorldSphere;
