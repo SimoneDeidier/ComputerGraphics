@@ -5,12 +5,12 @@
 
 #define MESH 210
 #define CARS 9
-#define SPHERES 2
+#define SPHERES 1
 #define STREET_LIGHT_COUNT 36
 #define PEOPLE 45
 #define TAXI_ELEMENTS 8
 
-#define DEBUG 0
+#define DEBUG 1
 
 std::vector<SingleText> outText = {
         {2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
@@ -726,14 +726,26 @@ protected:
         glm::mat4 mWorld; //World matrix for city
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
-        glm::vec3 sphereCenter = glm::vec3(40.0f, 20.0f, -75.0f);
-        glm::vec3 sunPos = glm::vec3(40.0f + 200.0f * cos(cTime * angTurnTimeFact), // x
-                                     20.0f + 55.0f * sin(cTime * angTurnTimeFact), // y
-                                     -75.0f             // z (fisso)
+        glm::vec3 sphereCenter = glm::vec3(40.0f, 0.0, -75.0f);
+        glm::vec3 sphereScale = glm::vec3(180.0f);
+        float sunOffset = 10.0f;
+        glm::vec3 sunPos = glm::vec3(sphereCenter.x + (sphereScale.x - sunOffset) * cos(cTime * angTurnTimeFact), // x
+                                     sphereCenter.y + (sphereScale.x - sunOffset) * sin(cTime * angTurnTimeFact), // y
+                                     sphereCenter.z // z (fisso)
         );
 
+        #if DEBUG
+            glm::mat4 mWorldSphere = glm::translate(glm::mat4(1.0), sunPos);
+            for(int i = 0; i < SPHERES; i++) {
+                uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
+                uboSphere[i].mMat = mWorldSphere;
+                uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
+                DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
+            }
+        #endif
+
         //50.0f * sin(glm::radians(90.0f)
-        // check when the sun is belowe the horizon
+        // check when the sun is below the horizon
         isNight = (sunPos.y < 0.0f ? true : false);
 
         glm::mat4 mWorldTaxi =
@@ -807,17 +819,6 @@ protected:
             DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
         }
 
-        #if DEBUG
-            for (int i = 0; i < SPHERES; i++) {
-                glm::vec3 offset = (i == 0) ? glm::vec3(-0.6f, 0.6f, 2.6f) : glm::vec3(0.6f, 0.6f, 2.6f);
-                glm::mat4 mWorldSphere = glm::scale(glm::translate(mWorldTaxi, offset), glm::vec3(0.1f));
-                uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
-                uboSphere[i].mMat = mWorldSphere;
-                uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
-                DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
-            }
-        #endif
-
         for(int i = 0; i < CARS; i++) {
             uboCars[i].mvpMat = Prj * mView * mWorldCars[i];
             uboCars[i].mMat = mWorldCars[i];
@@ -831,7 +832,7 @@ protected:
             DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
         }
 
-        glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), glm::vec3(40.0f, 20.0f, -75.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(195.0f, 50.0f, 195.0f));
+        glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), sphereCenter) * glm::scale(glm::mat4(1.0f), sphereScale);
         uboSky.mvpMat = Prj * mView * (scaleMat);
         uboSky.mMat = scaleMat;
         uboSky.nMat = glm::inverse(glm::transpose(uboSky.mMat));

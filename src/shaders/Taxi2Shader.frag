@@ -13,7 +13,6 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 	vec3 lightDir;
 	vec4 lightColor;
 	vec3 rearLightRPos;
-	//vec3 rearLightPos[2];
 	vec4 rearLightRColor;
 	vec3 rearLightLPos;
 	vec4 rearLightLColor;
@@ -40,18 +39,21 @@ void main() {
 	vec3 directLightDir = normalize(gubo.lightDir - fragPos);
 	vec3 directLightColor = gubo.lightColor.rgb;
 	vec3 ambient = 0.05 * albedo;
-
+	
+	// directional light (sun)
 	vec3 directLightBRDF = BRDF(viewerDir, norm, directLightDir, albedo, vec3(gubo.metallic), gubo.gamma);
 
-	//vec3 res = 0.0;
+	vec3 res = directLightBRDF * directLightColor;
 
-	vec3 rearlightRDir = normalize(gubo.rearLightRPos - fragPos);
+	// right rear light
+	vec3 rearLightRDir = normalize(gubo.rearLightRPos - fragPos);
 	vec3 rearLightRColor = gubo.rearLightRColor.rgb * pow((1 / length(gubo.rearLightRPos - fragPos)), 2.0);
 
-	vec3 rearLightRBRDF = BRDF(viewerDir, norm, rearlightRDir, albedo, vec3(gubo.metallic), gubo.gamma);
+	vec3 rearLightRBRDF = BRDF(viewerDir, norm, rearLightRDir, albedo, vec3(gubo.metallic), gubo.gamma);
 	
-	vec3 res = rearLightRBRDF * rearLightRColor;
-
+	res += rearLightRBRDF * rearLightRColor;
+	
+	// left rear light
 	vec3 rearlightLDir = normalize(gubo.rearLightLPos - fragPos);
 	vec3 rearLightLColor = gubo.rearLightLColor.rgb * pow((1 / length(gubo.rearLightLPos - fragPos)), 2.0);
 
@@ -59,13 +61,9 @@ void main() {
 
 	res += rearLightLBRDF * rearLightLColor;
 
-	/*for(int i = 0; i < 2 ; i++) {
-		vec3 rearlightDir = normalize(gubo.rearLightPos[i] - fragPos);
-		vec3 rearLightColor = gubo.rearLightColor.rgb * pow((1.0 / length(gubo.rearLightPos[i] - fragPos)), 2.0);
-		vec3 rearLightBRDF = BRDF(viewerDir, norm, rearlightDir, albedo, vec3(gubo.metallic), gubo.gamma);
-		res += rearLightBRDF * rearLightColor;
-	}*/
+	// ambient light
+	res += ambient;
 
-	outColor = vec4(directLightBRDF * directLightColor + res + ambient, 1.0); // main color
+	outColor = vec4(res, 1.0); // main color
 
 }
