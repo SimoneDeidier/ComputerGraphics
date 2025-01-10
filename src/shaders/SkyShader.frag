@@ -10,11 +10,10 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 1) uniform sampler2D textureSampler;
 
 layout(binding = 2) uniform GlobalUniformBufferObject {
-    vec3 lightDir;
+    vec4 lightDir;
     vec4 lightColor;
-    vec3 eyePos;
-    float gamma;
-    float metallic;
+    vec4 eyePos;
+    vec4 gammaAndMetallic;
 } gubo;
 
 // Colori per i vari momenti della giornata
@@ -73,18 +72,18 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, vec3 Ms, float gamma) {
 
 void main() {
     vec3 Norm = normalize(fragNormal);
-    vec3 ViewerDir = normalize(gubo.eyePos - fragPos);
+    vec3 ViewerDir = normalize(gubo.eyePos.xyz - fragPos);
     vec3 Albedo = texture(textureSampler, fragUV).rgb;
-    vec3 LightDir = normalize(gubo.lightDir - fragPos);
+    vec3 LightDir = normalize(gubo.lightDir.xyz - fragPos);
     vec3 lightColor = gubo.lightColor.rgb;
     vec3 Ambient = 0.05 * Albedo;
     int val=0;
 
-    vec3 brdf = BRDF(ViewerDir, Norm, LightDir, Albedo, vec3(gubo.metallic), gubo.gamma);
+    vec3 brdf = BRDF(ViewerDir, Norm, LightDir, Albedo, vec3(gubo.gammaAndMetallic.y), gubo.gammaAndMetallic.x);
 
     // Calcola il colore del cielo in base alla posizione del sole
-    vec3 skyColor = calculateSkyColor(gubo.lightDir);
-    val= calculateValore(val, gubo.lightDir);
+    vec3 skyColor = calculateSkyColor(gubo.lightDir.xyz);
+    val= calculateValore(val, gubo.lightDir.xyz);
 
     // Mescola il colore della texture con il colore del cielo
     if(val==0){

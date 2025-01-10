@@ -7,12 +7,13 @@
 
 #define MESH 210
 #define CARS 9
-#define SPHERES 0
-#define STREET_LIGHT_COUNT 36
+//#define STREET_LIGHT_COUNT 36
 #define PEOPLE 45
 #define TAXI_ELEMENTS 8
+#define TAXI_LIGHT_COUNT 4
 
 #define DEBUG 0
+#define SPHERES 0
 
 std::vector<SingleText> outText = {
         {2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
@@ -27,36 +28,19 @@ struct UniformBufferObject {
 };
 
 struct GlobalUniformBufferObject {
-    alignas(16) glm::vec3 lightDir;
-    alignas(16) glm::vec4 lightColor;
-    alignas(16) glm::vec3 eyePos;
-    alignas(4) float gamma;
-    alignas(4) float metallic;
-};
-
-// utilizzare solo vec4 e poi usare .xyz in shader
-struct TaxiGUBO {
-    alignas(16) glm::vec3 lightDir;
-    alignas(16) glm::vec4 lightColor;
-    alignas(16) glm::vec3 rearLightRPos;
-    alignas(16) glm::vec4 rearLightRCol;
-    alignas(16) glm::vec3 rearLightLPos;
-    alignas(16) glm::vec4 rearLightLCol;
-    alignas(16) glm::vec3 frontLightRPos;
-    alignas(16) glm::vec4 frontLightRCol;
-    alignas(16) glm::vec3 frontLightLPos;
-    alignas(16) glm::vec4 frontLightLCol;
-    alignas(16) glm::vec3 eyePos;
-    alignas(4) float gamma; // impacchetta in vec4
-    alignas(4) float metallic; // idem
+    alignas(16) glm::vec4 lightPositions[5];
+    alignas(16) glm::vec4 directLightCol;
+    alignas(16) glm::vec4 frontLightCol;
+    alignas(16) glm::vec4 rearLightCol;
+    alignas(16) glm::vec4 eyePos;
+    alignas(16) glm::vec4 gammaAndMetallic;
 };
 
 struct SkyGUBO {
-	alignas(16) glm::vec3 lightDir;
+	alignas(16) glm::vec4 lightDir;
     alignas(16) glm::vec4 lightColor;
-	alignas(16) glm::vec3 eyePos;
-    alignas(4) float gamma;
-    alignas(4) float metallic;
+	alignas(16) glm::vec4 eyePos;
+    alignas(16) glm::vec4 gammaAndMetallic;
 };
 
 struct Vertex {
@@ -66,30 +50,29 @@ struct Vertex {
 };
 
 class Application : public BaseProject {
-protected:
+    
+    protected:
+        
+        float Ar; // aspect ratio
 
-    // aspect ratio
-    float Ar;
+        DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople;
 
-    DescriptorSetLayout DSL,DSLcity, DSLsky, DSLcars, DSLpeople;
+        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople;
 
-    VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople;
+        Pipeline P, Pcity, Psky, Pcars, Ppeople;
 
-    Pipeline P, Pcity, Psky, Pcars, Ppeople;
+        TextMaker txt;
 
-    TextMaker txt;
+        Model  Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE];
+        Model Mcity[MESH];
 
-    Model  Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE];
-    Model Mcity[MESH];
+        DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE];
 
-    DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE];
+        Texture Tcity, Tsky, Tpeople, Ttaxy;
 
-    Texture Tcity, Tsky, Tpeople, Ttaxy;
-
-    UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSky, uboCars[CARS], ubocity[MESH], uboPeople[PEOPLE];
-    GlobalUniformBufferObject guboCars[CARS], gubocity[MESH], guboPeople[PEOPLE];
-    SkyGUBO guboSky;
-    TaxiGUBO guboTaxi[TAXI_ELEMENTS];
+        UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSky, uboCars[CARS], uboCity[MESH], uboPeople[PEOPLE];
+        GlobalUniformBufferObject guboTaxi[TAXI_ELEMENTS], guboCars[CARS], guboCity[MESH], guboPeople[PEOPLE];
+        SkyGUBO guboSky;
 
     #if DEBUG
         DescriptorSetLayout DSLsphere;
@@ -280,7 +263,7 @@ protected:
                     });
         #endif
 
-        P.init(this, &VD, "shaders/BaseVert.spv", "shaders/Taxi2Frag.spv", {&DSL});
+        P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
         Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
         Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
         Psky.init(this, &VDsky, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
@@ -387,7 +370,7 @@ protected:
             DStaxi[i].init(this, &DSL, {
                     {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                     {1, TEXTURE, 0, &Ttaxy},
-                    {2, UNIFORM, sizeof(TaxiGUBO), nullptr}
+                    {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
             });
         }
 
@@ -733,7 +716,7 @@ protected:
         glm::mat4 mWorld; //World matrix for city
         mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
-        glm::vec3 sphereCenter = glm::vec3(40.0f, 0.0, -75.0f);
+        glm::vec3 sphereCenter = glm::vec3(40.0f, 0.0f, -75.0f);
         glm::vec3 sphereScale = glm::vec3(180.0f);
         float sunOffset = 10.0f;
         glm::vec3 sunPos = glm::vec3(sphereCenter.x + (sphereScale.x - sunOffset) * cos(cTime * angTurnTimeFact), // x
@@ -747,6 +730,15 @@ protected:
         glm::mat4 mWorldTaxi =
                 glm::translate(glm::mat4(1.0), taxiPos) *
                 glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
+
+        glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT] = {glm::translate(mWorldTaxi, glm::vec3(-0.5f, 0.5f, -0.75f))[3], // rear right
+                                                    glm::translate(mWorldTaxi, glm::vec3(0.5f, 0.5f, -0.75f))[3], // rear left
+                                                    glm::translate(mWorldTaxi, glm::vec3(-0.6f, 0.6f, 2.6f))[3], // front right
+                                                    glm::translate(mWorldTaxi, glm::vec3(0.6f, 0.6f, 2.6f))[3]}; // front left
+        glm::vec4 black = glm::vec4(glm::vec3(0.0f), 1.0f);
+        glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
+        glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
+        glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);
 
         glm::mat4 mWorldCars[CARS];
         for(int i = 0; i < CARS; i++) {
@@ -773,16 +765,26 @@ protected:
                     TMj[l] = TMjson[l];
                 }
                 mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                ubocity[k].mMat = mWorld;
-                ubocity[k].nMat = glm::inverse(glm::transpose(ubocity[k].mMat));
-                ubocity[k].mvpMat = Prj * mView * mWorld;
-                DScity[k].map(currentImage, &ubocity[k], sizeof(ubocity[k]), 0);
-                gubocity[k].lightDir = sunPos;
-                gubocity[k].lightColor = glm::vec4(1.0f);
-                gubocity[k].eyePos = camPos;
-                gubocity[k].gamma = 128.0f;
-                gubocity[k].metallic = 0.1f;
-                DScity[k].map(currentImage, &gubocity[k], sizeof(gubocity[k]), 2);
+                uboCity[k].mMat = mWorld;
+                uboCity[k].nMat = glm::inverse(glm::transpose(uboCity[k].mMat));
+                uboCity[k].mvpMat = Prj * mView * mWorld;
+                DScity[k].map(currentImage, &uboCity[k], sizeof(uboCity[k]), 0);
+                guboCity[k].lightPositions[0] = glm::vec4(sunPos, 1.0f);
+                for(int i = 0; i < TAXI_LIGHT_COUNT; i++) {
+                    guboCity[k].lightPositions[i + 1] = taxiLightPos[i];
+                }
+                guboCity[k].directLightCol = sunCol, 1.0f;
+                if(isNight) {
+                    guboCity[k].rearLightCol = rearLightColor;
+                    guboCity[k].frontLightCol = frontLightColor;
+                }
+                else {
+                    guboCity[k].rearLightCol = black;
+                    guboCity[k].frontLightCol = black;
+                }
+                guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
+                guboCity[k].gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
+                DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
             }
 
         }
@@ -795,31 +797,22 @@ protected:
             uboTaxi[i].mvpMat = Prj * mView * mWorldTaxi;
             uboTaxi[i].mMat = mWorldTaxi;
             uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
-            DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);
-            guboTaxi[i].lightDir = sunPos;
-            guboTaxi[i].lightColor = glm::vec4(1.0f);
-            guboTaxi[i].rearLightRPos = glm::translate(mWorldTaxi, glm::vec3(-0.5f, 0.5f, -0.75f))[3];
-            guboTaxi[i].rearLightLPos = glm::translate(mWorldTaxi, glm::vec3(0.5f, 0.5f, -0.75f))[3];
-            guboTaxi[i].frontLightRPos = glm::translate(mWorldTaxi, glm::vec3(-0.6f, 0.6f, 2.6f))[3];
-            guboTaxi[i].frontLightLPos = glm::translate(mWorldTaxi, glm::vec3(0.6f, 0.6f, 2.6f))[3];
-            glm::vec3 black = glm::vec3(0.0f);
-            glm::vec3 backLightColor = glm::vec3(238.0f / 255.0f, 0.0f, 0.0f);
-            glm::vec3 frontLightColor = glm::vec3(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f);
+            DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);    
+            guboTaxi[i].lightPositions[0] = glm::vec4(sunPos, 1.0f);
+            for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
+                guboTaxi[i].lightPositions[j + 1] = taxiLightPos[j];
+            }
+            guboTaxi[i].directLightCol = sunCol, 1.0f;
             if(isNight) {
-                guboTaxi[i].rearLightRCol = glm::vec4(backLightColor, 1.0f);
-                guboTaxi[i].rearLightLCol = glm::vec4(backLightColor, 1.0f);
-                guboTaxi[i].frontLightRCol = glm::vec4(frontLightColor, 1.0f);
-                guboTaxi[i].frontLightLCol = glm::vec4(frontLightColor, 1.0f);
+                guboTaxi[i].rearLightCol = rearLightColor;
+                guboTaxi[i].frontLightCol = frontLightColor;
             }
             else {
-                guboTaxi[i].rearLightRCol = glm::vec4(black, 1.0f);
-                guboTaxi[i].rearLightLCol = glm::vec4(black, 1.0f);
-                guboTaxi[i].frontLightRCol = glm::vec4(black, 1.0f);
-                guboTaxi[i].frontLightLCol = glm::vec4(black, 1.0f);
+                guboTaxi[i].rearLightCol = black;
+                guboTaxi[i].frontLightCol = black;
             }
-            guboTaxi[i].eyePos = camPos;
-            guboTaxi[i].gamma = 128.0f;
-            guboTaxi[i].metallic = 1.0f;
+            guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
+            guboTaxi[i].gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
             DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
         }
 
@@ -828,11 +821,21 @@ protected:
             uboCars[i].mMat = mWorldCars[i];
             uboCars[i].nMat = glm::inverse(glm::transpose(uboCars[i].mMat));
             DScars[i].map(currentImage, &uboCars[i], sizeof(uboCars[i]), 0);
-            guboCars[i].lightDir = sunPos;
-            guboCars[i].lightColor = glm::vec4(1.0f);
-            guboCars[i].eyePos = camPos;
-            guboCars[i].gamma = 128.0f;
-            guboCars[i].metallic = 1.0f;
+            guboCars[i].lightPositions[0] = glm::vec4(sunPos, 1.0f);
+            for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
+                guboCars[i].lightPositions[j + 1] = taxiLightPos[j];
+            }
+            guboCars[i].directLightCol = sunCol, 1.0f;
+            if(isNight) {
+                guboCars[i].rearLightCol = rearLightColor;
+                guboCars[i].frontLightCol = frontLightColor;
+            }
+            else {
+                guboCars[i].rearLightCol = black;
+                guboCars[i].frontLightCol = black;
+            }
+            guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
+            guboCars[i].gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
             DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
         }
 
@@ -841,11 +844,10 @@ protected:
         uboSky.mMat = scaleMat;
         uboSky.nMat = glm::inverse(glm::transpose(uboSky.mMat));
         DSsky.map(currentImage, &uboSky, sizeof(uboSky), 0);
-        guboSky.lightDir = sunPos;
+        guboSky.lightDir = glm::vec4(sunPos, 1.0f);
         guboSky.lightColor = glm::vec4(1.0f);
-        guboSky.eyePos = camPos;
-        guboSky.gamma = 128.0f;
-        guboSky.metallic = 0.1f;
+        guboSky.eyePos = glm::vec4(camPos, 1.0f);
+        guboSky.gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
         DSsky.map(currentImage, &guboSky, sizeof(guboSky), 2);
 
         nlohmann::json js3;
@@ -870,11 +872,21 @@ protected:
                 uboPeople[k].nMat = glm::inverse(glm::transpose(uboPeople[k].mMat));
                 uboPeople[k].mvpMat = Prj * mView * mWorld;
                 DSpeople[k].map(currentImage, &uboPeople[k], sizeof(uboPeople[k]), 0);
-                guboPeople[k].lightDir = sunPos;
-                guboPeople[k].lightColor = glm::vec4(1.0f);
-                guboPeople[k].eyePos = camPos;
-                guboPeople[k].gamma = 128.0f;
-                guboPeople[k].metallic = 0.1f;
+                guboPeople[k].lightPositions[0] = glm::vec4(sunPos, 1.0f);
+                for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
+                    guboPeople[k].lightPositions[j + 1] = taxiLightPos[j];
+                }
+                guboPeople[k].directLightCol = sunCol, 1.0f;
+                if(isNight) {
+                    guboPeople[k].rearLightCol = rearLightColor;
+                    guboPeople[k].frontLightCol = frontLightColor;
+                }
+                else {
+                    guboPeople[k].rearLightCol = black;
+                    guboPeople[k].frontLightCol = black;
+                }
+                guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
+                guboPeople[k].gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
                 DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
 
             }

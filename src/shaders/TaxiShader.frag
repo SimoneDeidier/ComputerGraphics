@@ -10,34 +10,51 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 1) uniform sampler2D textureSampler;
 
 layout(binding = 2) uniform GlobalUniformBufferObject {
-	vec3 lightDir;
-	vec4 lightColor;
-	vec3 eyePos;
-	float gamma;
-	float metallic;
+	vec4 lightPositions[5];
+	vec4 directLightColor;
+	vec4 frontLightColor;
+	vec4 rearLightColor;
+	vec4 eyePos;
+	vec4 gammaAndMetallic;
 } gubo;
 
 // LAMBERT duffuse + BLINN specular
-vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, vec3 Ms, float gamma) {
+vec3 BRDF(vec3 v, vec3 n, vec3 l, vec3 md, vec3 ms, float gamma) {
 
-	vec3 Diffuse = Md * clamp(dot(N, L), 0.0, 1.0);
-	vec3 Specular = Ms * vec3(pow(clamp(dot(N, normalize(V + L)), 0.0, 1.0), gamma));
+	vec3 diffuse = md * clamp(dot(n, l), 0.0, 1.0);
+	vec3 specular = ms * vec3(pow(clamp(dot(n, normalize(v + l)), 0.0, 1.0), gamma));
 
-	return (Diffuse + Specular);
+	return (diffuse + specular);
 
 }
 
 void main() {
 
-	vec3 Norm = normalize(fragNormal);
-	vec3 ViewerDir = normalize(gubo.eyePos - fragPos);
-	vec3 Albedo = texture(textureSampler, fragUV).rgb;
-	vec3 LightDir = normalize(gubo.lightDir);
-	vec3 lightColor = gubo.lightColor.rgb;
-	vec3 Ambient = 0.05 * Albedo;
+	vec3 norm = normalize(fragNormal);
+	vec3 viewerDir = normalize(gubo.eyePos.xyz - fragPos);
+	vec3 albedo = texture(textureSampler, fragUV).rgb;
 
-	vec3 brdf = BRDF(ViewerDir, Norm, LightDir, Albedo, vec3(gubo.metallic), gubo.gamma);
+	vec3 res = vec3(0.0);
 
-	outColor = vec4(brdf * lightColor + Ambient, 1.0); // main color
+	for(int i = 0; i < 5; i++) {
+		vec3 lightDir = normalize(gubo.lightPositions[i].xyz - fragPos);
+		vec3 lightColor = vec3(0.0);
+		if(i == 0) {
+			lightColor = gubo.directLightColor.rgb;
+		}
+		else if(i == 1 || i == 2) {
+			lightColor = gubo.rearLightColor.rgb * pow((1 / length(gubo.lightPositions[i].xyz - fragPos)), 2.0);
+		}
+		else {
+			lightColor = gubo.frontLightColor.rgb * pow((1 / length(gubo.lightPositions[i].xyz - fragPos)), 2.0);
+		}
+		vec3 lightBRDF = BRDF(viewerDir, norm, lightDir, albedo, vec3(gubo.gammaAndMetallic.y), gubo.gammaAndMetallic.x);
+		res += lightBRDF * lightColor;
+	}
+
+	vec3 ambient = 0.05 * albedo;
+	res += ambient;
+
+	outColor = vec4(res, 1.0); // main color
 
 }
