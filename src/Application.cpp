@@ -3,14 +3,16 @@
 #include <iostream>
 #include <fstream>
 
+// normale della città invertite (check sullo scaling - coeff. negativi dispari)
+
 #define MESH 210
 #define CARS 9
-#define SPHERES 1
+#define SPHERES 3
 #define STREET_LIGHT_COUNT 36
 #define PEOPLE 45
 #define TAXI_ELEMENTS 8
 
-#define DEBUG 1
+#define DEBUG 0
 
 std::vector<SingleText> outText = {
         {2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
@@ -32,6 +34,7 @@ struct GlobalUniformBufferObject {
     alignas(4) float metallic;
 };
 
+// utilizzare solo vec4 e poi usare .xyz in shader
 struct TaxiGUBO {
     alignas(16) glm::vec3 lightDir;
     alignas(16) glm::vec4 lightColor;
@@ -39,9 +42,13 @@ struct TaxiGUBO {
     alignas(16) glm::vec4 rearLightRCol;
     alignas(16) glm::vec3 rearLightLPos;
     alignas(16) glm::vec4 rearLightLCol;
+    alignas(16) glm::vec3 frontLightRPos;
+    alignas(16) glm::vec4 frontLightRCol;
+    alignas(16) glm::vec3 frontLightLPos;
+    alignas(16) glm::vec4 frontLightLCol;
     alignas(16) glm::vec3 eyePos;
-    alignas(4) float gamma;
-    alignas(4) float metallic;
+    alignas(4) float gamma; // impacchetta in vec4
+    alignas(4) float metallic; // idem
 };
 
 struct SkyGUBO {
@@ -796,6 +803,22 @@ protected:
             exit(1);
         }
 
+
+        #if DEBUG
+            for(int i = 1; i < SPHERES; i++) {
+                if(i == 1) {
+                    mWorldSphere = glm::translate(mWorldTaxi, glm::vec3(-0.6f, 0.6f, 1.6f));
+                }
+                else {
+                    mWorldSphere = glm::translate(mWorldTaxi, glm::vec3(0.6f, 0.6f, 1.6f));
+                }
+                uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
+                uboSphere[i].mMat = mWorldSphere;
+                uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
+                DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
+            }
+        #endif
+
         for(int i=0; i<8; i++){
             uboTaxi[i].mvpMat = Prj * mView * mWorldTaxi;
             uboTaxi[i].mMat = mWorldTaxi;
@@ -805,13 +828,22 @@ protected:
             guboTaxi[i].lightColor = glm::vec4(1.0f);
             guboTaxi[i].rearLightRPos = glm::translate(mWorldTaxi, glm::vec3(-0.5f, 0.5f, -0.75f))[3];
             guboTaxi[i].rearLightLPos = glm::translate(mWorldTaxi, glm::vec3(0.5f, 0.5f, -0.75f))[3];
+            guboTaxi[i].frontLightRPos = glm::translate(mWorldTaxi, glm::vec3(-0.6f, 0.6f, 2.6f))[3];
+            guboTaxi[i].frontLightLPos = glm::translate(mWorldTaxi, glm::vec3(0.6f, 0.6f, 2.6f))[3];
+            glm::vec3 black = glm::vec3(0.0f);
+            glm::vec3 backLightColor = glm::vec3(238.0f / 255.0f, 0.0f, 0.0f);
+            glm::vec3 frontLightColor = glm::vec3(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f);
             if(isNight) {
-                guboTaxi[i].rearLightRCol = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-                guboTaxi[i].rearLightLCol = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                guboTaxi[i].rearLightRCol = glm::vec4(backLightColor, 1.0f);
+                guboTaxi[i].rearLightLCol = glm::vec4(backLightColor, 1.0f);
+                guboTaxi[i].frontLightRCol = glm::vec4(frontLightColor, 1.0f);
+                guboTaxi[i].frontLightLCol = glm::vec4(frontLightColor, 1.0f);
             }
             else {
-                guboTaxi[i].rearLightRCol = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-                guboTaxi[i].rearLightLCol = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                guboTaxi[i].rearLightRCol = glm::vec4(black, 1.0f);
+                guboTaxi[i].rearLightLCol = glm::vec4(black, 1.0f);
+                guboTaxi[i].frontLightRCol = glm::vec4(black, 1.0f);
+                guboTaxi[i].frontLightLCol = glm::vec4(black, 1.0f);
             }
             guboTaxi[i].eyePos = camPos;
             guboTaxi[i].gamma = 128.0f;
