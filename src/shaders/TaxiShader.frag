@@ -10,12 +10,13 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 1) uniform sampler2D textureSampler;
 
 layout(binding = 2) uniform GlobalUniformBufferObject {
-	vec4 lightPositions[5];
+	vec4 directLightPos;
 	vec4 directLightColor;
+	vec4 taxiLightPos[4];
 	vec4 frontLightColor;
 	vec4 rearLightColor;
 	vec4 eyePos;
-	vec4 gammaAndMetallic;
+	vec4 gammaMetallicSettings;
 } gubo;
 
 // LAMBERT duffuse + BLINN specular
@@ -36,24 +37,31 @@ void main() {
 
 	vec3 res = vec3(0.0);
 
-	for(int i = 0; i < 5; i++) {
-		vec3 lightDir = normalize(gubo.lightPositions[i].xyz - fragPos);
-		vec3 lightColor = vec3(0.0);
-		if(i == 0) {
-			lightColor = gubo.directLightColor.rgb;
-		}
-		else if(i == 1 || i == 2) {
-			lightColor = gubo.rearLightColor.rgb * pow((1 / length(gubo.lightPositions[i].xyz - fragPos)), 2.0);
-		}
-		else {
-			lightColor = gubo.frontLightColor.rgb * pow((1 / length(gubo.lightPositions[i].xyz - fragPos)), 2.0);
-		}
-		vec3 lightBRDF = BRDF(viewerDir, norm, lightDir, albedo, vec3(gubo.gammaAndMetallic.y), gubo.gammaAndMetallic.x);
-		res += lightBRDF * lightColor;
-	}
-
 	vec3 ambient = 0.05 * albedo;
 	res += ambient;
+
+	vec3 directLightDir = normalize(gubo.directLightPos.xyz - fragPos);
+	vec3 directLightColor = gubo.directLightColor.rgb;
+	vec3 directLightBRDF = BRDF(viewerDir, norm, directLightDir, albedo, vec3(gubo.gammaMetallicSettings.y), gubo.gammaMetallicSettings.x);
+	res += directLightBRDF * directLightColor;
+
+	if(gubo.gammaMetallicSettings.z == 0.0) {
+		outColor = vec4(res, 1.0);
+		return;
+	}
+
+	for(int i = 0; i < 4; i++) {
+		vec3 taxiLightDir = normalize(gubo.taxiLightPos[i].xyz - fragPos);
+		vec3 taxiLightColor = vec3(0.0);
+		if(i < 2) {
+			taxiLightColor = gubo.rearLightColor.rgb * pow((1 / length(gubo.taxiLightPos[i].xyz - fragPos)), 2.0);
+		}
+		else {
+			taxiLightColor = gubo.frontLightColor.rgb * pow((1 / length(gubo.taxiLightPos[i].xyz - fragPos)), 2.0);
+		}
+		vec3 taxiLightBRDF = BRDF(viewerDir, norm, taxiLightDir, albedo, vec3(gubo.gammaMetallicSettings.y), gubo.gammaMetallicSettings.x);
+		res += taxiLightBRDF * taxiLightColor;
+	}
 
 	outColor = vec4(res, 1.0); // main color
 

@@ -28,12 +28,13 @@ struct UniformBufferObject {
 };
 
 struct GlobalUniformBufferObject {
-    alignas(16) glm::vec4 lightPositions[5];
+    alignas(16) glm::vec4 directLightPos;
     alignas(16) glm::vec4 directLightCol;
+    alignas(16) glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT];
     alignas(16) glm::vec4 frontLightCol;
     alignas(16) glm::vec4 rearLightCol;
     alignas(16) glm::vec4 eyePos;
-    alignas(16) glm::vec4 gammaAndMetallic;
+    alignas(16) glm::vec4 gammaMetallicSettings;
 };
 
 struct SkyGUBO {
@@ -48,6 +49,13 @@ struct Vertex {
     glm::vec2 UV;
     glm::vec3 normal;
 };
+
+/* GLOBAL VARIABLE FOR GRAPHICS SETTINGS:
+ * 0 -> low ==> only direct light
+ * 1 -> medium ==> direct light + taxi lights
+ * 2 -> high ==> direct light + taxi lights + street lights
+ */
+int graphicsSettings = 1;
 
 class Application : public BaseProject {
     
@@ -769,11 +777,11 @@ class Application : public BaseProject {
                 uboCity[k].nMat = glm::inverse(glm::transpose(uboCity[k].mMat));
                 uboCity[k].mvpMat = Prj * mView * mWorld;
                 DScity[k].map(currentImage, &uboCity[k], sizeof(uboCity[k]), 0);
-                guboCity[k].lightPositions[0] = glm::vec4(sunPos, 1.0f);
+                guboCity[k].directLightPos = glm::vec4(sunPos, 1.0f);
                 for(int i = 0; i < TAXI_LIGHT_COUNT; i++) {
-                    guboCity[k].lightPositions[i + 1] = taxiLightPos[i];
+                    guboCity[k].taxiLightPos[i] = taxiLightPos[i];
                 }
-                guboCity[k].directLightCol = sunCol, 1.0f;
+                guboCity[k].directLightCol = sunCol;
                 if(isNight) {
                     guboCity[k].rearLightCol = rearLightColor;
                     guboCity[k].frontLightCol = frontLightColor;
@@ -783,7 +791,7 @@ class Application : public BaseProject {
                     guboCity[k].frontLightCol = black;
                 }
                 guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
-                guboCity[k].gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
+                guboCity[k].gammaMetallicSettings = glm::vec4(128.0f, 0.1f, float(graphicsSettings), 0.0f);
                 DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
             }
 
@@ -798,11 +806,11 @@ class Application : public BaseProject {
             uboTaxi[i].mMat = mWorldTaxi;
             uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
             DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);    
-            guboTaxi[i].lightPositions[0] = glm::vec4(sunPos, 1.0f);
+            guboTaxi[i].directLightPos = glm::vec4(sunPos, 1.0f);
             for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
-                guboTaxi[i].lightPositions[j + 1] = taxiLightPos[j];
+                guboTaxi[i].taxiLightPos[j] = taxiLightPos[j];
             }
-            guboTaxi[i].directLightCol = sunCol, 1.0f;
+            guboTaxi[i].directLightCol = sunCol;
             if(isNight) {
                 guboTaxi[i].rearLightCol = rearLightColor;
                 guboTaxi[i].frontLightCol = frontLightColor;
@@ -812,7 +820,7 @@ class Application : public BaseProject {
                 guboTaxi[i].frontLightCol = black;
             }
             guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
-            guboTaxi[i].gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
+            guboTaxi[i].gammaMetallicSettings = glm::vec4(128.0f, 1.0f, float(graphicsSettings), 0.0f);
             DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
         }
 
@@ -821,11 +829,11 @@ class Application : public BaseProject {
             uboCars[i].mMat = mWorldCars[i];
             uboCars[i].nMat = glm::inverse(glm::transpose(uboCars[i].mMat));
             DScars[i].map(currentImage, &uboCars[i], sizeof(uboCars[i]), 0);
-            guboCars[i].lightPositions[0] = glm::vec4(sunPos, 1.0f);
+            guboCars[i].directLightPos = glm::vec4(sunPos, 1.0f);
             for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
-                guboCars[i].lightPositions[j + 1] = taxiLightPos[j];
+                guboCars[i].taxiLightPos[j] = taxiLightPos[j];
             }
-            guboCars[i].directLightCol = sunCol, 1.0f;
+            guboCars[i].directLightCol = sunCol;
             if(isNight) {
                 guboCars[i].rearLightCol = rearLightColor;
                 guboCars[i].frontLightCol = frontLightColor;
@@ -835,7 +843,7 @@ class Application : public BaseProject {
                 guboCars[i].frontLightCol = black;
             }
             guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
-            guboCars[i].gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
+            guboCars[i].gammaMetallicSettings = glm::vec4(128.0f, 1.0f, float(graphicsSettings), 0.0f);
             DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
         }
 
@@ -872,11 +880,11 @@ class Application : public BaseProject {
                 uboPeople[k].nMat = glm::inverse(glm::transpose(uboPeople[k].mMat));
                 uboPeople[k].mvpMat = Prj * mView * mWorld;
                 DSpeople[k].map(currentImage, &uboPeople[k], sizeof(uboPeople[k]), 0);
-                guboPeople[k].lightPositions[0] = glm::vec4(sunPos, 1.0f);
+                guboPeople[k].directLightPos = glm::vec4(sunPos, 1.0f);
                 for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
-                    guboPeople[k].lightPositions[j + 1] = taxiLightPos[j];
+                    guboPeople[k].taxiLightPos[j] = taxiLightPos[j];
                 }
-                guboPeople[k].directLightCol = sunCol, 1.0f;
+                guboPeople[k].directLightCol = sunCol;
                 if(isNight) {
                     guboPeople[k].rearLightCol = rearLightColor;
                     guboPeople[k].frontLightCol = frontLightColor;
@@ -886,7 +894,7 @@ class Application : public BaseProject {
                     guboPeople[k].frontLightCol = black;
                 }
                 guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
-                guboPeople[k].gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
+                guboPeople[k].gammaMetallicSettings = glm::vec4(128.0f, 0.1f, float(graphicsSettings), 0.0f);
                 DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
 
             }
@@ -900,8 +908,12 @@ class Application : public BaseProject {
 
 
 // This is the main: probably you do not need to touch this!
-int main() {
+int main(int argc, char* argv[]) {
     Application app;
+
+    if (argc > 2 && std::string(argv[1]) == "settings") {
+        graphicsSettings = std::stoi(argv[2]);
+    }
 
     try {
         app.run();
