@@ -7,7 +7,7 @@
 
 #define MESH 210
 #define CARS 9
-#define SPHERES 3
+#define SPHERES 0
 #define STREET_LIGHT_COUNT 36
 #define PEOPLE 45
 #define TAXI_ELEMENTS 8
@@ -741,24 +741,12 @@ protected:
                                      sphereCenter.z // z (fisso)
         );
 
-        #if DEBUG
-            glm::mat4 mWorldSphere = glm::translate(glm::mat4(1.0), sunPos);
-            for(int i = 0; i < SPHERES; i++) {
-                uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
-                uboSphere[i].mMat = mWorldSphere;
-                uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
-                DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
-            }
-        #endif
-
-        //50.0f * sin(glm::radians(90.0f)
         // check when the sun is below the horizon
         isNight = (sunPos.y < 0.0f ? true : false);
 
         glm::mat4 mWorldTaxi =
                 glm::translate(glm::mat4(1.0), taxiPos) *
                 glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
-
 
         glm::mat4 mWorldCars[CARS];
         for(int i = 0; i < CARS; i++) {
@@ -802,22 +790,6 @@ protected:
             std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
             exit(1);
         }
-
-
-        #if DEBUG
-            for(int i = 1; i < SPHERES; i++) {
-                if(i == 1) {
-                    mWorldSphere = glm::translate(mWorldTaxi, glm::vec3(-0.6f, 0.6f, 1.6f));
-                }
-                else {
-                    mWorldSphere = glm::translate(mWorldTaxi, glm::vec3(0.6f, 0.6f, 1.6f));
-                }
-                uboSphere[i].mvpMat = Prj * mView * mWorldSphere;
-                uboSphere[i].mMat = mWorldSphere;
-                uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
-                DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
-            }
-        #endif
 
         for(int i=0; i<8; i++){
             uboTaxi[i].mvpMat = Prj * mView * mWorldTaxi;
