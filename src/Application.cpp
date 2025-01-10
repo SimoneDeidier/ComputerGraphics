@@ -7,13 +7,14 @@
 
 #define MESH 210
 #define CARS 9
-//#define STREET_LIGHT_COUNT 36
+#define STREET_LIGHT_COUNT 36
+#define MAX_STREET_LIGHTS 5
 #define PEOPLE 45
 #define TAXI_ELEMENTS 8
 #define TAXI_LIGHT_COUNT 4
 
 #define DEBUG 0
-#define SPHERES 0
+#define SPHERES 36
 
 std::vector<SingleText> outText = {
         {2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
@@ -754,17 +755,53 @@ class Application : public BaseProject {
                             glm::rotate(glm::mat4(1.0), steeringAngCars[i], glm::vec3(0, 1, 0));
         }
 
+        /* TODO : Implement streetlights
+        std::vector<glm::mat4> streetlightPosVector;
+
+        #if DEBUG
+            if(streetlightPosVector.size() > 0) {
+                for(int i = 0; i < STREET_LIGHT_COUNT; i++) {
+                    uboSphere[i].mvpMat = Prj * mView * streetlightPosVector[i];
+                    uboSphere[i].mMat = streetlightPosVector[i];
+                    uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
+                    DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
+                }
+            }
+        #endif*/
+
         nlohmann::json js;
         std::ifstream ifs2("models/city.json");
         if (!ifs2.is_open()) {
             std::cout << "[ ERROR ]: Scene file not found!" << std::endl;
             exit(-1);
         }
-        try{
+        try {
             json j;
             ifs2>>j;
 
             float TMj[16];
+
+            /*for(int k = 0; k < MESH; k++) {
+                nlohmann::json TMjson = j["instances"][k]["transform"];
+                for(int l = 0; l < 16; l++) {
+                    TMj[l] = TMjson[l];
+                }
+                std::string modelName = j["models"][k]["model"];
+                glm::mat4 tileModelMat = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
+                glm::mat4 streetlightPos;
+                if(modelName == "models/road_tile_1x1_001.mgcg") {
+                    streetlightPos = glm::translate(tileModelMat, glm::vec3(3.75f, 4.25f, -0.75f)); // Adjust position
+                    streetlightPosVector.push_back(streetlightPos);
+                }
+                else if(modelName == "models/road_tile_1x1_006.mgcg") {
+                    streetlightPos = glm::translate(tileModelMat, glm::vec3(2.0f, 5.0f, -1.0f)); // Adjust position
+                    streetlightPosVector.push_back(streetlightPos);
+                }
+                else if(modelName == "models/road_tile_1x1_008.mgcg") {
+                    streetlightPos = glm::translate(tileModelMat, glm::vec3(-4.0f, 5.0f, 1.0f)); // Adjust position
+                    streetlightPosVector.push_back(streetlightPos);
+                }
+            }*/
 
             for(int k = 0; k < MESH; k++) {
 
@@ -912,6 +949,7 @@ int main(int argc, char* argv[]) {
     Application app;
 
     if (argc > 2 && std::string(argv[1]) == "settings") {
+        std::cout << "[ SETTINGS ]: Graphics settings set to " << argv[2] << std::endl;
         graphicsSettings = std::stoi(argv[2]);
     }
 
