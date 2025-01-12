@@ -21,7 +21,8 @@
 
 std::vector<SingleText> outText = {
         {2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
-        {2, {"Photo mode", "Press SPACE to access third person view", "",""}, 0, 0}
+        {2, {"Photo mode", "Press SPACE to access third person view", "",""}, 0, 0},
+        {2, {"","","",""}, 0, 0}
 };
 
 // float : alignas(4), vec2  : alignas(8), vec3, vec4, mat3, mat4  : alignas(16)
@@ -52,6 +53,11 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec2 UV;
     glm::vec3 normal;
+};
+
+struct TwoDimVertex {
+    glm::vec3 pos;
+    glm::vec2 UV;
 };
 
 class Application : public BaseProject {
@@ -97,10 +103,11 @@ class Application : public BaseProject {
         #endif
 
         // Other application parameters
-        int currScene = 0;
+        int currScene = 2;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
         glm::vec3 camPosInPhotoMode;
         glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
+        bool drawTitle = true;
 
         glm::vec3 carPositions[CARS] = {glm::vec3(-72.0, -0.2, 36.0), //initial pos of car
                                     glm::vec3(5.0, -0.2, 36.0),
@@ -162,12 +169,12 @@ class Application : public BaseProject {
 
             windowWidth = 1920;
             windowHeight = 1080;
-            windowTitle = "Computer graphics' project";
+            windowTitle = "TAXI DRIVER";
             windowResizable = GLFW_TRUE;
             initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
             // Descriptor pool sizes
-            uniformBlocksInPool =  (2 * MESH) + 16+2+2*CARS+2*PEOPLE + (DEBUG ? 2 * SPHERES : 0);
+            uniformBlocksInPool =  (2 * MESH) + 16+2+2*CARS+2*PEOPLE + (DEBUG ? SPHERES : 0);
             texturesInPool = MESH + 8 +1+1+CARS+PEOPLE+1; //city, taxi, text, sky, autonomous cars, people, title
             setsInPool = MESH + 8 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0) + 1;
 
@@ -206,15 +213,15 @@ class Application : public BaseProject {
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
 
+            DSLtitle.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+            });
+
             #if DEBUG
                 DSLsphere.init(this, {
                         {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
                 });
             #endif
-
-            DSLtitle.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-            });
 
             VD.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -266,6 +273,15 @@ class Application : public BaseProject {
                                 {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                         sizeof(glm::vec3), NORMAL}
                         });
+            
+            VDtitle.init(this, {
+                {0, sizeof(TwoDimVertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            }, {
+                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TwoDimVertex, pos),
+                        sizeof(glm::vec3), POSITION},
+                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(TwoDimVertex, UV),
+                        sizeof(glm::vec2), UV}
+            });
 
             #if DEBUG
                 VDsphere.init(this, {
@@ -280,17 +296,6 @@ class Application : public BaseProject {
                         });
             #endif
 
-            VDtitle.init(this, {
-                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                        sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                        sizeof(glm::vec2), UV},
-                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
-                        sizeof(glm::vec3), NORMAL}
-            });
-
             P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
             Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
             Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
@@ -300,6 +305,7 @@ class Application : public BaseProject {
             Ppeople.init(this, &VDpeople, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLpeople});
             Ptitle.init(this, &VDtitle, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtitle});
             Ptitle.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+
 
             #if DEBUG
                 Psphere.init(this, &VDsphere, "shaders/BaseVert.spv", "shaders/DEBUGFrag.spv", {&DSLsphere});
@@ -332,13 +338,13 @@ class Application : public BaseProject {
                 }
             #endif
 
-            std::vector<Vertex> vertices = {{{-1.0,-1.0,0.9f}, {0.0f,0.0f}, {0.0f,1.0f,0.0f}},
-                       {{-1.0, 1.0,0.9f}, {0.0f,1.0f}, {0.0f,1.0f,0.0f}},
-                       {{ 1.0,-1.0,0.9f}, {1.0f,0.0f}, {0.0f,1.0f,0.0f}},
-                       {{ 1.0, 1.0,0.9f}, {1.0f,1.0f}, {0.0f,1.0f,0.0f}}};
-            Mtitle.vertices = std::vector<unsigned char>(vertices.size()*sizeof(Vertex), 0);
-		    Mtitle.indices = {0, 1, 2, 1, 3, 2};
-		    Mtitle.initMesh(this, &VD);
+            std::vector<TwoDimVertex> vertices = {{{-1.0,-1.0,0.9f}, {0.0f,0.0f}},
+                    {{-1.0, 1.0,0.9f}, {0.0f,1.0f}},
+                    {{ 1.0,-1.0,0.9f}, {1.0f,0.0f}},
+                    {{ 1.0, 1.0,0.9f}, {1.0f,1.0f}}};
+            Mtitle.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
+            Mtitle.indices = {0, 1, 2, 1, 3, 2};
+            Mtitle.initMesh(this, &VD);
 
             Tcity.init(this,"textures/Textures_City.png");
             Tsky.init(this, "textures/images.png");
@@ -400,12 +406,11 @@ class Application : public BaseProject {
             Psky.create();
             Pcars.create();
             Ppeople.create();
+            Ptitle.create();
 
             #if DEBUG
                 Psphere.create();
             #endif
-
-            Ptitle.create();
 
             for(int i = 0; i<8; i++){
                 DStaxi[i].init(this, &DSL, {
@@ -444,6 +449,10 @@ class Application : public BaseProject {
                 });
             }
 
+            DStitle.init(this, &DSLtitle, {
+                {0, TEXTURE, 0, &Ttitle}
+            });
+
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
                     DSsphere[i].init(this, &DSLsphere, {
@@ -451,10 +460,6 @@ class Application : public BaseProject {
                     });
                 }
             #endif
-
-            DStitle.init(this, &DSLtitle, {
-                {0, TEXTURE, 0, &Ttitle}
-            });
 
             txt.pipelinesAndDescriptorSetsInit();
         }
@@ -466,12 +471,11 @@ class Application : public BaseProject {
             Psky.cleanup();
             Pcars.cleanup();
             Ppeople.cleanup();
+            Ptitle.cleanup();
 
             #if DEBUG
                 Psphere.cleanup();
             #endif
-
-            Ptitle.cleanup();
 
             for(int i = 0; i < 8; i++) {
                 DStaxi[i].cleanup();
@@ -491,13 +495,14 @@ class Application : public BaseProject {
                 DSpeople[i].cleanup();
             }
 
+            DStitle.cleanup();
+
+
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
                     DSsphere[i].cleanup();
                 }
             #endif
-
-            DStitle.cleanup();
 
             txt.pipelinesAndDescriptorSetsCleanup();
         }
@@ -526,6 +531,7 @@ class Application : public BaseProject {
             for(int i = 0; i < PEOPLE; i++) {
                 Mpeople[i].cleanup();
             }
+            Mtitle.cleanup();
 
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
@@ -533,31 +539,27 @@ class Application : public BaseProject {
                 }
             #endif
 
-            Mtitle.cleanup();
-
             DSL.cleanup();
             DSLcity.cleanup();
             DSLsky.cleanup();
             DSLcars.cleanup();
             DSLpeople.cleanup();
+            DSLtitle.cleanup();
 
             #if DEBUG
                 DSLsphere.cleanup();
             #endif
-
-            DSLtitle.cleanup();
 
             P.destroy();
             Pcity.destroy();
             Psky.destroy();
             Pcars.destroy();
             Ppeople.destroy();
+            Ptitle.destroy();
 
             #if DEBUG
                 Psphere.destroy();
             #endif
-
-            Ptitle.destroy();
 
             txt.localCleanup();
         }
@@ -607,7 +609,13 @@ class Application : public BaseProject {
                 vkCmdDrawIndexed(commandBuffer,
                                 static_cast<uint32_t>(Mpeople[i].indices.size()), 1, 0, 0, 0);
             }
-
+            if(drawTitle) {
+                Ptitle.bind(commandBuffer);
+                DStitle.bind(commandBuffer, Ptitle, 0, currentImage);
+                Mtitle.bind(commandBuffer);
+                vkCmdDrawIndexed(commandBuffer,
+                                static_cast<uint32_t>(Mtitle.indices.size()), 1, 0, 0, 0);
+            }
 
             #if DEBUG
             Psphere.bind(commandBuffer);
@@ -619,12 +627,6 @@ class Application : public BaseProject {
                                     static_cast<uint32_t>(Msphere[i].indices.size()), 1, 0, 0, 0);
                 }
             #endif
-
-            Ptitle.bind(commandBuffer);
-            DStitle.bind(commandBuffer, Ptitle, 0, currentImage);
-            Mtitle.bind(commandBuffer);
-            vkCmdDrawIndexed(commandBuffer,
-                            static_cast<uint32_t>(Mtitle.indices.size()), 1, 0, 0, 0);
 
             txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
         }
@@ -656,7 +658,8 @@ class Application : public BaseProject {
                 if(!debounce) {
                     debounce = true;
                     curDebounce = GLFW_KEY_SPACE;
-                    if(currScene == -1) {
+                    if(currScene == 2) {
+                        drawTitle = false;
                         currScene = 0;
                     }
                     else if(currScene == 0) {
@@ -709,10 +712,7 @@ class Application : public BaseProject {
             static float steeringAng = 0.0f;
             glm::mat4 mView;
 
-            if(currScene == -1) {
-                
-            }
-            else {
+            if(currScene != 2) {
                 if(currScene == 0) {
                     alreadyInPhotoMode = false;
                     // Third person view
