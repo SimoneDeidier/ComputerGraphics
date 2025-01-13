@@ -115,9 +115,11 @@ class Application : public BaseProject {
         bool drawTitle = true;
         bool miniaudioEngineInit = false;
         bool titleSoundStarted = false;
+        bool ingameSoundStarted = false;
         ma_result result;
         ma_engine engine;
         ma_sound titleSound;
+        ma_sound ingameSound;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
         glm::vec3 camPosInPhotoMode;
         glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
@@ -610,50 +612,52 @@ class Application : public BaseProject {
 
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
-            P.bind(commandBuffer);
+            if(!drawTitle) {
+                P.bind(commandBuffer);
 
-            for(int i = 0; i < 8; i++){
-                DStaxi[i].bind(commandBuffer, P, 0, currentImage);
-                Mtaxi[i].bind(commandBuffer);
+                for(int i = 0; i < 8; i++){
+                    DStaxi[i].bind(commandBuffer, P, 0, currentImage);
+                    Mtaxi[i].bind(commandBuffer);
+                    vkCmdDrawIndexed(commandBuffer,
+                                    static_cast<uint32_t>(Mtaxi[i].indices.size()), 1, 0, 0, 0);
+                }
+
+
+                Pcity.bind(commandBuffer);
+
+                for(int i = 0; i < MESH; i++) {
+                    DScity[i].bind(commandBuffer, Pcity, 0, currentImage);
+                    Mcity[i].bind(commandBuffer);
+                    vkCmdDrawIndexed(commandBuffer,
+                                    static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
+                }
+
+                Psky.bind(commandBuffer);
+
+                DSsky.bind(commandBuffer, Psky, 0, currentImage);
+                Msky.bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
-                                static_cast<uint32_t>(Mtaxi[i].indices.size()), 1, 0, 0, 0);
+                                static_cast<uint32_t>(Msky.indices.size()), 1, 0, 0, 0);
+
+                Pcars.bind(commandBuffer);
+
+                for(int i = 0; i < CARS; i++) {
+                    DScars[i].bind(commandBuffer, Pcars, 0, currentImage);
+                    Mcars[i].bind(commandBuffer);
+                    vkCmdDrawIndexed(commandBuffer,
+                                    static_cast<uint32_t>(Mcars[i].indices.size()), 1, 0, 0, 0);
+                }
+
+                Ppeople.bind(commandBuffer);
+
+                for(int i = 0; i < PEOPLE; i++) {
+                    DSpeople[i].bind(commandBuffer, Ppeople, 0, currentImage);
+                    Mpeople[i].bind(commandBuffer);
+                    vkCmdDrawIndexed(commandBuffer,
+                                    static_cast<uint32_t>(Mpeople[i].indices.size()), 1, 0, 0, 0);
+                }
             }
-
-
-            Pcity.bind(commandBuffer);
-
-            for(int i = 0; i < MESH; i++) {
-                DScity[i].bind(commandBuffer, Pcity, 0, currentImage);
-                Mcity[i].bind(commandBuffer);
-                vkCmdDrawIndexed(commandBuffer,
-                                static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
-            }
-
-            Psky.bind(commandBuffer);
-
-            DSsky.bind(commandBuffer, Psky, 0, currentImage);
-            Msky.bind(commandBuffer);
-            vkCmdDrawIndexed(commandBuffer,
-                            static_cast<uint32_t>(Msky.indices.size()), 1, 0, 0, 0);
-
-            Pcars.bind(commandBuffer);
-
-            for(int i = 0; i < CARS; i++) {
-                DScars[i].bind(commandBuffer, Pcars, 0, currentImage);
-                Mcars[i].bind(commandBuffer);
-                vkCmdDrawIndexed(commandBuffer,
-                                static_cast<uint32_t>(Mcars[i].indices.size()), 1, 0, 0, 0);
-            }
-
-            Ppeople.bind(commandBuffer);
-
-            for(int i = 0; i < PEOPLE; i++) {
-                DSpeople[i].bind(commandBuffer, Ppeople, 0, currentImage);
-                Mpeople[i].bind(commandBuffer);
-                vkCmdDrawIndexed(commandBuffer,
-                                static_cast<uint32_t>(Mpeople[i].indices.size()), 1, 0, 0, 0);
-            }
-            if(drawTitle) {
+            else {
                 Ptitle.bind(commandBuffer);
                 DStitle.bind(commandBuffer, Ptitle, 0, currentImage);
                 Mtitle.bind(commandBuffer);
@@ -785,6 +789,16 @@ class Application : public BaseProject {
                 }
             }
             else {
+                if(miniaudioEngineInit && !ingameSoundStarted) {
+                    // initialize and start the ingame sound
+                    result = ma_sound_init_from_file(&engine, "audios/ingame.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &ingameSound);
+                    if(result != MA_SUCCESS) {
+                        throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
+                    }
+                    ma_sound_set_looping(&ingameSound, MA_TRUE);
+                    ma_sound_start(&ingameSound);
+                    ingameSoundStarted = true;
+                }
                 if(currScene == 0) {
                     alreadyInPhotoMode = false;
                     // Third person view
@@ -902,29 +916,6 @@ class Application : public BaseProject {
 
                     float TMj[16];
 
-                    
-                    /*for(int k = 0; k < MESH; k++) {
-                        nlohmann::json TMjson = j["instances"][k]["transform"];
-                        for(int l = 0; l < 16; l++) {
-                            TMj[l] = TMjson[l];
-                        }
-                        std::string modelName = j["models"][k]["model"];
-                        glm::mat4 tileModelMat = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                        glm::mat4 streetlightPos;
-                        if(modelName == "models/road_tile_1x1_001.mgcg") {
-                            streetlightPos = glm::translate(tileModelMat, glm::vec3(3.7f, 4.65f, -0.55f)); // Adjust position
-                            streetlightPosVector.push_back(streetlightPos);
-                        }
-                        else if(modelName == "models/road_tile_1x1_006.mgcg") {
-                            streetlightPos = glm::translate(tileModelMat, glm::vec3(1.7f, 4.65f, -0.7f)); // Adjust position
-                            streetlightPosVector.push_back(streetlightPos);
-                        }
-                        else if(modelName == "models/road_tile_1x1_008.mgcg") {
-                            streetlightPos = glm::translate(tileModelMat, glm::vec3(-3.8f, 4.65f, 0.8f)); // Adjust position
-                            streetlightPosVector.push_back(streetlightPos);
-                        }
-                    }*/
-
                     for(int k = 0; k < MESH; k++) {
 
                         nlohmann::json TMjson = j["instances"][k]["transform"];
@@ -968,16 +959,6 @@ class Application : public BaseProject {
                     std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
                     exit(1);
                 }
-
-                #if DEBUG
-                    for(int i = 0; i < STREET_LIGHT_COUNT; i++) {
-                        glm::mat4 sphereMMat = glm::scale(glm::translate(glm::mat4(1.0f), streetlightPos[i]), glm::vec3(0.1f));
-                        uboSphere[i].mvpMat = Prj * mView * sphereMMat;
-                        uboSphere[i].mMat = sphereMMat;
-                        uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
-                        DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
-                    }
-                #endif
 
                 for(int i=0; i<8; i++){
                     uboTaxi[i].mvpMat = Prj * mView * mWorldTaxi;
