@@ -73,6 +73,12 @@ class Application : public BaseProject {
         * 2 -> high ==> direct light + taxi lights + street lights
         */
         int graphicsSettings = 2;
+
+        ma_engine engine;
+        ma_sound titleMusic;
+        ma_sound ingameMusic;
+        ma_sound idleEngineSound;
+        ma_sound accelerationEngineSound;
     
     protected:
         
@@ -113,13 +119,6 @@ class Application : public BaseProject {
         bool alreadyInPhotoMode = false;
         bool isNight = false;
         bool drawTitle = true;
-        bool miniaudioEngineInit = false;
-        bool titleSoundStarted = false;
-        bool ingameSoundStarted = false;
-        ma_result result;
-        ma_engine engine;
-        ma_sound titleSound;
-        ma_sound ingameSound;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
         glm::vec3 camPosInPhotoMode;
         glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
@@ -700,9 +699,17 @@ class Application : public BaseProject {
 
             // Standard procedure to quit when the ESC key is pressed
             if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-                if(miniaudioEngineInit) {
-                    ma_engine_uninit(&engine);
-                }
+                if(ma_sound_is_playing(&titleMusic)) ma_sound_stop(&titleMusic);
+                ma_sound_uninit(&titleMusic);
+                if(ma_sound_is_playing(&ingameMusic)) ma_sound_stop(&ingameMusic);
+                ma_sound_uninit(&ingameMusic);
+                if(ma_sound_is_playing(&idleEngineSound)) ma_sound_stop(&idleEngineSound);
+                ma_sound_uninit(&idleEngineSound);
+                if(ma_sound_is_playing(&accelerationEngineSound)) ma_sound_stop(&accelerationEngineSound);
+                ma_sound_uninit(&accelerationEngineSound);
+
+                ma_engine_uninit(&engine);
+
                 glfwSetWindowShouldClose(window, GL_TRUE);
             }
 
@@ -713,11 +720,6 @@ class Application : public BaseProject {
                     if(currScene == 2) {
                         drawTitle = false;
                         currScene = 0;
-                        if(titleSoundStarted) {
-                            ma_sound_stop(&titleSound);
-                            ma_sound_uninit(&titleSound);
-                            titleSoundStarted = false;
-                        }
                     }
                     else if(currScene == 0) {
                         currScene = 1;
@@ -767,37 +769,13 @@ class Application : public BaseProject {
             static float steeringAng = 0.0f;
             glm::mat4 mView;
 
-            // initialize the miniaudio engine
-            if(!miniaudioEngineInit) {
-                result = ma_engine_init(NULL, &engine);
-                if(result != MA_SUCCESS) {
-                    throw std::runtime_error("[ ERROR ]: Failed to initialize miniaudio engine!");
-                }
-                miniaudioEngineInit = true;
-            }
-
-            if(currScene == 2) {
-                if(miniaudioEngineInit && !titleSoundStarted) {
-                    // initialize and start the title sound
-                    result = ma_sound_init_from_file(&engine, "audios/title.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &titleSound);
-                    if(result != MA_SUCCESS) {
-                        throw std::runtime_error("[ ERROR ]: Failed to initialize title sound!");
-                    }
-                    ma_sound_set_looping(&titleSound, MA_TRUE);
-                    ma_sound_start(&titleSound);
-                    titleSoundStarted = true;
-                }
+            if(currScene == 2 && !ma_sound_is_playing(&titleMusic)) {
+                    ma_sound_start(&titleMusic);
             }
             else {
-                if(miniaudioEngineInit && !ingameSoundStarted) {
-                    // initialize and start the ingame sound
-                    result = ma_sound_init_from_file(&engine, "audios/ingame.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &ingameSound);
-                    if(result != MA_SUCCESS) {
-                        throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
-                    }
-                    ma_sound_set_looping(&ingameSound, MA_TRUE);
-                    ma_sound_start(&ingameSound);
-                    ingameSoundStarted = true;
+                if(currScene != 2 && ma_sound_is_playing(&titleMusic) && !ma_sound_is_playing(&ingameMusic)) {
+                    ma_sound_stop(&titleMusic);
+                    ma_sound_start(&ingameMusic);
                 }
                 if(currScene == 0) {
                     alreadyInPhotoMode = false;
@@ -810,9 +788,22 @@ class Application : public BaseProject {
                     const float dampingFactor = 3.0f; // Adjust this value to control the damping effect
                     currentSpeed += (targetSpeed - currentSpeed) * dampingFactor * deltaT;
                     float speed = currentSpeed * deltaT;
+                    speed = (speed < 0.001f) ? 0.0f : speed;
                     if (speed != 0.0f) {
                         steeringAng += (speed > 0 ? -m.x : m.x) * steeringSpeed * deltaT;
                         taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
+                        if(ma_sound_is_playing(&idleEngineSound)) {
+                            ma_sound_stop(&idleEngineSound);
+                            ma_sound_seek_to_pcm_frame(&accelerationEngineSound, 0);
+                        }
+                        ma_sound_start(&accelerationEngineSound);
+                    }
+                    else {
+                        if(ma_sound_is_playing(&accelerationEngineSound)) {
+                            ma_sound_stop(&accelerationEngineSound);
+                            ma_sound_seek_to_pcm_frame(&idleEngineSound, 0);
+                        }
+                        ma_sound_start(&idleEngineSound);
                     }
 
                     //update camera position for lookAt view, keeping into account the current SteeringAng
@@ -1102,6 +1093,41 @@ int main(int argc, char* argv[]) {
         std::cout << "[ SETTINGS ]: Graphics settings set to " << argv[2] << std::endl;
         app.graphicsSettings = std::stoi(argv[2]);
     }
+
+    std::cout << "[ SOUND ]: Initializing sound resources..." << std::endl;
+    // initialize the miniaudio engine
+    ma_result result = ma_engine_init(NULL, &app.engine);
+    if(result != MA_SUCCESS) {
+        throw std::runtime_error("[ ERROR ]: Failed to initialize miniaudio engine!");
+    }
+    // initialize title music
+    result = ma_sound_init_from_file(&app.engine, "audios/title.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.titleMusic);
+    if(result != MA_SUCCESS) {
+        throw std::runtime_error("[ ERROR ]: Failed to initialize title sound!");
+    }
+    ma_sound_set_looping(&app.titleMusic, MA_TRUE);
+    // initialize in-game music
+    result = ma_sound_init_from_file(&app.engine, "audios/ingame.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.ingameMusic);
+    if(result != MA_SUCCESS) {
+        throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
+    }
+    ma_sound_set_looping(&app.ingameMusic, MA_TRUE);
+    ma_sound_set_volume(&app.ingameMusic, 0.25f);
+    // initialize idle engine sound
+    result = ma_sound_init_from_file(&app.engine, "audios/idle.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.idleEngineSound);
+    if(result != MA_SUCCESS) {
+        throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
+    }
+    ma_sound_set_looping(&app.idleEngineSound, MA_TRUE);
+    ma_sound_set_volume(&app.idleEngineSound, 2.0f);
+    // initialize accelearion engine sound
+    result = ma_sound_init_from_file(&app.engine, "audios/acceleration.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.accelerationEngineSound);
+    if(result != MA_SUCCESS) {
+        throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
+    }
+    ma_sound_set_looping(&app.accelerationEngineSound, MA_TRUE);
+    ma_sound_set_volume(&app.accelerationEngineSound, 1.5f);
+    std::cout << "[ SOUND ]: Sound resources initialized!" << std::endl;
 
     try {
         app.run();
