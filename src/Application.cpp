@@ -2,9 +2,8 @@
 #include "headers/TextMaker.hpp"
 #include <iostream>
 #include <fstream>
-
-// #define STB_IMAGE_IMPLEMENTATION
-// #include "stb_image.h"
+#define MINIAUDIO_IMPLEMENTATION
+#include "headers/miniaudio.h"
 
 // normale della città invertite (check sullo scaling - coeff. negativi dispari)
 
@@ -38,8 +37,10 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT];
     alignas(16) glm::vec4 frontLightCol;
     alignas(16) glm::vec4 rearLightCol;
+    alignas(16) glm::vec4 streetLightPos[MAX_STREET_LIGHTS];
+    alignas(16) glm::vec4 streetLightCol;
     alignas(16) glm::vec4 eyePos;
-    alignas(16) glm::vec4 gammaMetallicSettings;
+    alignas(16) glm::vec4 gammaMetallicSettingsNight;
 };
 
 struct SkyGUBO {
@@ -64,12 +65,12 @@ class Application : public BaseProject {
 
     public:
 
-        /* GLOBAL VARIABLE FOR GRAPHICS SETTINGS:
+        /* PUBLIC PARAMETER FOR GRAPHICS SETTINGS:
         * 0 -> low ==> only direct light
         * 1 -> medium ==> direct light + taxi lights
         * 2 -> high ==> direct light + taxi lights + street lights
         */
-        int graphicsSettings = 1;
+        int graphicsSettings = 2;
     
     protected:
         
@@ -104,10 +105,20 @@ class Application : public BaseProject {
 
         // Other application parameters
         int currScene = 2;
+        int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
+        float CamAlpha = 0.0f;
+        float CamBeta = 0.0f;
+        bool alreadyInPhotoMode = false;
+        bool isNight = false;
+        bool drawTitle = true;
+        bool miniaudioEngineInit = false;
+        bool titleSoundStarted = false;
+        ma_result result;
+        ma_engine engine;
+        ma_sound titleSound;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
         glm::vec3 camPosInPhotoMode;
         glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
-        bool drawTitle = true;
 
         glm::vec3 carPositions[CARS] = {glm::vec3(-72.0, -0.2, 36.0), //initial pos of car
                                     glm::vec3(5.0, -0.2, 36.0),
@@ -158,11 +169,42 @@ class Application : public BaseProject {
                                         glm::vec3(141.0f, -0.2f, -111.0f)};
         std::vector<glm::vec3> wayPoints[CARS] = {wayPoints1, wayPoints2, wayPoints3, wayPoints4, wayPoints5, wayPoints6, wayPoints7, wayPoints8, wayPoints9};
 
-        int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
-        float CamAlpha = 0.0f;
-        float CamBeta = 0.0f;
-        bool alreadyInPhotoMode = false;
-        bool isNight = false;
+        glm::vec3 streetlightPos[STREET_LIGHT_COUNT] = {glm::vec3(-1.65, 9.3, -22.2),
+                                                        glm::vec3(-1.65, 9.3, -94.2),
+                                                        glm::vec3(-1.65, 9.3, -166.2),
+                                                        glm::vec3(70.35, 9.3, -22.2),
+                                                        glm::vec3(70.35, 9.3, -94.2),
+                                                        glm::vec3(70.35, 9.3, -166.2),
+                                                        glm::vec3(-13.8, 9.3, -37.65),
+                                                        glm::vec3(58.2, 9.3, -37.65),
+                                                        glm::vec3(130.2, 9.3, -37.65),
+                                                        glm::vec3(-13.8, 9.3, -109.65),
+                                                        glm::vec3(58.2, 9.3, -109.65),
+                                                        glm::vec3(130.2, 9.3, -109.65),
+                                                        glm::vec3(-13.8, 9.3, 34.35),
+                                                        glm::vec3(58.2, 9.3, 34.35),
+                                                        glm::vec3(130.2, 9.3, 34.35),
+                                                        glm::vec3(-13.8, 9.3, -181.65),
+                                                        glm::vec3(58.2, 9.3, -181.65),
+                                                        glm::vec3(130.2, 9.3, -181.65),
+                                                        glm::vec3(-73.65, 9.3, -22.2),
+                                                        glm::vec3(-73.65, 9.3, -94.2),
+                                                        glm::vec3(-73.65, 9.3, -166.2),
+                                                        glm::vec3(142.35, 9.3, -22.2),
+                                                        glm::vec3(142.35, 9.3, -94.2),
+                                                        glm::vec3(142.35, 9.3, -166.2),
+                                                        glm::vec3(-11.4, 9.3, 38.4),
+                                                        glm::vec3(-74.4, 9.3, -47.4),
+                                                        glm::vec3(-74.4, 9.3, -119.4),
+                                                        glm::vec3(11.4, 9.3, -182.4),
+                                                        glm::vec3(83.4, 9.3, -182.4),
+                                                        glm::vec3(146.4, 9.3, -96.6),
+                                                        glm::vec3(146.4, 9.3, -24.6),
+                                                        glm::vec3(60.6, 9.3, 38.4),
+                                                        glm::vec3(-77.1, 9.3, 38.1),
+                                                        glm::vec3(-74.1, 9.3, -185.1),
+                                                        glm::vec3(149.1, 9.3, -182.1),
+                                                        glm::vec3(146.1, 9.3, 41.1)};
 
         // Here you set the main application parameters
         void setWindowParameters() {
@@ -643,6 +685,7 @@ class Application : public BaseProject {
             const float angTurnTimeFact = 2.0f * M_PI / turnTime;
 
             glm::vec3 directions[CARS];
+
             for(int i = 0; i < CARS; i++) {
                 directions[i] = glm::normalize(wayPoints[i][currentPoints[i]] - carPositions[i]);
             }
@@ -651,6 +694,9 @@ class Application : public BaseProject {
 
             // Standard procedure to quit when the ESC key is pressed
             if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+                if(miniaudioEngineInit) {
+                    ma_engine_uninit(&engine);
+                }
                 glfwSetWindowShouldClose(window, GL_TRUE);
             }
 
@@ -661,6 +707,11 @@ class Application : public BaseProject {
                     if(currScene == 2) {
                         drawTitle = false;
                         currScene = 0;
+                        if(titleSoundStarted) {
+                            ma_sound_stop(&titleSound);
+                            ma_sound_uninit(&titleSound);
+                            titleSoundStarted = false;
+                        }
                     }
                     else if(currScene == 0) {
                         currScene = 1;
@@ -668,8 +719,6 @@ class Application : public BaseProject {
                     else {
                         currScene = 0;
                     }
-                    std::cout << "[ DEBUG ]: Scene " << currScene << std::endl;
-
                     RebuildPipeline();
                 }
             } else {
@@ -712,7 +761,28 @@ class Application : public BaseProject {
             static float steeringAng = 0.0f;
             glm::mat4 mView;
 
-            if(currScene != 2) {
+            // initialize the miniaudio engine
+            if(!miniaudioEngineInit) {
+                result = ma_engine_init(NULL, &engine);
+                if(result != MA_SUCCESS) {
+                    throw std::runtime_error("[ ERROR ]: Failed to initialize miniaudio engine!");
+                }
+                miniaudioEngineInit = true;
+            }
+
+            if(currScene == 2) {
+                if(miniaudioEngineInit && !titleSoundStarted) {
+                    // initialize and start the title sound
+                    result = ma_sound_init_from_file(&engine, "audios/title.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &titleSound);
+                    if(result != MA_SUCCESS) {
+                        throw std::runtime_error("[ ERROR ]: Failed to initialize title sound!");
+                    }
+                    ma_sound_set_looping(&titleSound, MA_TRUE);
+                    ma_sound_start(&titleSound);
+                    titleSoundStarted = true;
+                }
+            }
+            else {
                 if(currScene == 0) {
                     alreadyInPhotoMode = false;
                     // Third person view
@@ -809,26 +879,12 @@ class Application : public BaseProject {
                 glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
                 glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
                 glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);
-
+                glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);
                 glm::mat4 mWorldCars[CARS];
                 for(int i = 0; i < CARS; i++) {
                     mWorldCars[i] = glm::translate(glm::mat4(1.0), carPositions[i]) *
                                     glm::rotate(glm::mat4(1.0), steeringAngCars[i], glm::vec3(0, 1, 0));
                 }
-
-                /* TODO : Implement streetlights
-                std::vector<glm::mat4> streetlightPosVector;
-
-                #if DEBUG
-                    if(streetlightPosVector.size() > 0) {
-                        for(int i = 0; i < STREET_LIGHT_COUNT; i++) {
-                            uboSphere[i].mvpMat = Prj * mView * streetlightPosVector[i];
-                            uboSphere[i].mMat = streetlightPosVector[i];
-                            uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
-                            DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
-                        }
-                    }
-                #endif*/
 
                 nlohmann::json js;
                 std::ifstream ifs2("models/city.json");
@@ -842,6 +898,7 @@ class Application : public BaseProject {
 
                     float TMj[16];
 
+                    
                     /*for(int k = 0; k < MESH; k++) {
                         nlohmann::json TMjson = j["instances"][k]["transform"];
                         for(int l = 0; l < 16; l++) {
@@ -851,15 +908,15 @@ class Application : public BaseProject {
                         glm::mat4 tileModelMat = glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
                         glm::mat4 streetlightPos;
                         if(modelName == "models/road_tile_1x1_001.mgcg") {
-                            streetlightPos = glm::translate(tileModelMat, glm::vec3(3.75f, 4.25f, -0.75f)); // Adjust position
+                            streetlightPos = glm::translate(tileModelMat, glm::vec3(3.7f, 4.65f, -0.55f)); // Adjust position
                             streetlightPosVector.push_back(streetlightPos);
                         }
                         else if(modelName == "models/road_tile_1x1_006.mgcg") {
-                            streetlightPos = glm::translate(tileModelMat, glm::vec3(2.0f, 5.0f, -1.0f)); // Adjust position
+                            streetlightPos = glm::translate(tileModelMat, glm::vec3(1.7f, 4.65f, -0.7f)); // Adjust position
                             streetlightPosVector.push_back(streetlightPos);
                         }
                         else if(modelName == "models/road_tile_1x1_008.mgcg") {
-                            streetlightPos = glm::translate(tileModelMat, glm::vec3(-4.0f, 5.0f, 1.0f)); // Adjust position
+                            streetlightPos = glm::translate(tileModelMat, glm::vec3(-3.8f, 4.65f, 0.8f)); // Adjust position
                             streetlightPosVector.push_back(streetlightPos);
                         }
                     }*/
@@ -880,16 +937,23 @@ class Application : public BaseProject {
                             guboCity[k].taxiLightPos[i] = taxiLightPos[i];
                         }
                         guboCity[k].directLightCol = sunCol;
-                        if(isNight) {
-                            guboCity[k].rearLightCol = rearLightColor;
-                            guboCity[k].frontLightCol = frontLightColor;
+                        guboCity[k].rearLightCol = rearLightColor;
+                        guboCity[k].frontLightCol = frontLightColor;
+                        std::unordered_map<float, glm::vec3> distancesToPositions;
+                        std::vector<float> distances;
+                        float dist = 0.0f;
+                        for(int i = 0; i < STREET_LIGHT_COUNT; i++) {
+                            dist = glm::distance(streetlightPos[i], glm::vec3(mWorld[3]));
+                            distances.push_back(dist);
+                            distancesToPositions[dist] = streetlightPos[i];
                         }
-                        else {
-                            guboCity[k].rearLightCol = black;
-                            guboCity[k].frontLightCol = black;
+                        std::sort(distances.begin(), distances.end());
+                        for(int i = 0; i < MAX_STREET_LIGHTS; i++) {
+                            guboCity[k].streetLightPos[i] = glm::vec4(distancesToPositions[distances[i]], 1.0f);
                         }
+                        guboCity[k].streetLightCol = streetLightCol;
                         guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
-                        guboCity[k].gammaMetallicSettings = glm::vec4(128.0f, 0.1f, float(graphicsSettings), 0.0f);
+                        guboCity[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
                     }
 
@@ -898,6 +962,16 @@ class Application : public BaseProject {
                     std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
                     exit(1);
                 }
+
+                #if DEBUG
+                    for(int i = 0; i < STREET_LIGHT_COUNT; i++) {
+                        glm::mat4 sphereMMat = glm::scale(glm::translate(glm::mat4(1.0f), streetlightPos[i]), glm::vec3(0.1f));
+                        uboSphere[i].mvpMat = Prj * mView * sphereMMat;
+                        uboSphere[i].mMat = sphereMMat;
+                        uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
+                        DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
+                    }
+                #endif
 
                 for(int i=0; i<8; i++){
                     uboTaxi[i].mvpMat = Prj * mView * mWorldTaxi;
@@ -909,16 +983,23 @@ class Application : public BaseProject {
                         guboTaxi[i].taxiLightPos[j] = taxiLightPos[j];
                     }
                     guboTaxi[i].directLightCol = sunCol;
-                    if(isNight) {
-                        guboTaxi[i].rearLightCol = rearLightColor;
-                        guboTaxi[i].frontLightCol = frontLightColor;
+                    guboTaxi[i].rearLightCol = rearLightColor;
+                    guboTaxi[i].frontLightCol = frontLightColor;
+                    std::unordered_map<float, glm::vec3> distancesToPositions;
+                    std::vector<float> distances;
+                    float dist = 0.0f;
+                    for(int j = 0; j < STREET_LIGHT_COUNT; j++) {
+                        dist = glm::distance(streetlightPos[j], glm::vec3(mWorldTaxi[3]));
+                        distances.push_back(dist);
+                        distancesToPositions[dist] = streetlightPos[j];
                     }
-                    else {
-                        guboTaxi[i].rearLightCol = black;
-                        guboTaxi[i].frontLightCol = black;
+                    std::sort(distances.begin(), distances.end());
+                    for(int j = 0; j < MAX_STREET_LIGHTS; j++) {
+                        guboTaxi[i].streetLightPos[j] = glm::vec4(distancesToPositions[distances[j]], 1.0f);
                     }
+                    guboTaxi[i].streetLightCol = streetLightCol;
                     guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
-                    guboTaxi[i].gammaMetallicSettings = glm::vec4(128.0f, 1.0f, float(graphicsSettings), 0.0f);
+                    guboTaxi[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
                 }
 
@@ -932,16 +1013,23 @@ class Application : public BaseProject {
                         guboCars[i].taxiLightPos[j] = taxiLightPos[j];
                     }
                     guboCars[i].directLightCol = sunCol;
-                    if(isNight) {
-                        guboCars[i].rearLightCol = rearLightColor;
-                        guboCars[i].frontLightCol = frontLightColor;
+                    guboCars[i].rearLightCol = rearLightColor;
+                    guboCars[i].frontLightCol = frontLightColor;
+                    std::unordered_map<float, glm::vec3> distancesToPositions;
+                    std::vector<float> distances;
+                    float dist = 0.0f;
+                    for(int j = 0; j < STREET_LIGHT_COUNT; j++) {
+                        dist = glm::distance(streetlightPos[j], glm::vec3(mWorldCars[i][3]));
+                        distances.push_back(dist);
+                        distancesToPositions[dist] = streetlightPos[j];
                     }
-                    else {
-                        guboCars[i].rearLightCol = black;
-                        guboCars[i].frontLightCol = black;
+                    std::sort(distances.begin(), distances.end());
+                    for(int j = 0; j < MAX_STREET_LIGHTS; j++) {
+                        guboCars[i].streetLightPos[j] = glm::vec4(distancesToPositions[distances[j]], 1.0f);
                     }
+                    guboCars[i].streetLightCol = streetLightCol;
                     guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
-                    guboCars[i].gammaMetallicSettings = glm::vec4(128.0f, 1.0f, float(graphicsSettings), 0.0f);
+                    guboCars[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
                 }
 
@@ -983,18 +1071,24 @@ class Application : public BaseProject {
                             guboPeople[k].taxiLightPos[j] = taxiLightPos[j];
                         }
                         guboPeople[k].directLightCol = sunCol;
-                        if(isNight) {
-                            guboPeople[k].rearLightCol = rearLightColor;
-                            guboPeople[k].frontLightCol = frontLightColor;
+                        guboPeople[k].rearLightCol = rearLightColor;
+                        guboPeople[k].frontLightCol = frontLightColor;
+                        std::unordered_map<float, glm::vec3> distancesToPositions;
+                        std::vector<float> distances;
+                        float dist = 0.0f;
+                        for(int i = 0; i < STREET_LIGHT_COUNT; i++) {
+                            dist = glm::distance(streetlightPos[i], glm::vec3(mWorld[3]));
+                            distances.push_back(dist);
+                            distancesToPositions[dist] = streetlightPos[i];
                         }
-                        else {
-                            guboPeople[k].rearLightCol = black;
-                            guboPeople[k].frontLightCol = black;
+                        std::sort(distances.begin(), distances.end());
+                        for(int i = 0; i < MAX_STREET_LIGHTS; i++) {
+                            guboPeople[k].streetLightPos[i] = glm::vec4(distancesToPositions[distances[i]], 1.0f);
                         }
+                        guboPeople[k].streetLightCol = streetLightCol;
                         guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
-                        guboPeople[k].gammaMetallicSettings = glm::vec4(128.0f, 0.1f, float(graphicsSettings), 0.0f);
+                        guboPeople[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
-
                     }
 
                 }
