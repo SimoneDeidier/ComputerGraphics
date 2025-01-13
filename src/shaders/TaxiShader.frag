@@ -19,6 +19,8 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 	vec4 streetLightCol;
 	vec4 streetLightDirection;
 	vec4 streetLightCosines;
+	vec4 waypointPos;
+	vec4 waypointCol;
 	vec4 eyePos;
 	vec4 gammaMetallicSettingsNight;
 } gubo;
@@ -48,6 +50,11 @@ void main() {
 	vec3 directLightColor = gubo.directLightColor.rgb;
 	vec3 directLightBRDF = BRDF(viewerDir, norm, directLightDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
 	res += directLightBRDF * directLightColor;
+
+	vec3 waypointDir = normalize(gubo.waypointPos.xyz - fragPos);
+	vec3 waypointColor = gubo.waypointCol.rgb * dot(pow((5 / length(gubo.waypointPos.xyz - fragPos)), 2.0), clamp((dot(normalize(gubo.waypointPos.xyz - fragPos), gubo.streetLightDirection.xyz) - gubo.streetLightCosines.y) / (gubo.streetLightCosines.x - gubo.streetLightCosines.y), 0.0, 1.0));
+	vec3 waypointBRDF = BRDF(viewerDir, norm, waypointDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
+	res += waypointBRDF * waypointColor;
 
 	if(gubo.gammaMetallicSettingsNight.z == 0.0) {
 		outColor = vec4(res, 1.0);

@@ -14,6 +14,7 @@
 #define PEOPLE 45
 #define TAXI_ELEMENTS 8
 #define TAXI_LIGHT_COUNT 4
+#define WAYPOINTS_COUNT 5
 
 #define DEBUG 0
 #define SPHERES 36
@@ -41,6 +42,8 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec4 streetLightCol;
     alignas(16) glm::vec4 streetLightDirection;
     alignas(16) glm::vec4 streetLightCosines;
+    alignas(16) glm::vec4 waypointPos;
+    alignas(16) glm::vec4 waypointCol;
     alignas(16) glm::vec4 eyePos;
     alignas(16) glm::vec4 gammaMetallicSettingsNight;
 };
@@ -119,19 +122,20 @@ class Application : public BaseProject {
         bool alreadyInPhotoMode = false;
         bool isNight = false;
         bool drawTitle = true;
+        bool selectedPeople = false;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
         glm::vec3 camPosInPhotoMode;
-        glm::vec3 taxiPos = glm::vec3(0.0, -0.2, 0.0); //initial pos of taxi
+        glm::vec3 taxiPos = glm::vec3(0.0f, -0.2f, 0.0f); //initial pos of taxi
 
-        glm::vec3 carPositions[CARS] = {glm::vec3(-72.0, -0.2, 36.0), //initial pos of car
-                                    glm::vec3(5.0, -0.2, 36.0),
-                                    glm::vec3(72.0, -0.2, 36.0),
-                                    glm::vec3(-36.0, -0.2, -108.0),
-                                    glm::vec3(36.0, -0.2, -108.0),
-                                    glm::vec3(108.0, -0.2, -108.0),
-                                    glm::vec3(-36.0, -0.2, -112.0),
-                                    glm::vec3(36.0, -0.2, -112.0),
-                                    glm::vec3(108.0, -0.2, -112.0)};
+        glm::vec3 carPositions[CARS] = {glm::vec3(-72.0f, -0.2f, 36.0f), //initial pos of car
+                                    glm::vec3(5.0f, -0.2f, 36.0f),
+                                    glm::vec3(72.0f, -0.2f, 36.0f),
+                                    glm::vec3(-36.0f, -0.2f, -108.0f),
+                                    glm::vec3(36.0f, -0.2f, -108.0f),
+                                    glm::vec3(108.0f, -0.2f, -108.0f),
+                                    glm::vec3(-36.0f, -0.2f, -112.0f),
+                                    glm::vec3(36.0f, -0.2f, -112.0f),
+                                    glm::vec3(108.0f, -0.2f, -112.0f)};
 
 
         std::vector<glm::vec3> wayPoints1={glm::vec3(-69.0f, -0.2f, 33.0f),
@@ -172,42 +176,59 @@ class Application : public BaseProject {
                                         glm::vec3(141.0f, -0.2f, -111.0f)};
         std::vector<glm::vec3> wayPoints[CARS] = {wayPoints1, wayPoints2, wayPoints3, wayPoints4, wayPoints5, wayPoints6, wayPoints7, wayPoints8, wayPoints9};
 
-        glm::vec3 streetlightPos[STREET_LIGHT_COUNT] = {glm::vec3(-1.65, 9.3, -22.2),
-                                                        glm::vec3(-1.65, 9.3, -94.2),
-                                                        glm::vec3(-1.65, 9.3, -166.2),
-                                                        glm::vec3(70.35, 9.3, -22.2),
-                                                        glm::vec3(70.35, 9.3, -94.2),
-                                                        glm::vec3(70.35, 9.3, -166.2),
-                                                        glm::vec3(-13.8, 9.3, -37.65),
-                                                        glm::vec3(58.2, 9.3, -37.65),
-                                                        glm::vec3(130.2, 9.3, -37.65),
-                                                        glm::vec3(-13.8, 9.3, -109.65),
-                                                        glm::vec3(58.2, 9.3, -109.65),
-                                                        glm::vec3(130.2, 9.3, -109.65),
-                                                        glm::vec3(-13.8, 9.3, 34.35),
-                                                        glm::vec3(58.2, 9.3, 34.35),
-                                                        glm::vec3(130.2, 9.3, 34.35),
-                                                        glm::vec3(-13.8, 9.3, -181.65),
-                                                        glm::vec3(58.2, 9.3, -181.65),
-                                                        glm::vec3(130.2, 9.3, -181.65),
-                                                        glm::vec3(-73.65, 9.3, -22.2),
-                                                        glm::vec3(-73.65, 9.3, -94.2),
-                                                        glm::vec3(-73.65, 9.3, -166.2),
-                                                        glm::vec3(142.35, 9.3, -22.2),
-                                                        glm::vec3(142.35, 9.3, -94.2),
-                                                        glm::vec3(142.35, 9.3, -166.2),
-                                                        glm::vec3(-11.4, 9.3, 38.4),
-                                                        glm::vec3(-74.4, 9.3, -47.4),
-                                                        glm::vec3(-74.4, 9.3, -119.4),
-                                                        glm::vec3(11.4, 9.3, -182.4),
-                                                        glm::vec3(83.4, 9.3, -182.4),
-                                                        glm::vec3(146.4, 9.3, -96.6),
-                                                        glm::vec3(146.4, 9.3, -24.6),
-                                                        glm::vec3(60.6, 9.3, 38.4),
-                                                        glm::vec3(-77.1, 9.3, 38.1),
-                                                        glm::vec3(-74.1, 9.3, -185.1),
-                                                        glm::vec3(149.1, 9.3, -182.1),
-                                                        glm::vec3(146.1, 9.3, 41.1)};
+        glm::vec3 streetlightPos[STREET_LIGHT_COUNT] = {glm::vec3(-1.65f, 9.3f, -22.2f),
+                                                        glm::vec3(-1.65f, 9.3f, -94.2f),
+                                                        glm::vec3(-1.65f, 9.3f, -166.2f),
+                                                        glm::vec3(70.35f, 9.3f, -22.2f),
+                                                        glm::vec3(70.35f, 9.3f, -94.2f),
+                                                        glm::vec3(70.35f, 9.3f, -166.2f),
+                                                        glm::vec3(-13.8f, 9.3f, -37.65f),
+                                                        glm::vec3(58.2f, 9.3f, -37.65f),
+                                                        glm::vec3(130.2f, 9.3f, -37.65f),
+                                                        glm::vec3(-13.8f, 9.3f, -109.65f),
+                                                        glm::vec3(58.2f, 9.3f, -109.65f),
+                                                        glm::vec3(130.2f, 9.3f, -109.65f),
+                                                        glm::vec3(-13.8f, 9.3f, 34.35f),
+                                                        glm::vec3(58.2f, 9.3f, 34.35f),
+                                                        glm::vec3(130.2f, 9.3f, 34.35f),
+                                                        glm::vec3(-13.8f, 9.3f, -181.65f),
+                                                        glm::vec3(58.2f, 9.3f, -181.65f),
+                                                        glm::vec3(130.2f, 9.3f, -181.65f),
+                                                        glm::vec3(-73.65f, 9.3f, -22.2f),
+                                                        glm::vec3(-73.65f, 9.3f, -94.2f),
+                                                        glm::vec3(-73.65f, 9.3f, -166.2f),
+                                                        glm::vec3(142.35f, 9.3f, -22.2f),
+                                                        glm::vec3(142.35f, 9.3f, -94.2f),
+                                                        glm::vec3(142.35f, 9.3f, -166.2f),
+                                                        glm::vec3(-11.4f, 9.3f, 38.4f),
+                                                        glm::vec3(-74.4f, 9.3f, -47.4f),
+                                                        glm::vec3(-74.4f, 9.3f, -119.4f),
+                                                        glm::vec3(11.4f, 9.3f, -182.4f),
+                                                        glm::vec3(83.4f, 9.3f, -182.4f),
+                                                        glm::vec3(146.4f, 9.3f, -96.6f),
+                                                        glm::vec3(146.4f, 9.3f, -24.6f),
+                                                        glm::vec3(60.6f, 9.3f, 38.4f),
+                                                        glm::vec3(-77.1f, 9.3f, 38.1f),
+                                                        glm::vec3(-74.1f, 9.3f, -185.1f),
+                                                        glm::vec3(149.1f, 9.3f, -182.1f),
+                                                        glm::vec3(146.1f, 9.3f, 41.1f)};
+
+        glm::vec4 waypointsPosition[WAYPOINTS_COUNT] = {glm::vec4(-79.0f, 2.5f, 0.0f, 0.0f),
+                                                        glm::vec4(-36.0f, 2.5f, 29.0f, 0.0f),
+                                                        glm::vec4(26.0f, 2.5f, -115.0f, 0.0f),
+                                                        glm::vec4(7.0f, 2.5f, -114.0f, 0.0f),
+                                                        glm::vec4(151.0f, 2.5f, -144.0f, 0.0f)};
+
+        glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
+        glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
+        glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);
+        glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);
+        glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
+        glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);
+        glm::vec4 waypointColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        glm::vec4 waypointPosition = glm::vec4(0.0f);
+
+        std::unordered_map<int, bool> drawPeople = {{4, true}, {8, true}, {36, true}, {38, true}, {45, true}};
 
         // Here you set the main application parameters
         void setWindowParameters() {
@@ -788,7 +809,7 @@ class Application : public BaseProject {
                     const float dampingFactor = 3.0f; // Adjust this value to control the damping effect
                     currentSpeed += (targetSpeed - currentSpeed) * dampingFactor * deltaT;
                     float speed = currentSpeed * deltaT;
-                    speed = (speed < 0.001f) ? 0.0f : speed;
+                    speed = (speed > 0 && speed < 0.001f) ? 0.0f : speed;
                     if (speed != 0.0f) {
                         steeringAng += (speed > 0 ? -m.x : m.x) * steeringSpeed * deltaT;
                         taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
@@ -882,17 +903,16 @@ class Application : public BaseProject {
                                                             glm::translate(mWorldTaxi, glm::vec3(0.5f, 0.5f, -0.75f))[3], // rear left
                                                             glm::translate(mWorldTaxi, glm::vec3(-0.6f, 0.6f, 2.6f))[3], // front right
                                                             glm::translate(mWorldTaxi, glm::vec3(0.6f, 0.6f, 2.6f))[3]}; // front left
-                glm::vec4 black = glm::vec4(glm::vec3(0.0f), 1.0f);
-                glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
-                glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
-                glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);
-                glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);
-                glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
-                glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);
+                
                 glm::mat4 mWorldCars[CARS];
                 for(int i = 0; i < CARS; i++) {
                     mWorldCars[i] = glm::translate(glm::mat4(1.0), carPositions[i]) *
                                     glm::rotate(glm::mat4(1.0), steeringAngCars[i], glm::vec3(0, 1, 0));
+                }
+
+                if(!selectedPeople) {
+                    waypointPosition = waypointsPosition[rand() % WAYPOINTS_COUNT];
+                    selectedPeople = true;
                 }
 
                 nlohmann::json js;
@@ -940,6 +960,8 @@ class Application : public BaseProject {
                         guboCity[k].streetLightCol = streetLightCol;
                         guboCity[k].streetLightDirection = streetLightDirection;
                         guboCity[k].streetLightCosines = streetLightCosines;
+                        guboCity[k].waypointPos = waypointPosition;
+                        guboCity[k].waypointCol = waypointColor;
                         guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboCity[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
@@ -978,6 +1000,8 @@ class Application : public BaseProject {
                     guboTaxi[i].streetLightCol = streetLightCol;
                     guboTaxi[i].streetLightDirection = streetLightDirection;
                     guboTaxi[i].streetLightCosines = streetLightCosines;
+                    guboTaxi[i].waypointPos = waypointPosition;
+                    guboTaxi[i].waypointCol = waypointColor;
                     guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboTaxi[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
@@ -1010,6 +1034,8 @@ class Application : public BaseProject {
                     guboCars[i].streetLightCol = streetLightCol;
                     guboCars[i].streetLightDirection = streetLightDirection;
                     guboCars[i].streetLightCosines = streetLightCosines;
+                    guboCars[i].waypointPos = waypointPosition;
+                    guboCars[i].waypointCol = waypointColor;
                     guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboCars[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
@@ -1070,6 +1096,8 @@ class Application : public BaseProject {
                         guboPeople[k].streetLightCol = streetLightCol;
                         guboPeople[k].streetLightDirection = streetLightDirection;
                         guboPeople[k].streetLightCosines = streetLightCosines;
+                        guboPeople[k].waypointPos = waypointPosition;
+                        guboPeople[k].waypointCol = waypointColor;
                         guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboPeople[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
@@ -1080,6 +1108,7 @@ class Application : public BaseProject {
                     std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
                     exit(1);
                 }
+
             }
         }
 };
@@ -1087,6 +1116,7 @@ class Application : public BaseProject {
 
 // This is the main: probably you do not need to touch this!
 int main(int argc, char* argv[]) {
+
     Application app;
 
     if (argc > 2 && std::string(argv[1]) == "settings") {
@@ -1116,18 +1146,20 @@ int main(int argc, char* argv[]) {
     // initialize idle engine sound
     result = ma_sound_init_from_file(&app.engine, "audios/idle.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.idleEngineSound);
     if(result != MA_SUCCESS) {
-        throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
+        throw std::runtime_error("[ ERROR ]: Failed to initialize idle engine sound!");
     }
     ma_sound_set_looping(&app.idleEngineSound, MA_TRUE);
     ma_sound_set_volume(&app.idleEngineSound, 2.0f);
     // initialize accelearion engine sound
     result = ma_sound_init_from_file(&app.engine, "audios/acceleration.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.accelerationEngineSound);
     if(result != MA_SUCCESS) {
-        throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
+        throw std::runtime_error("[ ERROR ]: Failed to initialize acceleration engine sound!");
     }
     ma_sound_set_looping(&app.accelerationEngineSound, MA_TRUE);
     ma_sound_set_volume(&app.accelerationEngineSound, 1.5f);
     std::cout << "[ SOUND ]: Sound resources initialized!" << std::endl;
+
+    srand(time(NULL));
 
     try {
         app.run();
