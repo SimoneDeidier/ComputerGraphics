@@ -39,6 +39,8 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec4 rearLightCol;
     alignas(16) glm::vec4 streetLightPos[MAX_STREET_LIGHTS];
     alignas(16) glm::vec4 streetLightCol;
+    alignas(16) glm::vec4 streetLightDirection;
+    alignas(16) glm::vec4 streetLightCosines;
     alignas(16) glm::vec4 eyePos;
     alignas(16) glm::vec4 gammaMetallicSettingsNight;
 };
@@ -880,6 +882,8 @@ class Application : public BaseProject {
                 glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
                 glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);
                 glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);
+                glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
+                glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);
                 glm::mat4 mWorldCars[CARS];
                 for(int i = 0; i < CARS; i++) {
                     mWorldCars[i] = glm::translate(glm::mat4(1.0), carPositions[i]) *
@@ -952,6 +956,8 @@ class Application : public BaseProject {
                             guboCity[k].streetLightPos[i] = glm::vec4(distancesToPositions[distances[i]], 1.0f);
                         }
                         guboCity[k].streetLightCol = streetLightCol;
+                        guboCity[k].streetLightDirection = streetLightDirection;
+                        guboCity[k].streetLightCosines = streetLightCosines;
                         guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboCity[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
@@ -998,6 +1004,8 @@ class Application : public BaseProject {
                         guboTaxi[i].streetLightPos[j] = glm::vec4(distancesToPositions[distances[j]], 1.0f);
                     }
                     guboTaxi[i].streetLightCol = streetLightCol;
+                    guboTaxi[i].streetLightDirection = streetLightDirection;
+                    guboTaxi[i].streetLightCosines = streetLightCosines;
                     guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboTaxi[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
@@ -1028,6 +1036,8 @@ class Application : public BaseProject {
                         guboCars[i].streetLightPos[j] = glm::vec4(distancesToPositions[distances[j]], 1.0f);
                     }
                     guboCars[i].streetLightCol = streetLightCol;
+                    guboCars[i].streetLightDirection = streetLightDirection;
+                    guboCars[i].streetLightCosines = streetLightCosines;
                     guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboCars[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
@@ -1086,6 +1096,8 @@ class Application : public BaseProject {
                             guboPeople[k].streetLightPos[i] = glm::vec4(distancesToPositions[distances[i]], 1.0f);
                         }
                         guboPeople[k].streetLightCol = streetLightCol;
+                        guboPeople[k].streetLightDirection = streetLightDirection;
+                        guboPeople[k].streetLightCosines = streetLightCosines;
                         guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboPeople[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);

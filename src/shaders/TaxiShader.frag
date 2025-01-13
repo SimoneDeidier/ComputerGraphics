@@ -17,6 +17,8 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 	vec4 rearLightColor;
 	vec4 streetLightPos[5];
 	vec4 streetLightCol;
+	vec4 streetLightDirection;
+	vec4 streetLightCosines;
 	vec4 eyePos;
 	vec4 gammaMetallicSettingsNight;
 } gubo;
@@ -73,7 +75,7 @@ void main() {
 
 		for(int i = 0; i < 5; i++) {
 			vec3 streetLightDir = normalize(gubo.streetLightPos[i].xyz - fragPos);
-			vec3 streetLightColor = gubo.streetLightCol.rgb * pow((3 / length(gubo.streetLightPos[i].xyz - fragPos)), 2.0);
+			vec3 streetLightColor = gubo.streetLightCol.rgb * dot(pow((10 / length(gubo.streetLightPos[i].xyz - fragPos)), 2.0), clamp((dot(normalize(gubo.streetLightPos[i].xyz - fragPos), gubo.streetLightDirection.xyz) - gubo.streetLightCosines.y) / (gubo.streetLightCosines.x - gubo.streetLightCosines.y), 0.0, 1.0));
 			vec3 streetLightBRDF = BRDF(viewerDir, norm, streetLightDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
 			res += streetLightBRDF * streetLightColor;
 		}
