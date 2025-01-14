@@ -14,7 +14,9 @@
 #define PEOPLE 45
 #define TAXI_ELEMENTS 8
 #define TAXI_LIGHT_COUNT 4
-#define WAYPOINTS_COUNT 5
+#define PICKUP_COUNT 5
+
+#define MIN_DISTANCE_TO_PICKUP 2.5f
 
 #define DEBUG 0
 #define SPHERES 36
@@ -42,8 +44,9 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec4 streetLightCol;
     alignas(16) glm::vec4 streetLightDirection;
     alignas(16) glm::vec4 streetLightCosines;
-    alignas(16) glm::vec4 waypointPos;
-    alignas(16) glm::vec4 waypointCol;
+    alignas(16) glm::vec4 pickupPointPos;
+    alignas(16) glm::vec4 pickupPointCol;
+    alignas(16) glm::vec4 pickupPointOn;
     alignas(16) glm::vec4 eyePos;
     alignas(16) glm::vec4 gammaMetallicSettingsNight;
 };
@@ -82,6 +85,7 @@ class Application : public BaseProject {
         ma_sound ingameMusic;
         ma_sound idleEngineSound;
         ma_sound accelerationEngineSound;
+        ma_sound pickupSound;
     
     protected:
         
@@ -117,12 +121,14 @@ class Application : public BaseProject {
         // Other application parameters
         int currScene = 2;
         int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
+        int random_index = -1;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
         bool alreadyInPhotoMode = false;
         bool isNight = false;
         bool drawTitle = true;
-        bool selectedPeople = false;
+        bool pickupPointSelected = false;
+        bool pickedPassenger = false;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
         glm::vec3 camPosInPhotoMode;
         glm::vec3 taxiPos = glm::vec3(0.0f, -0.2f, 0.0f); //initial pos of taxi
@@ -213,11 +219,11 @@ class Application : public BaseProject {
                                                         glm::vec3(149.1f, 9.3f, -182.1f),
                                                         glm::vec3(146.1f, 9.3f, 41.1f)};
 
-        glm::vec4 waypointsPosition[WAYPOINTS_COUNT] = {glm::vec4(-79.0f, 2.5f, 0.0f, 0.0f),
-                                                        glm::vec4(-36.0f, 2.5f, 29.0f, 0.0f),
-                                                        glm::vec4(26.0f, 2.5f, -115.0f, 0.0f),
-                                                        glm::vec4(7.0f, 2.5f, -114.0f, 0.0f),
-                                                        glm::vec4(151.0f, 2.5f, -144.0f, 0.0f)};
+        glm::vec4 pickupPoints[PICKUP_COUNT] = {glm::vec4(-79.0f, 0.0f, 0.0f, 0.0f),
+                                                        glm::vec4(36.0f, 0.0f, -29.0f, 0.0f),
+                                                        glm::vec4(26.0f, 0.0f, -115.0f, 0.0f),
+                                                        glm::vec4(7.0f, 0.0f, -144.0f, 0.0f),
+                                                        glm::vec4(151.0f, 0.0f, -144.0f, 0.0f)};
 
         glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
         glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
@@ -225,10 +231,10 @@ class Application : public BaseProject {
         glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);
         glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
         glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);
-        glm::vec4 waypointColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-        glm::vec4 waypointPosition = glm::vec4(0.0f);
+        glm::vec4 pickupPointColor = glm::vec4(247.0f / 255.0f, 76.0f / 255.0f, 63.0f / 255.0f, 1.0f);
+        glm::vec4 pickupPoint = glm::vec4(0.0f);
 
-        std::unordered_map<int, bool> drawPeople = {{4, true}, {8, true}, {36, true}, {38, true}, {45, true}};
+        std::unordered_map<int, bool> drawPeople = {{3, true}, {7, true}, {35, true}, {37, true}, {44, true}};
 
         // Here you set the main application parameters
         void setWindowParameters() {
@@ -671,10 +677,15 @@ class Application : public BaseProject {
                 Ppeople.bind(commandBuffer);
 
                 for(int i = 0; i < PEOPLE; i++) {
-                    DSpeople[i].bind(commandBuffer, Ppeople, 0, currentImage);
-                    Mpeople[i].bind(commandBuffer);
-                    vkCmdDrawIndexed(commandBuffer,
-                                    static_cast<uint32_t>(Mpeople[i].indices.size()), 1, 0, 0, 0);
+                    if((i == 3 || i == 7 || i == 35 || i == 37 || i == 44) && !drawPeople[i]) {
+                        // do nothing --> do not draw it
+                    }
+                    else {
+                        DSpeople[i].bind(commandBuffer, Ppeople, 0, currentImage);
+                        Mpeople[i].bind(commandBuffer);
+                        vkCmdDrawIndexed(commandBuffer,
+                                        static_cast<uint32_t>(Mpeople[i].indices.size()), 1, 0, 0, 0);
+                    }
                 }
             }
             else {
@@ -728,6 +739,8 @@ class Application : public BaseProject {
                 ma_sound_uninit(&idleEngineSound);
                 if(ma_sound_is_playing(&accelerationEngineSound)) ma_sound_stop(&accelerationEngineSound);
                 ma_sound_uninit(&accelerationEngineSound);
+                if(ma_sound_is_playing(&pickupSound)) ma_sound_stop(&pickupSound);
+                ma_sound_uninit(&pickupSound);
 
                 ma_engine_uninit(&engine);
 
@@ -910,9 +923,19 @@ class Application : public BaseProject {
                                     glm::rotate(glm::mat4(1.0), steeringAngCars[i], glm::vec3(0, 1, 0));
                 }
 
-                if(!selectedPeople) {
-                    waypointPosition = waypointsPosition[rand() % WAYPOINTS_COUNT];
-                    selectedPeople = true;
+                if(!pickupPointSelected) {
+                    random_index = rand() % PICKUP_COUNT;
+                    pickupPoint = pickupPoints[random_index];
+                    pickupPointSelected = true;
+                }
+
+                if(glm::distance(glm::vec3(pickupPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && !pickedPassenger) {
+                    int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
+                    drawPeople[map_index] = false;
+                    pickedPassenger = true;
+                    RebuildPipeline();
+                    if(ma_sound_at_end(&pickupSound)) ma_sound_seek_to_pcm_frame(&pickupSound, 0);
+                    ma_sound_start(&pickupSound);
                 }
 
                 nlohmann::json js;
@@ -960,8 +983,9 @@ class Application : public BaseProject {
                         guboCity[k].streetLightCol = streetLightCol;
                         guboCity[k].streetLightDirection = streetLightDirection;
                         guboCity[k].streetLightCosines = streetLightCosines;
-                        guboCity[k].waypointPos = waypointPosition;
-                        guboCity[k].waypointCol = waypointColor;
+                        guboCity[k].pickupPointPos = glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w);
+                        guboCity[k].pickupPointCol = pickupPointColor;
+                        guboCity[k].pickupPointOn = glm::vec4((pickedPassenger ? 0.0f : 1.0f), 0.0f, 0.0f, 0.0f);
                         guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboCity[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
@@ -1000,8 +1024,9 @@ class Application : public BaseProject {
                     guboTaxi[i].streetLightCol = streetLightCol;
                     guboTaxi[i].streetLightDirection = streetLightDirection;
                     guboTaxi[i].streetLightCosines = streetLightCosines;
-                    guboTaxi[i].waypointPos = waypointPosition;
-                    guboTaxi[i].waypointCol = waypointColor;
+                    guboTaxi[i].pickupPointPos = glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w);
+                    guboTaxi[i].pickupPointCol = pickupPointColor;
+                    guboTaxi[i].pickupPointOn = glm::vec4((pickedPassenger ? 0.0f : 1.0f), 0.0f, 0.0f, 0.0f);
                     guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboTaxi[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
@@ -1034,8 +1059,9 @@ class Application : public BaseProject {
                     guboCars[i].streetLightCol = streetLightCol;
                     guboCars[i].streetLightDirection = streetLightDirection;
                     guboCars[i].streetLightCosines = streetLightCosines;
-                    guboCars[i].waypointPos = waypointPosition;
-                    guboCars[i].waypointCol = waypointColor;
+                    guboCars[i].pickupPointPos = glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w);
+                    guboCars[i].pickupPointCol = pickupPointColor;
+                    guboCars[i].pickupPointOn = glm::vec4((pickedPassenger ? 0.0f : 1.0f), 0.0f, 0.0f, 0.0f);
                     guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboCars[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
@@ -1096,8 +1122,9 @@ class Application : public BaseProject {
                         guboPeople[k].streetLightCol = streetLightCol;
                         guboPeople[k].streetLightDirection = streetLightDirection;
                         guboPeople[k].streetLightCosines = streetLightCosines;
-                        guboPeople[k].waypointPos = waypointPosition;
-                        guboPeople[k].waypointCol = waypointColor;
+                        guboPeople[k].pickupPointPos = glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w);
+                        guboPeople[k].pickupPointCol = pickupPointColor;
+                        guboPeople[k].pickupPointOn = glm::vec4((pickedPassenger ? 0.0f : 1.0f), 0.0f, 0.0f, 0.0f);
                         guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboPeople[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
@@ -1157,6 +1184,12 @@ int main(int argc, char* argv[]) {
     }
     ma_sound_set_looping(&app.accelerationEngineSound, MA_TRUE);
     ma_sound_set_volume(&app.accelerationEngineSound, 1.5f);
+    // initialize pickup sound
+    result = ma_sound_init_from_file(&app.engine, "audios/pickup.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.pickupSound);
+    if(result != MA_SUCCESS) {
+        throw std::runtime_error("[ ERROR ]: Failed to initialize pickup sound!");
+    }
+    ma_sound_set_volume(&app.pickupSound, 2.0f);
     std::cout << "[ SOUND ]: Sound resources initialized!" << std::endl;
 
     srand(time(NULL));

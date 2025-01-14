@@ -19,8 +19,9 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 	vec4 streetLightCol;
 	vec4 streetLightDirection;
 	vec4 streetLightCosines;
-	vec4 waypointPos;
-	vec4 waypointCol;
+	vec4 pickupPointPos;
+	vec4 pickupPointCol;
+	vec4 pickupPointOn;
 	vec4 eyePos;
 	vec4 gammaMetallicSettingsNight;
 } gubo;
@@ -51,10 +52,12 @@ void main() {
 	vec3 directLightBRDF = BRDF(viewerDir, norm, directLightDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
 	res += directLightBRDF * directLightColor;
 
-	vec3 waypointDir = normalize(gubo.waypointPos.xyz - fragPos);
-	vec3 waypointColor = gubo.waypointCol.rgb * dot(pow((5 / length(gubo.waypointPos.xyz - fragPos)), 2.0), clamp((dot(normalize(gubo.waypointPos.xyz - fragPos), gubo.streetLightDirection.xyz) - gubo.streetLightCosines.y) / (gubo.streetLightCosines.x - gubo.streetLightCosines.y), 0.0, 1.0));
-	vec3 waypointBRDF = BRDF(viewerDir, norm, waypointDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
-	res += waypointBRDF * waypointColor;
+	if(gubo.pickupPointOn.x == 1.0) {
+		vec3 pickupPointDir = normalize(gubo.pickupPointPos.xyz - fragPos);
+		vec3 pickupPointColor = gubo.pickupPointCol.rgb * dot(pow((5 / length(gubo.pickupPointPos.xyz - fragPos)), 2.0), clamp((dot(normalize(gubo.pickupPointPos.xyz - fragPos), gubo.streetLightDirection.xyz) - gubo.streetLightCosines.y) / (gubo.streetLightCosines.x - gubo.streetLightCosines.y), 0.0, 1.0));
+		vec3 pickupPointBRDF = BRDF(viewerDir, norm, pickupPointDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
+		res += pickupPointBRDF * pickupPointColor;
+	}
 
 	if(gubo.gammaMetallicSettingsNight.z == 0.0) {
 		outColor = vec4(res, 1.0);
