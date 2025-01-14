@@ -15,6 +15,8 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 	vec4 taxiLightPos[4];
 	vec4 frontLightColor;
 	vec4 rearLightColor;
+	vec4 frontLightDirection;
+	vec4 frontLightCosines;
 	vec4 streetLightPos[5];
 	vec4 streetLightCol;
 	vec4 streetLightDirection;
@@ -72,7 +74,7 @@ void main() {
 				taxiLightColor = gubo.rearLightColor.rgb * pow((1 / length(gubo.taxiLightPos[i].xyz - fragPos)), 2.0);
 			}
 			else {
-				taxiLightColor = gubo.frontLightColor.rgb * pow((1 / length(gubo.taxiLightPos[i].xyz - fragPos)), 2.0);
+				taxiLightColor = gubo.frontLightColor.rgb * dot(pow((3 / length(gubo.taxiLightPos[i].xyz - fragPos)), 2.0), clamp((dot(normalize(gubo.taxiLightPos[i].xyz - fragPos), gubo.frontLightDirection.xyz) - gubo.frontLightCosines.y) / (gubo.frontLightCosines.x - gubo.frontLightCosines.y), 0.0, 1.0));
 			}
 			vec3 taxiLightBRDF = BRDF(viewerDir, norm, taxiLightDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
 			res += taxiLightBRDF * taxiLightColor;

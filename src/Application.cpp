@@ -40,6 +40,8 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT];
     alignas(16) glm::vec4 frontLightCol;
     alignas(16) glm::vec4 rearLightCol;
+    alignas(16) glm::vec4 frontLightDir;
+    alignas(16) glm::vec4 frontLightCosines;
     alignas(16) glm::vec4 streetLightPos[MAX_STREET_LIGHTS];
     alignas(16) glm::vec4 streetLightCol;
     alignas(16) glm::vec4 streetLightDirection;
@@ -227,6 +229,8 @@ class Application : public BaseProject {
 
         glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
         glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
+        glm::vec4 frontLightDirection = glm::vec4(0.0f, -1.0f * glm::abs(glm::sin(glm::radians(2.0f))), -1.0f * glm::abs(glm::cos(glm::radians(2.0f))), 0.0f);
+        glm::vec4 frontLightCosines = glm::vec4(glm::abs(glm::cos(10.0f)), glm::abs(glm::cos(15.0f)), 0.0f, 0.0f);
         glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);
         glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);
         glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
@@ -251,6 +255,7 @@ class Application : public BaseProject {
             setsInPool = MESH + 8 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0) + 1;
 
             Ar = (float)windowWidth / (float)windowHeight;
+
         }
 
         void onWindowResize(int w, int h) {
@@ -801,6 +806,7 @@ class Application : public BaseProject {
             }
 
             static float steeringAng = 0.0f;
+            float oldSteeringAng = steeringAng;
             glm::mat4 mView;
 
             if(currScene == 2 && !ma_sound_is_playing(&titleMusic)) {
@@ -824,6 +830,7 @@ class Application : public BaseProject {
                     float speed = currentSpeed * deltaT;
                     speed = (speed > 0 && speed < 0.001f) ? 0.0f : speed;
                     if (speed != 0.0f) {
+                        oldSteeringAng = steeringAng;
                         steeringAng += (speed > 0 ? -m.x : m.x) * steeringSpeed * deltaT;
                         taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
                         if(ma_sound_is_playing(&idleEngineSound)) {
@@ -838,6 +845,11 @@ class Application : public BaseProject {
                             ma_sound_seek_to_pcm_frame(&idleEngineSound, 0);
                         }
                         ma_sound_start(&idleEngineSound);
+                    }
+
+                    float actualTurn = steeringAng - oldSteeringAng;
+                    if(actualTurn != 0.0f) {
+                        frontLightDirection = glm::vec4(glm::rotate(glm::mat4(1.0), actualTurn, glm::vec3(0.0f, 1.0f, 0.0f)) * frontLightDirection);
                     }
 
                     //update camera position for lookAt view, keeping into account the current SteeringAng
@@ -968,6 +980,8 @@ class Application : public BaseProject {
                         guboCity[k].directLightCol = sunCol;
                         guboCity[k].rearLightCol = rearLightColor;
                         guboCity[k].frontLightCol = frontLightColor;
+                        guboCity[k].frontLightDir = frontLightDirection;
+                        guboCity[k].frontLightCosines = frontLightCosines;
                         std::unordered_map<float, glm::vec3> distancesToPositions;
                         std::vector<float> distances;
                         float dist = 0.0f;
@@ -1009,6 +1023,8 @@ class Application : public BaseProject {
                     guboTaxi[i].directLightCol = sunCol;
                     guboTaxi[i].rearLightCol = rearLightColor;
                     guboTaxi[i].frontLightCol = frontLightColor;
+                    guboTaxi[i].frontLightDir = frontLightDirection;
+                    guboTaxi[i].frontLightCosines = frontLightCosines;
                     std::unordered_map<float, glm::vec3> distancesToPositions;
                     std::vector<float> distances;
                     float dist = 0.0f;
@@ -1044,6 +1060,8 @@ class Application : public BaseProject {
                     guboCars[i].directLightCol = sunCol;
                     guboCars[i].rearLightCol = rearLightColor;
                     guboCars[i].frontLightCol = frontLightColor;
+                    guboCars[i].frontLightDir = frontLightDirection;
+                    guboCars[i].frontLightCosines = frontLightCosines;
                     std::unordered_map<float, glm::vec3> distancesToPositions;
                     std::vector<float> distances;
                     float dist = 0.0f;
@@ -1107,6 +1125,8 @@ class Application : public BaseProject {
                         guboPeople[k].directLightCol = sunCol;
                         guboPeople[k].rearLightCol = rearLightColor;
                         guboPeople[k].frontLightCol = frontLightColor;
+                        guboPeople[k].frontLightDir = frontLightDirection;
+                        guboPeople[k].frontLightCosines = frontLightCosines;
                         std::unordered_map<float, glm::vec3> distancesToPositions;
                         std::vector<float> distances;
                         float dist = 0.0f;
