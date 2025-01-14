@@ -2,6 +2,7 @@
 #include "headers/TextMaker.hpp"
 #include <iostream>
 #include <fstream>
+
 #define MINIAUDIO_IMPLEMENTATION
 #include "headers/miniaudio.h"
 
@@ -87,6 +88,7 @@ class Application : public BaseProject {
         ma_sound idleEngineSound;
         ma_sound accelerationEngineSound;
         ma_sound pickupSound;
+        ma_sound moneySound;
     
     protected:
         
@@ -125,6 +127,7 @@ class Application : public BaseProject {
         int random_index = -1;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
+        float money = 0.0f;
         bool alreadyInPhotoMode = false;
         bool isNight = false;
         bool drawTitle = true;
@@ -718,7 +721,9 @@ class Application : public BaseProject {
                 }
             #endif
 
-            txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
+            if(currScene == 0) {
+                txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
+            }
         }
 
         // main application loop
@@ -752,6 +757,8 @@ class Application : public BaseProject {
                 ma_sound_uninit(&accelerationEngineSound);
                 if(ma_sound_is_playing(&pickupSound)) ma_sound_stop(&pickupSound);
                 ma_sound_uninit(&pickupSound);
+                if(ma_sound_is_playing(&moneySound)) ma_sound_stop(&moneySound);
+                ma_sound_uninit(&moneySound);
 
                 ma_engine_uninit(&engine);
 
@@ -965,8 +972,8 @@ class Application : public BaseProject {
                     pickupPointSelected = false;
                     RebuildPipeline();
                     // TODO change sound
-                    if(ma_sound_at_end(&pickupSound)) ma_sound_seek_to_pcm_frame(&pickupSound, 0);
-                    ma_sound_start(&pickupSound);
+                    if(ma_sound_at_end(&moneySound)) ma_sound_seek_to_pcm_frame(&moneySound, 0);
+                    ma_sound_start(&moneySound);
                 }
 
                 nlohmann::json js;
@@ -1225,6 +1232,12 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize pickup sound!");
     }
     ma_sound_set_volume(&app.pickupSound, 2.0f);
+    // initialize money sound
+    result = ma_sound_init_from_file(&app.engine, "audios/money.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.moneySound);
+    if(result != MA_SUCCESS) {
+        throw std::runtime_error("[ ERROR ]: Failed to initialize pickup sound!");
+    }
+    ma_sound_set_volume(&app.moneySound, 3.0f);
     std::cout << "[ SOUND ]: Sound resources initialized!" << std::endl;
 
     srand(time(NULL));
