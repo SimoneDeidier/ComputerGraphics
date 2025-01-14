@@ -19,7 +19,7 @@
 #define MIN_DISTANCE_TO_PICKUP 2.5f
 
 #define DEBUG 0
-#define SPHERES 36
+#define SPHERES 2 * PICKUP_COUNT
 
 std::vector<SingleText> outText = {
         {2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
@@ -48,7 +48,6 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec4 streetLightCosines;
     alignas(16) glm::vec4 pickupPointPos;
     alignas(16) glm::vec4 pickupPointCol;
-    alignas(16) glm::vec4 pickupPointOn;
     alignas(16) glm::vec4 eyePos;
     alignas(16) glm::vec4 gammaMetallicSettingsNight;
 };
@@ -227,6 +226,12 @@ class Application : public BaseProject {
                                                         glm::vec4(7.0f, 0.0f, -144.0f, 0.0f),
                                                         glm::vec4(151.0f, 0.0f, -144.0f, 0.0f)};
 
+        glm::vec4 dropoffPoints[PICKUP_COUNT] = {glm::vec4(95.69f, 0.0f, -187.0f, 0.0f),
+                                                    glm::vec4(-80.0f, 0.0f, -184.0f, 0.0f),
+                                                    glm::vec4(136.0f, 0.0f, -72.16f, 0.0f),
+                                                    glm::vec4(107.84f, 0.0f, 44.0f, 0.0f),
+                                                    glm::vec4(-7.0f, 0.0f, -46.13f, 0.0f)};
+
         glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
         glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
         glm::vec4 frontLightDirection = glm::vec4(0.0f, -1.0f * glm::abs(glm::sin(glm::radians(2.0f))), -1.0f * glm::abs(glm::cos(glm::radians(2.0f))), 0.0f);
@@ -237,6 +242,7 @@ class Application : public BaseProject {
         glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);
         glm::vec4 pickupPointColor = glm::vec4(247.0f / 255.0f, 76.0f / 255.0f, 63.0f / 255.0f, 1.0f);
         glm::vec4 pickupPoint = glm::vec4(0.0f);
+        glm::vec4 dropoffPoint = glm::vec4(0.0f);
 
         std::unordered_map<int, bool> drawPeople = {{3, true}, {7, true}, {35, true}, {37, true}, {44, true}};
 
@@ -948,6 +954,19 @@ class Application : public BaseProject {
                     RebuildPipeline();
                     if(ma_sound_at_end(&pickupSound)) ma_sound_seek_to_pcm_frame(&pickupSound, 0);
                     ma_sound_start(&pickupSound);
+                    dropoffPoint = dropoffPoints[random_index];
+                }
+
+
+                if(glm::distance(glm::vec3(dropoffPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && pickedPassenger) {
+                    int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
+                    drawPeople[map_index] = true;
+                    pickedPassenger = false;
+                    pickupPointSelected = false;
+                    RebuildPipeline();
+                    // TODO change sound
+                    if(ma_sound_at_end(&pickupSound)) ma_sound_seek_to_pcm_frame(&pickupSound, 0);
+                    ma_sound_start(&pickupSound);
                 }
 
                 nlohmann::json js;
@@ -997,9 +1016,8 @@ class Application : public BaseProject {
                         guboCity[k].streetLightCol = streetLightCol;
                         guboCity[k].streetLightDirection = streetLightDirection;
                         guboCity[k].streetLightCosines = streetLightCosines;
-                        guboCity[k].pickupPointPos = glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w);
+                        guboCity[k].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, 2.5f, dropoffPoint.z, dropoffPoint.w));
                         guboCity[k].pickupPointCol = pickupPointColor;
-                        guboCity[k].pickupPointOn = glm::vec4((pickedPassenger ? 0.0f : 1.0f), 0.0f, 0.0f, 0.0f);
                         guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboCity[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
@@ -1040,9 +1058,8 @@ class Application : public BaseProject {
                     guboTaxi[i].streetLightCol = streetLightCol;
                     guboTaxi[i].streetLightDirection = streetLightDirection;
                     guboTaxi[i].streetLightCosines = streetLightCosines;
-                    guboTaxi[i].pickupPointPos = glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w);
+                    guboTaxi[i].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, 2.5f, dropoffPoint.z, dropoffPoint.w));
                     guboTaxi[i].pickupPointCol = pickupPointColor;
-                    guboTaxi[i].pickupPointOn = glm::vec4((pickedPassenger ? 0.0f : 1.0f), 0.0f, 0.0f, 0.0f);
                     guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboTaxi[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
@@ -1077,9 +1094,8 @@ class Application : public BaseProject {
                     guboCars[i].streetLightCol = streetLightCol;
                     guboCars[i].streetLightDirection = streetLightDirection;
                     guboCars[i].streetLightCosines = streetLightCosines;
-                    guboCars[i].pickupPointPos = glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w);
+                    guboCars[i].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, 2.5f, dropoffPoint.z, dropoffPoint.w));
                     guboCars[i].pickupPointCol = pickupPointColor;
-                    guboCars[i].pickupPointOn = glm::vec4((pickedPassenger ? 0.0f : 1.0f), 0.0f, 0.0f, 0.0f);
                     guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboCars[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
@@ -1142,9 +1158,8 @@ class Application : public BaseProject {
                         guboPeople[k].streetLightCol = streetLightCol;
                         guboPeople[k].streetLightDirection = streetLightDirection;
                         guboPeople[k].streetLightCosines = streetLightCosines;
-                        guboPeople[k].pickupPointPos = glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w);
+                        guboPeople[k].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, 2.5f, dropoffPoint.z, dropoffPoint.w));
                         guboPeople[k].pickupPointCol = pickupPointColor;
-                        guboPeople[k].pickupPointOn = glm::vec4((pickedPassenger ? 0.0f : 1.0f), 0.0f, 0.0f, 0.0f);
                         guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboPeople[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                         DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
