@@ -1187,7 +1187,7 @@ class Application : public BaseProject {
                 }
 
                 // TODO RADIUS OF 0.75f !!!
-                glm::vec4 taxiCollisionSphereCenter = glm::translate(mWorldTaxi, glm::vec3(0.0f, 0.0f, 1.0f))[3];
+                glm::vec4 taxiCollisionSphereCenter = glm::translate(mWorldTaxi[1], glm::vec3(0.0f, 0.0f, 1.0f))[3];
                 
 
                 for(int i = 0; i < CARS; i++) {
