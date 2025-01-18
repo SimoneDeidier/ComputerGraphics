@@ -116,12 +116,18 @@ class Application : public BaseProject {
 
         // Other application parameters
         int currScene = -1;
+        int lastSavedSceneValue;
         int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
         int random_index = -1;
+        float wheelRoll = 0.0f;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
         float money = 100.0f;
         float oldMoney = 0.0f;
+        float wheelAndSteerAng = 0.0f;
+		bool openDoor = false;
+		bool closeDoor = false;
+		float openingDoorAngle = 0.0f;
         bool alreadyInPhotoMode = false;
         bool isNight = false;
         bool drawTitle = true;
@@ -392,15 +398,15 @@ class Application : public BaseProject {
             #endif
 
 
-            //Mtaxi.init(this, &VD, "models/transport_purpose_003_transport_purpose_003.001.mgcg", MGCG );
-            Mtaxi[0].init(this, &VD, "models/Car_Hatch_C_DoorR.obj", OBJ );
+            Mtaxi[0].init(this, &VD, "models/Car_Hatch_C_Door.obj", OBJ );
             Mtaxi[1].init(this, &VD, "models/Car_Hatch_C_Extern.obj", OBJ );
             Mtaxi[2].init(this, &VD, "models/Car_Hatch_C_Intern_no-steer.obj", OBJ );
-            Mtaxi[3].init(this, &VD, "models/Car_Hatch_C_Steer.obj", OBJ );
-            Mtaxi[4].init(this, &VD, "models/Car_Hatch_C_WheelBL_Origin_at_center.obj", OBJ );
-            Mtaxi[5].init(this, &VD, "models/Car_Hatch_C_WheelBR_Origin_at_center.obj", OBJ );
-            Mtaxi[6].init(this, &VD, "models/Car_Hatch_C_WheelFL_Origin_at_center.obj", OBJ );
-            Mtaxi[7].init(this, &VD, "models/Car_Hatch_C_WheelFR_Origin_at_center.obj", OBJ );
+            //Mtaxi[3].init(this, &VD, "models/Car_Hatch_C_Steer.obj", OBJ );
+            Mtaxi[3].init(this, &VD, "models/TruckBodySteeringWheelO.mgcg", MGCG);
+            Mtaxi[4].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ ); //FR
+            Mtaxi[5].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ );//FL
+            Mtaxi[6].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ ); //BR
+			Mtaxi[7].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ); //BL
             Msky.init(this, &VDsky, "models/Sphere2.obj", OBJ);
             Mcars[0].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
             Mcars[1].init(this, &VDcars, "models/transport_cool_003_transport_cool_003.001.mgcg" , MGCG);
@@ -718,6 +724,9 @@ class Application : public BaseProject {
             static float cTime = 0.0f;
             const float turnTime = 72.0f;
             const float angTurnTimeFact = 2.0f * M_PI / turnTime;
+            static float CamPitch = glm::radians(20.0f);
+            static float CamYaw = M_PI;
+            static float CamRoll = 0.0f;
 
             glm::vec3 directions[CARS];
 
@@ -747,6 +756,7 @@ class Application : public BaseProject {
                 glfwSetWindowShouldClose(window, GL_TRUE);
             }
 
+            //2-> title screen, 0-> third person view , 1-> photo mode, 3-> first person
             if(glfwGetKey(window, GLFW_KEY_SPACE)) {
                 if(!debounce) {
                     debounce = true;
@@ -764,6 +774,28 @@ class Application : public BaseProject {
                 }
             }
 
+            if (glfwGetKey(window, GLFW_KEY_P)) {
+                if (!debounce) {
+                    debounce = true;
+                    curDebounce = GLFW_KEY_P;
+					//check if I'm already in photo mode
+					if (currScene == 2) {
+                        currScene = lastSavedSceneValue;
+					}
+                    else {
+						lastSavedSceneValue = currScene;
+						currScene = 2;
+                    }
+                    RebuildPipeline();
+                }
+            }
+            else {
+                if ((curDebounce == GLFW_KEY_P) && debounce) {
+                    debounce = false;
+                    curDebounce = 0;
+                }
+            }
+            
             // Integration with the timers and the controllers
             float deltaT;
             glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
@@ -806,22 +838,40 @@ class Application : public BaseProject {
                     ma_sound_stop(&titleMusic);
                     ma_sound_start(&ingameMusic);
                 }
-                if(currScene == 0) {
+                if(currScene == 0 || currScene == 1) {
                     alreadyInPhotoMode = false;
-                    // Third person view
+                    // Third person view or first person
                     const float steeringSpeed = glm::radians(45.0f);
                     const float moveSpeed = 7.5f;
 
                     static float currentSpeed = 0.0f;
                     float targetSpeed = moveSpeed * -m.z;
                     const float dampingFactor = 3.0f; // Adjust this value to control the damping effect
-                    currentSpeed += (targetSpeed - currentSpeed) * dampingFactor * deltaT;
+                    float speedDifference = targetSpeed - currentSpeed;
+                    if (fabs(speedDifference) < 0.01f) {
+                        currentSpeed = targetSpeed;
+                    } else {
+                        currentSpeed += speedDifference * dampingFactor * deltaT;
+                    }
                     float speed = currentSpeed * deltaT;
-                    speed = (speed > 0 && speed < 0.001f) ? 0.0f : speed;
+                    wheelRoll -= currentSpeed;       
+                    speed = (abs(speed) < 0.01f) ? 0.0f : speed;
+                    oldSteeringAng = steeringAng;
+                    steeringAng += (speed >= 0 ? -m.x : m.x) * steeringSpeed * deltaT;
+                    if (steeringAng == oldSteeringAng) {
+                        wheelAndSteerAng = (wheelAndSteerAng < 0.0f ? wheelAndSteerAng + 0.25f : (wheelAndSteerAng > 0.0f ? wheelAndSteerAng - 0.25f : wheelAndSteerAng));
+                    }
+                    else if (steeringAng > oldSteeringAng) {
+                        wheelAndSteerAng = (wheelAndSteerAng > -1.5f ? wheelAndSteerAng - 0.25f : wheelAndSteerAng);
+                    }
+                    else {
+                        wheelAndSteerAng = (wheelAndSteerAng < 1.5f ? wheelAndSteerAng + 0.25f : wheelAndSteerAng);
+                    }
+                    if (speed == 0.0f) {
+						steeringAng = oldSteeringAng;
+                    }
+                    taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
                     if (speed != 0.0f) {
-                        oldSteeringAng = steeringAng;
-                        steeringAng += (speed > 0 ? -m.x : m.x) * steeringSpeed * deltaT;
-                        taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
                         if(ma_sound_is_playing(&idleEngineSound)) {
                             ma_sound_stop(&idleEngineSound);
                             ma_sound_seek_to_pcm_frame(&accelerationEngineSound, 0);
@@ -835,37 +885,59 @@ class Application : public BaseProject {
                         }
                         ma_sound_start(&idleEngineSound);
                     }
-
                     float actualTurn = steeringAng - oldSteeringAng;
                     if(actualTurn != 0.0f) {
                         frontLightDirection = glm::vec4(glm::rotate(glm::mat4(1.0), actualTurn, glm::vec3(0.0f, 1.0f, 0.0f)) * frontLightDirection);
                     }
+                    // THIRD PERSON
+                    if (currScene == 0) {
+                        //update camera position for lookAt view, keeping into account the current SteeringAng
+                        float x, y;
+                        float radius = 5.0f;
+                        static float camOffsetAngle = 0.0f;
+                        const float camRotationSpeed = glm::radians(90.0f);
 
-                    //update camera position for lookAt view, keeping into account the current SteeringAng
-                    float x, y;
-                    float radius = 5.0f;
-                    static float camOffsetAngle = 0.0f;
-                    const float camRotationSpeed = glm::radians(90.0f);
+                        // Update camera offset angle based on mouse movement
+                        if (r.y != 0.0f) {
+                            camOffsetAngle += camRotationSpeed * deltaT * r.y;
+                        }
 
-                    // Update camera offset angle based on mouse movement
-                    if (r.y != 0.0f) {
-                        camOffsetAngle += camRotationSpeed * deltaT * r.y;
+                        // Calculate the camera position around the taxi in a circular path with optional offset angle from the user
+                        x = -radius * sin(steeringAng + camOffsetAngle);
+                        y = -radius * cos(steeringAng + camOffsetAngle);
+                        camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
+                        mView = glm::lookAt(camPos,
+                            taxiPos,
+                            glm::vec3(0, 1, 0));
                     }
+                    // FIRST PERSON
+                    else {
+                        const float ROT_SPEED = glm::radians(120.0f);
+                        CamYaw -= ROT_SPEED * deltaT * r.y;
+                        CamPitch -= ROT_SPEED * deltaT * r.x;
+                        CamRoll -= ROT_SPEED * deltaT * r.z;
+                        CamYaw = (CamYaw < M_PI_2 ? M_PI_2 : (CamYaw > 1.5 * M_PI ? 1.5 * M_PI : CamYaw));
+                        CamPitch = (CamPitch < -0.25 * M_PI ? -0.25 * M_PI : (CamPitch > 0.25 * M_PI ? 0.25 * M_PI : CamPitch));
+                        CamRoll = (CamRoll < -M_PI ? -M_PI : (CamRoll > M_PI ? M_PI : CamRoll));
 
-                    // Calculate the camera position around the taxi in a circular path with optional offset angle from the user
-                    x = -radius * sin(steeringAng + camOffsetAngle);
-                    y = -radius * cos(steeringAng + camOffsetAngle);
-                    camPos = glm::vec3(taxiPos.x + x, taxiPos.y + 1.5f, taxiPos.z + y);
-                    mView = glm::lookAt(camPos,
-                                        taxiPos,
-                                        glm::vec3(0, 1, 0));
-                    //REMEMBER: primo parametro: spostamento dx e sx, secondo parametro: altezza su e giù, terzo avanti e indietro
+                        glm::vec3 camOffset(0.35f, 1.05f, 0.7f);
+                        glm::vec3 rotatedCamOffset = glm::vec3(
+                            glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(camOffset, 1.0)
+                        );
+                        camPos = taxiPos + rotatedCamOffset;
+                       //TODO: top ma magari guardare dritto quando si passa in prima persona sarebbe carino
+                        mView=
+                            glm::rotate(glm::mat4(1.0f), -CamRoll, glm::vec3(0, 0, 1)) *
+                            glm::rotate(glm::mat4(1.0f), -CamPitch, glm::vec3(1, 0, 0)) *
+                            glm::rotate(glm::mat4(1.0f), -CamYaw - steeringAng, glm::vec3(0, 1, 0)) *
+                            glm::translate(glm::mat4(1.0f), -camPos);
 
-                } else if (currScene == 1){
+                    }
+                }
+                else if(currScene == 2) {
 
                     // Photo mode
                     if(!alreadyInPhotoMode) {
-                        //TODO: set the camera orientation towards the taxi
                         camPosInPhotoMode = camPos;
                         alreadyInPhotoMode = true;
                     }
@@ -890,7 +962,7 @@ class Application : public BaseProject {
 
                 }
 
-                const float nearPlane = 1.0f;
+                const float nearPlane = 0.1f;
                 const float farPlane = 280.0f;
                 glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
                 Prj[1][1] *= -1; //Projection matrix
@@ -910,14 +982,77 @@ class Application : public BaseProject {
                 // check when the sun is below the horizon
                 isNight = (sunPos.y < 0.0f ? true : false);
 
-                glm::mat4 mWorldTaxi =
-                        glm::translate(glm::mat4(1.0), taxiPos) *
-                        glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
+                if (openDoor || closeDoor) {
+					if (openDoor) {
+                        openingDoorAngle += 3.0f;
+						if (openingDoorAngle >= 33.0f) {
+							openDoor = false;
+							closeDoor = true;
+						}
+					}
+					else {
+                        openingDoorAngle -= 3.0f;
+						if (openingDoorAngle <= 0.0f) {
+                            openingDoorAngle = 0.0f;
+							closeDoor = false;
+						}
+					}
+                }
+                glm::mat4 mWorldTaxi[8];
 
-                glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT] = {glm::translate(mWorldTaxi, glm::vec3(-0.5f, 0.5f, -0.75f))[3], // rear right
-                                                            glm::translate(mWorldTaxi, glm::vec3(0.5f, 0.5f, -0.75f))[3], // rear left
-                                                            glm::translate(mWorldTaxi, glm::vec3(-0.6f, 0.6f, 2.6f))[3], // front right
-                                                            glm::translate(mWorldTaxi, glm::vec3(0.6f, 0.6f, 2.6f))[3]}; // front left
+                // Taxi's world matrix 
+                mWorldTaxi[1] = mWorldTaxi[2] =
+                glm::translate(glm::mat4(1.0), taxiPos) *
+                glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
+
+				glm::vec3 offsets[6] = {
+					glm::vec3(-0.65f, 0.23f, 2.05f), //FR wheel
+					glm::vec3(0.65f, 0.23f, 2.05f), //FL wheel
+					glm::vec3(-0.65f, 0.2f, -0.1f), //BR wheel
+					glm::vec3(0.65f, 0.2f, -0.1f), //BL wheel
+					glm::vec3(0.45f, 0.75f, 1.5f), //steer
+					glm::vec3(-0.742f, 0.695f, 1.6f) //door
+				};
+                glm::vec3 rotatedOffSet[6], finalWorldPos[6];
+                for (int i = 0; i < 6; i++) {
+					rotatedOffSet[i] = glm::vec3(
+						glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(offsets[i], 1.0)
+					);
+					finalWorldPos[i] = taxiPos + rotatedOffSet[i];
+
+                }
+                // Wheel's world matrix
+				mWorldTaxi[4] =  //FR wheel
+                    glm::translate(glm::mat4(1.0), finalWorldPos[0]) *
+                    glm::rotate(glm::mat4(1.0), steeringAng - glm::radians(wheelAndSteerAng*15), glm::vec3(0, 1, 0)) *
+					glm::rotate(glm::mat4(1.0), wheelRoll, glm::vec3(1, 0, 0)) * //when I accelerate the wheel should spin
+                    glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 0, 1)); //the wheel was facing left
+				mWorldTaxi[5] =  //FL wheel
+                    glm::translate(glm::mat4(1.0), finalWorldPos[1]) *
+                    glm::rotate(glm::mat4(1.0), steeringAng - glm::radians(wheelAndSteerAng * 15), glm::vec3(0, 1, 0)) *
+                    glm::rotate(glm::mat4(1.0), wheelRoll, glm::vec3(1, 0, 0)); //when I accelerate the wheel should spin
+				mWorldTaxi[6] = //BR wheel
+                    glm::translate(glm::mat4(1.0), finalWorldPos[2]) *
+                    glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) *
+                    glm::rotate(glm::mat4(1.0), wheelRoll, glm::vec3(1, 0, 0)) *
+                    glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 0, 1));
+				mWorldTaxi[7] = //BL wheel
+                    glm::translate(glm::mat4(1.0), finalWorldPos[3]) *
+                    glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) *
+                    glm::rotate(glm::mat4(1.0), wheelRoll, glm::vec3(1, 0, 0)); //when I accelerate the wheel should spin
+				mWorldTaxi[3] = //steer
+                    glm::translate(glm::mat4(1.0), finalWorldPos[4]) *
+                    glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) *
+                    glm::rotate(glm::mat4(1.0), wheelAndSteerAng, glm::vec3(0, 0, 1));
+				mWorldTaxi[0] = //door
+					glm::translate(glm::mat4(1.0), finalWorldPos[5]) *
+					glm::rotate(glm::mat4(1.0), steeringAng + glm::radians(openingDoorAngle), glm::vec3(0, 1, 0));
+                 
+
+                glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT] = {glm::translate(mWorldTaxi[1], glm::vec3(-0.5f, 0.5f, -0.75f))[3], // rear right
+                                                            glm::translate(mWorldTaxi[1], glm::vec3(0.5f, 0.5f, -0.75f))[3], // rear left
+                                                            glm::translate(mWorldTaxi[1], glm::vec3(-0.6f, 0.6f, 2.6f))[3], // front right
+                                                            glm::translate(mWorldTaxi[1], glm::vec3(0.6f, 0.6f, 2.6f))[3]}; // front left
                 
                 glm::mat4 mWorldCars[CARS];
                 for(int i = 0; i < CARS; i++) {
@@ -935,6 +1070,7 @@ class Application : public BaseProject {
                     int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
                     drawPeople[map_index] = false;
                     pickedPassenger = true;
+                    openDoor = true;
                     RebuildPipeline();
                     if(ma_sound_at_end(&pickupSound)) ma_sound_seek_to_pcm_frame(&pickupSound, 0);
                     ma_sound_start(&pickupSound);
@@ -946,6 +1082,7 @@ class Application : public BaseProject {
                     int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
                     drawPeople[map_index] = true;
                     pickedPassenger = false;
+                    openDoor = true;
                     pickupPointSelected = false;
                     RebuildPipeline();
                     if(ma_sound_at_end(&moneySound)) ma_sound_seek_to_pcm_frame(&moneySound, 0);
@@ -1013,10 +1150,11 @@ class Application : public BaseProject {
                 }
 
                 for(int i=0; i<8; i++){
-                    uboTaxi[i].mvpMat = Prj * mView * mWorldTaxi;
-                    uboTaxi[i].mMat = mWorldTaxi;
+                    uboTaxi[i].mMat = mWorldTaxi[i];
                     uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
-                    DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);    
+                    uboTaxi[i].mvpMat = Prj * mView * uboTaxi[i].mMat;
+                    DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);
+
                     guboTaxi[i].directLightPos = glm::vec4(sunPos, 1.0f);
                     for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
                         guboTaxi[i].taxiLightPos[j] = taxiLightPos[j];
@@ -1030,7 +1168,7 @@ class Application : public BaseProject {
                     std::vector<float> distances;
                     float dist = 0.0f;
                     for(int j = 0; j < STREET_LIGHT_COUNT; j++) {
-                        dist = glm::distance(streetlightPos[j], glm::vec3(mWorldTaxi[3]));
+                        dist = glm::distance(streetlightPos[j], glm::vec3(mWorldTaxi[1][3]));
                         distances.push_back(dist);
                         distancesToPositions[dist] = streetlightPos[j];
                     }
