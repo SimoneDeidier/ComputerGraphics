@@ -6,7 +6,7 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "headers/miniaudio.h"
 
-// TODO normale della città invertite (check sullo scaling - coeff. negativi dispari)
+// normale della città invertite (check sullo scaling - coeff. negativi dispari)
 
 #define MESH 210
 #define CARS 9
@@ -16,14 +16,19 @@
 #define TAXI_ELEMENTS 8
 #define TAXI_LIGHT_COUNT 4
 #define PICKUP_COUNT 5
-#define INGAME_SCENE_COUNT 2
-#define COLLISION_SPHERE_RADIUS 0.75f
 
 #define MIN_DISTANCE_TO_PICKUP 2.5f
 
 #define DEBUG 0
-#define SPHERES 0
+#define SPHERES 2 * PICKUP_COUNT
 
+std::vector<SingleText> outText = {
+        {2, {"Third person view", "Press SPACE to access photo mode","",""}, 0, 0},
+        {2, {"Photo mode", "Press SPACE to access third person view", "",""}, 0, 0},
+        {2, {"","","",""}, 0, 0}
+};
+
+// float : alignas(4), vec2  : alignas(8), vec3, vec4, mat3, mat4  : alignas(16)
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
     alignas(16) glm::mat4 mMat;
@@ -95,6 +100,8 @@ class Application : public BaseProject {
 
         Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle;
 
+        TextMaker txt;
+
         Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle;
 
         DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE], DStitle;
@@ -115,13 +122,12 @@ class Application : public BaseProject {
         #endif
 
         // Other application parameters
-        int currScene = -1;
+        int currScene = 2;
         int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
         int random_index = -1;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
-        float money = 100.0f;
-        float oldMoney = 0.0f;
+        float money = 0.0f;
         bool alreadyInPhotoMode = false;
         bool isNight = false;
         bool drawTitle = true;
@@ -432,6 +438,8 @@ class Application : public BaseProject {
             Ttaxy.init(this, "textures/VehiclePack_baseColor.png");
             Ttitle.init(this, "textures/title.jpg");
 
+            txt.init(this, &outText);
+
             nlohmann::json js;
             std::ifstream ifs("models/city.json");
             if (!ifs.is_open()) {
@@ -538,6 +546,8 @@ class Application : public BaseProject {
                     });
                 }
             #endif
+
+            txt.pipelinesAndDescriptorSetsInit();
         }
 
         void pipelinesAndDescriptorSetsCleanup() {
@@ -579,6 +589,8 @@ class Application : public BaseProject {
                     DSsphere[i].cleanup();
                 }
             #endif
+
+            txt.pipelinesAndDescriptorSetsCleanup();
         }
 
         void localCleanup() {
@@ -634,6 +646,8 @@ class Application : public BaseProject {
             #if DEBUG
                 Psphere.destroy();
             #endif
+
+            txt.localCleanup();
         }
 
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
@@ -706,6 +720,10 @@ class Application : public BaseProject {
                                     static_cast<uint32_t>(Msphere[i].indices.size()), 1, 0, 0, 0);
                 }
             #endif
+
+            if(currScene == 0) {
+                txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
+            }
         }
 
         // main application loop
@@ -751,9 +769,15 @@ class Application : public BaseProject {
                 if(!debounce) {
                     debounce = true;
                     curDebounce = GLFW_KEY_SPACE;
-                    currScene = (currScene + 1) % INGAME_SCENE_COUNT;
-                    if(currScene != -1) {
+                    if(currScene == 2) {
                         drawTitle = false;
+                        currScene = 0;
+                    }
+                    else if(currScene == 0) {
+                        currScene = 1;
+                    }
+                    else {
+                        currScene = 0;
                     }
                     RebuildPipeline();
                 }
@@ -798,11 +822,11 @@ class Application : public BaseProject {
             float oldSteeringAng = steeringAng;
             glm::mat4 mView;
 
-            if(currScene == -1 && !ma_sound_is_playing(&titleMusic)) {
+            if(currScene == 2 && !ma_sound_is_playing(&titleMusic)) {
                     ma_sound_start(&titleMusic);
             }
             else {
-                if(currScene != -1 && ma_sound_is_playing(&titleMusic) && !ma_sound_is_playing(&ingameMusic)) {
+                if(currScene != 2 && ma_sound_is_playing(&titleMusic) && !ma_sound_is_playing(&ingameMusic)) {
                     ma_sound_stop(&titleMusic);
                     ma_sound_start(&ingameMusic);
                 }
@@ -860,7 +884,6 @@ class Application : public BaseProject {
                                         taxiPos,
                                         glm::vec3(0, 1, 0));
                     //REMEMBER: primo parametro: spostamento dx e sx, secondo parametro: altezza su e giù, terzo avanti e indietro
-
                 } else if (currScene == 1){
 
                     // Photo mode
@@ -948,6 +971,7 @@ class Application : public BaseProject {
                     pickedPassenger = false;
                     pickupPointSelected = false;
                     RebuildPipeline();
+                    // TODO change sound
                     if(ma_sound_at_end(&moneySound)) ma_sound_seek_to_pcm_frame(&moneySound, 0);
                     ma_sound_start(&moneySound);
                 }
@@ -1048,10 +1072,6 @@ class Application : public BaseProject {
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
                 }
 
-                // TODO RADIUS OF 0.75f !!!
-                glm::vec4 taxiCollisionSphereCenter = glm::translate(mWorldTaxi, glm::vec3(0.0f, 0.0f, 1.0f))[3];
-                
-
                 for(int i = 0; i < CARS; i++) {
                     uboCars[i].mvpMat = Prj * mView * mWorldCars[i];
                     uboCars[i].mMat = mWorldCars[i];
@@ -1086,14 +1106,6 @@ class Application : public BaseProject {
                     guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboCars[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
-                }
-
-                glm::vec4 carCollisionSphereCenter = glm::vec4(0.0f);
-                for(int i = 0; i < CARS; i++) {
-                    carCollisionSphereCenter = mWorldCars[i][3];
-                    if(glm::distance(glm::vec3(taxiCollisionSphereCenter), glm::vec3(carCollisionSphereCenter)) < 2 * COLLISION_SPHERE_RADIUS) {
-                        std::cout << "[ GAME ]: COLLISION!" << std::endl;
-                    }
                 }
 
                 glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), sphereCenter) * glm::scale(glm::mat4(1.0f), sphereScale);
