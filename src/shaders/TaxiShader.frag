@@ -54,7 +54,7 @@ void main() {
 	res += directLightBRDF * directLightColor;
 
 	vec3 pickupPointDir = normalize(gubo.pickupPointPos.xyz - fragPos);
-	vec3 pickupPointColor = gubo.pickupPointCol.rgb * dot(pow((5 / length(gubo.pickupPointPos.xyz - fragPos)), 1.0), clamp((dot(normalize(gubo.pickupPointPos.xyz - fragPos), gubo.streetLightDirection.xyz) - gubo.streetLightCosines.y) / (gubo.streetLightCosines.x - gubo.streetLightCosines.y), 0.0, 1.0));
+	vec3 pickupPointColor = gubo.pickupPointCol.rgb * pow((5 / length(gubo.pickupPointPos.xyz - fragPos)), 2.0);
 	vec3 pickupPointBRDF = BRDF(viewerDir, norm, pickupPointDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
 	res += pickupPointBRDF * pickupPointColor;
 

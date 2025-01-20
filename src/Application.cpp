@@ -18,11 +18,13 @@
 #define TAXI_LIGHT_COUNT 4
 #define PICKUP_COUNT 5
 #define INGAME_SCENE_COUNT 2
-#define COLLISION_SPHERE_RADIUS 0.75f
 #define GAMEMODE_COUNT 2
 #define GRAPHICS_SETTINGS_COUNT 3
 
-#define MIN_DISTANCE_TO_PICKUP 2.5f
+#define MIN_DISTANCE_TO_PICKUP 3.5f
+#define COLLISION_SPHERE_RADIUS 0.75f
+#define PICKUP_POINT_Y_OFFSET 2.0f
+#define ARROW_Y_OFFSET 3.25f
 
 #define DEBUG 0
 #define SPHERES 0
@@ -55,6 +57,13 @@ struct SkyGUBO {
 	alignas(16) glm::vec4 lightDir;
     alignas(16) glm::vec4 lightColor;
 	alignas(16) glm::vec4 eyePos;
+    alignas(16) glm::vec4 gammaAndMetallic;
+};
+
+struct ArrowGUBO {
+    alignas(16) glm::vec4 pickupPointPos;
+    alignas(16) glm::vec4 pickupPointCol;
+    alignas(16) glm::vec4 eyePos;
     alignas(16) glm::vec4 gammaAndMetallic;
 };
 
@@ -93,21 +102,22 @@ class Application : public BaseProject {
         
         float Ar; // aspect ratio
 
-        DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols;
+        DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols, DSLarrow;
 
-        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols;
+        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols, VDarrow;
 
-        Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols;
+        Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols, Parrow;
 
-        Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle, Mcontrols;
+        Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle, Mcontrols, Marrow;
 
-        DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE], DStitle, DScontrols;
+        DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE], DStitle, DScontrols, DSarrow;
 
         Texture Tcity, Tsky, Tpeople, Ttaxy, Ttitle, Tcontrols;
 
-        UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSky, uboCars[CARS], uboCity[MESH], uboPeople[PEOPLE];
+        UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSky, uboCars[CARS], uboCity[MESH], uboPeople[PEOPLE], uboArrow;
         GlobalUniformBufferObject guboTaxi[TAXI_ELEMENTS], guboCars[CARS], guboCity[MESH], guboPeople[PEOPLE];
         SkyGUBO guboSky;
+        ArrowGUBO guboArrow;
 
         #if DEBUG
             DescriptorSetLayout DSLsphere;
@@ -264,9 +274,9 @@ class Application : public BaseProject {
             initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
             // Descriptor pool sizes
-            uniformBlocksInPool =  (2 * MESH) + 16+2+2*CARS+2*PEOPLE + (DEBUG ? SPHERES : 0);
-            texturesInPool = MESH + 8 +1+1+CARS+PEOPLE+2; //city, taxi, text, sky, autonomous cars, people, title
-            setsInPool = MESH + 8 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0) + 2;
+            uniformBlocksInPool =  (2 * MESH) + 16+2+2*CARS+2*PEOPLE + (DEBUG ? SPHERES : 0) + 2;
+            texturesInPool = MESH + 8 +1+1+CARS+PEOPLE+3; //city, taxi, text, sky, autonomous cars, people, title
+            setsInPool = MESH + 8 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0) + 3;
 
             Ar = (float)windowWidth / (float)windowHeight;
 
@@ -309,6 +319,10 @@ class Application : public BaseProject {
             });
             DSLcontrols.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+            });
+            DSLarrow.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
 
             #if DEBUG
@@ -385,6 +399,17 @@ class Application : public BaseProject {
                 {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(TwoDimVertex, UV),
                         sizeof(glm::vec2), UV}
             });
+            
+            VDarrow.init(this, {
+                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            }, {
+                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                        sizeof(glm::vec3), POSITION},
+                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                        sizeof(glm::vec2), UV},
+                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                        sizeof(glm::vec3), NORMAL}
+            });
 
             #if DEBUG
                 VDsphere.init(this, {
@@ -410,6 +435,7 @@ class Application : public BaseProject {
             Ptitle.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Pcontrols.init(this, &VDcontrols, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLcontrols});
             Pcontrols.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+            Parrow.init(this, &VDarrow, "shaders/BaseVert.spv", "shaders/ArrowFrag.spv", {&DSLarrow});
 
 
             #if DEBUG
@@ -504,6 +530,9 @@ class Application : public BaseProject {
                 std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
                 exit(1);
             }
+
+            Marrow.init(this, &VDarrow, "models/simple arrow.obj", OBJ);
+
         }
 
         void pipelinesAndDescriptorSetsInit() {
@@ -515,6 +544,7 @@ class Application : public BaseProject {
             Ppeople.create();
             Ptitle.create();
             Pcontrols.create();
+            Parrow.create();
 
             #if DEBUG
                 Psphere.create();
@@ -565,6 +595,11 @@ class Application : public BaseProject {
                 {0, TEXTURE, 0, &Tcontrols}
             });
 
+            DSarrow.init(this, &DSLarrow, {
+                {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+                {1, UNIFORM, sizeof(ArrowGUBO), nullptr}
+            });
+
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
                     DSsphere[i].init(this, &DSLsphere, {
@@ -583,6 +618,7 @@ class Application : public BaseProject {
             Ppeople.cleanup();
             Ptitle.cleanup();
             Pcontrols.cleanup();
+            Parrow.cleanup();
 
             #if DEBUG
                 Psphere.cleanup();
@@ -608,6 +644,7 @@ class Application : public BaseProject {
 
             DStitle.cleanup();
             DScontrols.cleanup();
+            DSarrow.cleanup();
 
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
@@ -643,6 +680,7 @@ class Application : public BaseProject {
             }
             Mtitle.cleanup();
             Mcontrols.cleanup();
+            Marrow.cleanup();
 
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
@@ -657,6 +695,7 @@ class Application : public BaseProject {
             DSLpeople.cleanup();
             DSLtitle.cleanup();
             DSLcontrols.cleanup();
+            DSLarrow.cleanup();
 
             #if DEBUG
                 DSLsphere.cleanup();
@@ -669,6 +708,7 @@ class Application : public BaseProject {
             Ppeople.destroy();
             Ptitle.destroy();
             Pcontrols.destroy();
+            Parrow.destroy();
 
             #if DEBUG
                 Psphere.destroy();
@@ -726,6 +766,13 @@ class Application : public BaseProject {
                                         static_cast<uint32_t>(Mpeople[i].indices.size()), 1, 0, 0, 0);
                     }
                 }
+
+                Parrow.bind(commandBuffer);
+                DSarrow.bind(commandBuffer, Parrow, 0, currentImage);
+                Marrow.bind(commandBuffer);
+                vkCmdDrawIndexed(commandBuffer,
+                                static_cast<uint32_t>(Marrow.indices.size()), 1, 0, 0, 0);
+
             }
             else if(drawTitle) {
                 Ptitle.bind(commandBuffer);
@@ -775,6 +822,7 @@ class Application : public BaseProject {
             }
 
             float speedCar= 4.0f;
+            float speed = 0.0f;
 
             // Standard procedure to quit when the ESC key is pressed
             if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
@@ -904,7 +952,9 @@ class Application : public BaseProject {
                     } else {
                         currentSpeed += speedDifference * dampingFactor * deltaT;
                     }
-                    float speed = currentSpeed * deltaT;
+                    if(!openDoor && !closeDoor) {
+                        speed = currentSpeed * deltaT;
+                    }
                     wheelRoll -= currentSpeed;       
                     speed = (abs(speed) < 0.01f) ? 0.0f : speed;
                     oldSteeringAng = steeringAng;
@@ -1035,14 +1085,14 @@ class Application : public BaseProject {
 
                 if (openDoor || closeDoor) {
 					if (openDoor) {
-                        openingDoorAngle += 3.0f;
-						if (openingDoorAngle >= 33.0f) {
+                        openingDoorAngle += 5.0f;
+						if (openingDoorAngle >= 69.0f) {
 							openDoor = false;
 							closeDoor = true;
 						}
 					}
 					else {
-                        openingDoorAngle -= 3.0f;
+                        openingDoorAngle -= 5.0f;
 						if (openingDoorAngle <= 0.0f) {
                             openingDoorAngle = 0.0f;
 							closeDoor = false;
@@ -1117,7 +1167,7 @@ class Application : public BaseProject {
                     pickupPointSelected = true;
                 }
 
-                if(glm::distance(glm::vec3(pickupPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && !pickedPassenger) {
+                if(glm::distance(glm::vec3(pickupPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && !pickedPassenger && speed == 0.0f) {
                     int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
                     drawPeople[map_index] = false;
                     pickedPassenger = true;
@@ -1129,7 +1179,7 @@ class Application : public BaseProject {
                 }
 
 
-                if(glm::distance(glm::vec3(dropoffPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && pickedPassenger) {
+                if(glm::distance(glm::vec3(dropoffPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && pickedPassenger && speed == 0.0f) {
                     int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
                     drawPeople[map_index] = true;
                     pickedPassenger = false;
@@ -1187,7 +1237,7 @@ class Application : public BaseProject {
                         guboCity[k].streetLightCol = streetLightCol;
                         guboCity[k].streetLightDirection = streetLightDirection;
                         guboCity[k].streetLightCosines = streetLightCosines;
-                        guboCity[k].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, 2.5f, dropoffPoint.z, dropoffPoint.w));
+                        guboCity[k].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
                         guboCity[k].pickupPointCol = pickupPointColor;
                         guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboCity[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
@@ -1230,14 +1280,13 @@ class Application : public BaseProject {
                     guboTaxi[i].streetLightCol = streetLightCol;
                     guboTaxi[i].streetLightDirection = streetLightDirection;
                     guboTaxi[i].streetLightCosines = streetLightCosines;
-                    guboTaxi[i].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, 2.5f, dropoffPoint.z, dropoffPoint.w));
+                    guboTaxi[i].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
                     guboTaxi[i].pickupPointCol = pickupPointColor;
                     guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboTaxi[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
                 }
 
-                // TODO RADIUS OF 0.75f !!!
                 glm::vec4 taxiCollisionSphereCenter = glm::translate(mWorldTaxi[1], glm::vec3(0.0f, 0.0f, 1.0f))[3];
                 
 
@@ -1270,7 +1319,7 @@ class Application : public BaseProject {
                     guboCars[i].streetLightCol = streetLightCol;
                     guboCars[i].streetLightDirection = streetLightDirection;
                     guboCars[i].streetLightCosines = streetLightCosines;
-                    guboCars[i].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, 2.5f, dropoffPoint.z, dropoffPoint.w));
+                    guboCars[i].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
                     guboCars[i].pickupPointCol = pickupPointColor;
                     guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
                     guboCars[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
@@ -1342,7 +1391,7 @@ class Application : public BaseProject {
                         guboPeople[k].streetLightCol = streetLightCol;
                         guboPeople[k].streetLightDirection = streetLightDirection;
                         guboPeople[k].streetLightCosines = streetLightCosines;
-                        guboPeople[k].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, 2.5f, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, 2.5f, dropoffPoint.z, dropoffPoint.w));
+                        guboPeople[k].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
                         guboPeople[k].pickupPointCol = pickupPointColor;
                         guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
                         guboPeople[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
@@ -1354,6 +1403,18 @@ class Application : public BaseProject {
                     std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
                     exit(1);
                 }
+
+                glm::vec3 arrowPosition = (!pickedPassenger ? glm::vec3(pickupPoint.x, ARROW_Y_OFFSET + (glm::cos(cTime) / 4.0f), pickupPoint.z) : glm::vec3(dropoffPoint.x, ARROW_Y_OFFSET + (glm::cos(cTime) / 4.0f), dropoffPoint.z));
+                glm::mat4 mWorldArrow = glm::rotate(glm::rotate(glm::translate(glm::mat4(1.0), arrowPosition), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)), glm::radians(10.0f) * cTime, glm::vec3(0.0f, 1.0f, 0.0f));
+                uboArrow.mvpMat = Prj * mView * mWorldArrow;
+                uboArrow.mMat = mWorldArrow;
+                uboArrow.nMat = glm::inverse(glm::transpose(uboArrow.mMat));
+                DSarrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
+                guboArrow.pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
+                guboArrow.pickupPointCol = pickupPointColor;
+                guboArrow.eyePos = glm::vec4(camPos, 1.0f);
+                guboArrow.gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
+                DSarrow.map(currentImage, &guboArrow, sizeof(guboArrow), 1);
 
             }
         }
