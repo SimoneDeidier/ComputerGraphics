@@ -102,17 +102,17 @@ class Application : public BaseProject {
         
         float Ar; // aspect ratio
 
-        DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols, DSLarrow;
+        DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols, DSLarrow, DSLendgame;
 
-        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols, VDarrow;
+        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols, VDarrow, Vendgame;
 
-        Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols, Parrow;
+        Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols, Parrow, Pendgame;
 
-        Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle, Mcontrols, Marrow;
+        Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle, Mcontrols, Marrow, Mendgame;
 
-        DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE], DStitle, DScontrols, DSarrow;
+        DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE], DStitle, DScontrols, DSarrow, DSendgame;
 
-        Texture Tcity, Tsky, Tpeople, Ttaxy, Ttitle, Tcontrols;
+        Texture Tcity, Tsky, Tpeople, Ttaxy, Ttitle, Tcontrols, Tendgame;
 
         UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSky, uboCars[CARS], uboCity[MESH], uboPeople[PEOPLE], uboArrow;
         GlobalUniformBufferObject guboTaxi[TAXI_ELEMENTS], guboCars[CARS], guboCity[MESH], guboPeople[PEOPLE];
@@ -136,9 +136,10 @@ class Application : public BaseProject {
         float wheelRoll = 0.0f;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
-        float money = 100.0f;
-        float oldMoney = 0.0f;
+        float money = 0.0f;
         float wheelAndSteerAng = 0.0f;
+        double pickupTime = 0.0;
+        double timeElapsed = 0.0;
 		bool openDoor = false;
 		bool closeDoor = false;
 		float openingDoorAngle = 0.0f;
@@ -148,6 +149,7 @@ class Application : public BaseProject {
         bool drawControls = false;
         bool pickupPointSelected = false;
         bool pickedPassenger = false;
+        bool endGame = false;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
         glm::vec3 camPosInPhotoMode;
         glm::vec3 taxiPos = glm::vec3(0.0f, -0.2f, 0.0f); //initial pos of taxi
@@ -324,6 +326,9 @@ class Application : public BaseProject {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
                 {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
+            DSLendgame.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+            });
 
             #if DEBUG
                 DSLsphere.init(this, {
@@ -411,6 +416,15 @@ class Application : public BaseProject {
                         sizeof(glm::vec3), NORMAL}
             });
 
+            VDendgame.init(this, {
+                {0, sizeof(TwoDimVertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            }, {
+                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TwoDimVertex, pos),
+                        sizeof(glm::vec3), POSITION},
+                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(TwoDimVertex, UV),
+                        sizeof(glm::vec2), UV}
+            });
+
             #if DEBUG
                 VDsphere.init(this, {
                         {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -436,6 +450,8 @@ class Application : public BaseProject {
             Pcontrols.init(this, &VDcontrols, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLcontrols});
             Pcontrols.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Parrow.init(this, &VDarrow, "shaders/BaseVert.spv", "shaders/ArrowFrag.spv", {&DSLarrow});
+            Pendgame.init(this, &VDendgame, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLendgame});
+            Pendgame.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
 
 
             #if DEBUG
@@ -479,6 +495,9 @@ class Application : public BaseProject {
             Mcontrols.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
             Mcontrols.indices = {0, 1, 2, 1, 3, 2};
             Mcontrols.initMesh(this, &VD);
+            Mendgame.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
+            Mendgame.indices = {0, 1, 2, 1, 3, 2};
+            Mendgame.initMesh(this, &VD);
 
             Tcity.init(this,"textures/Textures_City.png");
             Tsky.init(this, "textures/images.png");
@@ -486,6 +505,7 @@ class Application : public BaseProject {
             Ttaxy.init(this, "textures/VehiclePack_baseColor.png");
             Ttitle.init(this, "textures/title.jpg");
             Tcontrols.init(this, "textures/controls.jpg");
+            Tendgame.init(this, "textures/endgame.jpg");
 
             nlohmann::json js;
             std::ifstream ifs("models/city.json");
@@ -545,6 +565,7 @@ class Application : public BaseProject {
             Ptitle.create();
             Pcontrols.create();
             Parrow.create();
+            Pendgame.create();
 
             #if DEBUG
                 Psphere.create();
@@ -600,6 +621,10 @@ class Application : public BaseProject {
                 {1, UNIFORM, sizeof(ArrowGUBO), nullptr}
             });
 
+            DSendgame.init(this, &DSLendgame, {
+                {0, TEXTURE, 0, &Tendgame}
+            });
+
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
                     DSsphere[i].init(this, &DSLsphere, {
@@ -619,6 +644,7 @@ class Application : public BaseProject {
             Ptitle.cleanup();
             Pcontrols.cleanup();
             Parrow.cleanup();
+            Pendgame.cleanup();
 
             #if DEBUG
                 Psphere.cleanup();
@@ -645,6 +671,7 @@ class Application : public BaseProject {
             DStitle.cleanup();
             DScontrols.cleanup();
             DSarrow.cleanup();
+            DSendgame.cleanup();
 
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
@@ -661,6 +688,7 @@ class Application : public BaseProject {
             Ttaxy.cleanup();
             Ttitle.cleanup();
             Tcontrols.cleanup();
+            Tendgame.cleanup();
 
             for(int i = 0; i < 8; i++) {
                 Mtaxi[i].cleanup();
@@ -681,6 +709,7 @@ class Application : public BaseProject {
             Mtitle.cleanup();
             Mcontrols.cleanup();
             Marrow.cleanup();
+            Mendgame.cleanup();
 
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
@@ -696,6 +725,7 @@ class Application : public BaseProject {
             DSLtitle.cleanup();
             DSLcontrols.cleanup();
             DSLarrow.cleanup();
+            DSendgame.cleanup();
 
             #if DEBUG
                 DSLsphere.cleanup();
@@ -709,6 +739,7 @@ class Application : public BaseProject {
             Ptitle.destroy();
             Pcontrols.destroy();
             Parrow.destroy();
+            Pendgame.destroy();
 
             #if DEBUG
                 Psphere.destroy();
@@ -788,6 +819,13 @@ class Application : public BaseProject {
                 vkCmdDrawIndexed(commandBuffer,
                                 static_cast<uint32_t>(Mcontrols.indices.size()), 1, 0, 0, 0);
             }
+            else if(endGame) {
+                Pendgame.bind(commandBuffer);
+                DSendgame.bind(commandBuffer, Pendgame, 0, currentImage);
+                Mendgame.bind(commandBuffer);
+                vkCmdDrawIndexed(commandBuffer,
+                                static_cast<uint32_t>(Mendgame.indices.size()), 1, 0, 0, 0);
+            }
 
             #if DEBUG
             Psphere.bind(commandBuffer);
@@ -849,8 +887,10 @@ class Application : public BaseProject {
              * -1: controls
              * 0: third person
              * 1: first person
+             * 2: photo mode
+             * 3: end game
              */
-            if(glfwGetKey(window, GLFW_KEY_SPACE)) {
+            if(glfwGetKey(window, GLFW_KEY_SPACE) && currScene != 3) {
                 if(!debounce) {
                     debounce = true;
                     curDebounce = GLFW_KEY_SPACE;
@@ -1176,8 +1216,8 @@ class Application : public BaseProject {
                     if(ma_sound_at_end(&pickupSound)) ma_sound_seek_to_pcm_frame(&pickupSound, 0);
                     ma_sound_start(&pickupSound);
                     dropoffPoint = dropoffPoints[random_index];
+                    pickupTime=  time(NULL);
                 }
-
 
                 if(glm::distance(glm::vec3(dropoffPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && pickedPassenger && speed == 0.0f) {
                     int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
@@ -1188,6 +1228,12 @@ class Application : public BaseProject {
                     RebuildPipeline();
                     if(ma_sound_at_end(&moneySound)) ma_sound_seek_to_pcm_frame(&moneySound, 0);
                     ma_sound_start(&moneySound);
+                    money += (time(NULL) - pickupTime) * (isNight ? 7.9f : 4.1f);
+                    if(!endlessGameMode) {
+                        currScene = 3;
+                        endGame = true;
+                        RebuildPipleline();
+                    }
                 }
 
                 nlohmann::json js;
