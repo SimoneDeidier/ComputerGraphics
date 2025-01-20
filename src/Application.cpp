@@ -2,6 +2,7 @@
 #include "headers/TextMaker.hpp"
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "headers/miniaudio.h"
@@ -18,6 +19,8 @@
 #define PICKUP_COUNT 5
 #define INGAME_SCENE_COUNT 2
 #define COLLISION_SPHERE_RADIUS 0.75f
+#define GAMEMODE_COUNT 2
+#define GRAPHICS_SETTINGS_COUNT 3
 
 #define MIN_DISTANCE_TO_PICKUP 2.5f
 
@@ -76,6 +79,7 @@ class Application : public BaseProject {
         * 2 -> high ==> direct light + taxi lights + street lights
         */
         int graphicsSettings = 2;
+        int gameMode = 0;
 
         ma_engine engine;
         ma_sound titleMusic;
@@ -1314,10 +1318,79 @@ int main(int argc, char* argv[]) {
 
     Application app;
 
-    if (argc > 2 && std::string(argv[1]) == "settings") {
-        std::cout << "[ SETTINGS ]: Graphics settings set to " << argv[2] << std::endl;
-        app.graphicsSettings = std::stoi(argv[2]);
-    }
+    // TODO better logo
+    std::cout << "\n\n\n\t\tTAXI DRIVER\n\n\n" << std::endl;
+    int choose = 0;
+    int oldChoose = 0;
+    int gameMode = 0;
+    const char* gameModes[GAMEMODE_COUNT] = {"Arcade", "Endless"};
+    int graphicSetting = 2;
+    const char* gSettings[GRAPHICS_SETTINGS_COUNT] = {"Low", "Medium", "High"};
+    float musicVolume = 25.0f;
+    float soundVolume = 100.0f;
+    do {
+        std::cout << "1 - Start the game" << std::endl;
+        std::cout << "2 - Settings" << std::endl;
+        std::cout << "3 - Exit" << std::endl;
+        std::cout << "\nChoosing: ";
+        std::cin >> choose;
+        switch(choose) {
+            case 2: {
+                oldChoose = choose;
+                do {
+                    std::cout << std::fixed;
+                    std::cout << std::setprecision(2);
+                    std::cout << "\n--------- SETTINGS ---------\n" << std::endl;
+                    std::cout << "1 - Game mode:          " << "\t< " << gameModes[gameMode] << " >" << std::endl;
+                    std::cout << "2 - Graphics settings:  " << "\t< " << gSettings[graphicSetting]  << " > " << std::endl;
+                    std::cout << "3 - Music volume:       " << "\t< " << musicVolume << " >" << std::endl;
+                    std::cout << "4 - Sound and FX volume:" << "\t< " << soundVolume << " >" << std::endl;
+                    std::cout << "5 - Back" << std::endl;
+                    std::cout << "\nChoosing: ";
+                    std::cin >> choose;
+                    switch(choose) {
+                        case 1: {
+                            gameMode = (gameMode + 1) % GAMEMODE_COUNT;
+                            break;
+                        }
+                        case 2: {
+                            graphicSetting = (graphicSetting + 1) % GRAPHICS_SETTINGS_COUNT;
+                            break;
+                        }
+                        case 3: {
+                            do {
+                                std::cout << "Enter the music volume [0.0 - 100.0]: ";
+                                std::cin >> musicVolume;
+                            } while(musicVolume < 0.0f || musicVolume > 100.0f);
+                            break;
+                        }
+                        case 4: {
+                            do {
+                                std::cout << "Enter the sound and FX volume [0.0 - 100.0]: ";
+                                std::cin >> soundVolume;
+                            } while(soundVolume < 0.0f || soundVolume > 100.0f);
+                            break;
+                        }
+                        case 5:
+                            break;
+                        default: 
+                            break;
+                    }
+                } while(choose != 5);
+                choose = oldChoose;
+                break;
+            }
+            case 3: {
+                std::cout << "Closing the sofware..." << std::endl;
+                return EXIT_SUCCESS;
+            }
+            default:
+                break;
+        }
+    } while(choose == 2);
+
+    app.graphicsSettings = graphicSetting;
+    app.gameMode = gameMode;
 
     std::cout << "[ SOUND ]: Initializing sound resources..." << std::endl;
     // initialize the miniaudio engine
@@ -1331,39 +1404,40 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize title sound!");
     }
     ma_sound_set_looping(&app.titleMusic, MA_TRUE);
+    ma_sound_set_volume(&app.titleMusic, musicVolume / 100.0f);
     // initialize in-game music
     result = ma_sound_init_from_file(&app.engine, "audios/ingame.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.ingameMusic);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
     }
     ma_sound_set_looping(&app.ingameMusic, MA_TRUE);
-    ma_sound_set_volume(&app.ingameMusic, 0.25f);
+    ma_sound_set_volume(&app.ingameMusic, musicVolume / 100.0f);
     // initialize idle engine sound
     result = ma_sound_init_from_file(&app.engine, "audios/idle.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.idleEngineSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize idle engine sound!");
     }
     ma_sound_set_looping(&app.idleEngineSound, MA_TRUE);
-    ma_sound_set_volume(&app.idleEngineSound, 2.0f);
+    ma_sound_set_volume(&app.idleEngineSound, soundVolume / 100.0f + 1.0f);
     // initialize accelearion engine sound
     result = ma_sound_init_from_file(&app.engine, "audios/acceleration.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.accelerationEngineSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize acceleration engine sound!");
     }
     ma_sound_set_looping(&app.accelerationEngineSound, MA_TRUE);
-    ma_sound_set_volume(&app.accelerationEngineSound, 1.5f);
+    ma_sound_set_volume(&app.accelerationEngineSound, soundVolume / 100.0f + 0.5f);
     // initialize pickup sound
     result = ma_sound_init_from_file(&app.engine, "audios/pickup.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.pickupSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize pickup sound!");
     }
-    ma_sound_set_volume(&app.pickupSound, 2.0f);
+    ma_sound_set_volume(&app.pickupSound, soundVolume / 100.0f + 1.0f);
     // initialize money sound
     result = ma_sound_init_from_file(&app.engine, "audios/money.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.moneySound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize pickup sound!");
     }
-    ma_sound_set_volume(&app.moneySound, 3.0f);
+    ma_sound_set_volume(&app.moneySound, soundVolume / 100.0f + 2.0f);
     std::cout << "[ SOUND ]: Sound resources initialized!" << std::endl;
 
     srand(time(NULL));
