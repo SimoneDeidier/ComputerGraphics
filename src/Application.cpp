@@ -79,7 +79,7 @@ class Application : public BaseProject {
         * 2 -> high ==> direct light + taxi lights + street lights
         */
         int graphicsSettings = 2;
-        int gameMode = 0;
+        bool endlessGameMode = false;
 
         ma_engine engine;
         ma_sound titleMusic;
@@ -93,17 +93,17 @@ class Application : public BaseProject {
         
         float Ar; // aspect ratio
 
-        DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle;
+        DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols;
 
-        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle;
+        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols;
 
-        Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle;
+        Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols;
 
-        Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle;
+        Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle, Mcontrols;
 
-        DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE], DStitle;
+        DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE], DStitle, DScontrols;
 
-        Texture Tcity, Tsky, Tpeople, Ttaxy, Ttitle;
+        Texture Tcity, Tsky, Tpeople, Ttaxy, Ttitle, Tcontrols;
 
         UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSky, uboCars[CARS], uboCity[MESH], uboPeople[PEOPLE];
         GlobalUniformBufferObject guboTaxi[TAXI_ELEMENTS], guboCars[CARS], guboCity[MESH], guboPeople[PEOPLE];
@@ -119,7 +119,7 @@ class Application : public BaseProject {
         #endif
 
         // Other application parameters
-        int currScene = -1;
+        int currScene = -2;
         int lastSavedSceneValue;
         int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
         int random_index = -1;
@@ -135,6 +135,7 @@ class Application : public BaseProject {
         bool alreadyInPhotoMode = false;
         bool isNight = false;
         bool drawTitle = true;
+        bool drawControls = false;
         bool pickupPointSelected = false;
         bool pickedPassenger = false;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
@@ -264,8 +265,8 @@ class Application : public BaseProject {
 
             // Descriptor pool sizes
             uniformBlocksInPool =  (2 * MESH) + 16+2+2*CARS+2*PEOPLE + (DEBUG ? SPHERES : 0);
-            texturesInPool = MESH + 8 +1+1+CARS+PEOPLE+1; //city, taxi, text, sky, autonomous cars, people, title
-            setsInPool = MESH + 8 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0) + 1;
+            texturesInPool = MESH + 8 +1+1+CARS+PEOPLE+2; //city, taxi, text, sky, autonomous cars, people, title
+            setsInPool = MESH + 8 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0) + 2;
 
             Ar = (float)windowWidth / (float)windowHeight;
 
@@ -304,6 +305,9 @@ class Application : public BaseProject {
             });
 
             DSLtitle.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+            });
+            DSLcontrols.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
             });
 
@@ -373,6 +377,15 @@ class Application : public BaseProject {
                         sizeof(glm::vec2), UV}
             });
 
+            VDcontrols.init(this, {
+                {0, sizeof(TwoDimVertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            }, {
+                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TwoDimVertex, pos),
+                        sizeof(glm::vec3), POSITION},
+                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(TwoDimVertex, UV),
+                        sizeof(glm::vec2), UV}
+            });
+
             #if DEBUG
                 VDsphere.init(this, {
                         {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -395,6 +408,8 @@ class Application : public BaseProject {
             Ppeople.init(this, &VDpeople, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLpeople});
             Ptitle.init(this, &VDtitle, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtitle});
             Ptitle.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+            Pcontrols.init(this, &VDcontrols, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLcontrols});
+            Pcontrols.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
 
 
             #if DEBUG
@@ -435,12 +450,16 @@ class Application : public BaseProject {
             Mtitle.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
             Mtitle.indices = {0, 1, 2, 1, 3, 2};
             Mtitle.initMesh(this, &VD);
+            Mcontrols.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
+            Mcontrols.indices = {0, 1, 2, 1, 3, 2};
+            Mcontrols.initMesh(this, &VD);
 
             Tcity.init(this,"textures/Textures_City.png");
             Tsky.init(this, "textures/images.png");
             Tpeople.init(this, "textures/Humano_01Business_01_Diffuse04.jpg");
             Ttaxy.init(this, "textures/VehiclePack_baseColor.png");
             Ttitle.init(this, "textures/title.jpg");
+            Tcontrols.init(this, "textures/controls.jpg");
 
             nlohmann::json js;
             std::ifstream ifs("models/city.json");
@@ -495,6 +514,7 @@ class Application : public BaseProject {
             Pcars.create();
             Ppeople.create();
             Ptitle.create();
+            Pcontrols.create();
 
             #if DEBUG
                 Psphere.create();
@@ -541,6 +561,10 @@ class Application : public BaseProject {
                 {0, TEXTURE, 0, &Ttitle}
             });
 
+            DScontrols.init(this, &DSLcontrols, {
+                {0, TEXTURE, 0, &Tcontrols}
+            });
+
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
                     DSsphere[i].init(this, &DSLsphere, {
@@ -558,6 +582,7 @@ class Application : public BaseProject {
             Pcars.cleanup();
             Ppeople.cleanup();
             Ptitle.cleanup();
+            Pcontrols.cleanup();
 
             #if DEBUG
                 Psphere.cleanup();
@@ -582,7 +607,7 @@ class Application : public BaseProject {
             }
 
             DStitle.cleanup();
-
+            DScontrols.cleanup();
 
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
@@ -598,6 +623,7 @@ class Application : public BaseProject {
             Tpeople.cleanup();
             Ttaxy.cleanup();
             Ttitle.cleanup();
+            Tcontrols.cleanup();
 
             for(int i = 0; i < 8; i++) {
                 Mtaxi[i].cleanup();
@@ -616,6 +642,7 @@ class Application : public BaseProject {
                 Mpeople[i].cleanup();
             }
             Mtitle.cleanup();
+            Mcontrols.cleanup();
 
             #if DEBUG
                 for (int i = 0; i < SPHERES; i++) {
@@ -629,6 +656,7 @@ class Application : public BaseProject {
             DSLcars.cleanup();
             DSLpeople.cleanup();
             DSLtitle.cleanup();
+            DSLcontrols.cleanup();
 
             #if DEBUG
                 DSLsphere.cleanup();
@@ -640,6 +668,7 @@ class Application : public BaseProject {
             Pcars.destroy();
             Ppeople.destroy();
             Ptitle.destroy();
+            Pcontrols.destroy();
 
             #if DEBUG
                 Psphere.destroy();
@@ -648,7 +677,7 @@ class Application : public BaseProject {
 
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
-            if(!drawTitle) {
+            if(!drawTitle && !drawControls) {
                 P.bind(commandBuffer);
 
                 for(int i = 0; i < 8; i++){
@@ -698,12 +727,19 @@ class Application : public BaseProject {
                     }
                 }
             }
-            else {
+            else if(drawTitle) {
                 Ptitle.bind(commandBuffer);
                 DStitle.bind(commandBuffer, Ptitle, 0, currentImage);
                 Mtitle.bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
                                 static_cast<uint32_t>(Mtitle.indices.size()), 1, 0, 0, 0);
+            }
+            else if(drawControls) {
+                Pcontrols.bind(commandBuffer);
+                DScontrols.bind(commandBuffer, Pcontrols, 0, currentImage);
+                Mcontrols.bind(commandBuffer);
+                vkCmdDrawIndexed(commandBuffer,
+                                static_cast<uint32_t>(Mcontrols.indices.size()), 1, 0, 0, 0);
             }
 
             #if DEBUG
@@ -760,14 +796,25 @@ class Application : public BaseProject {
                 glfwSetWindowShouldClose(window, GL_TRUE);
             }
 
-            //2-> title screen, 0-> third person view , 1-> photo mode, 3-> first person
+            /* currScene
+             * -2: title
+             * -1: controls
+             * 0: third person
+             * 1: first person
+             */
             if(glfwGetKey(window, GLFW_KEY_SPACE)) {
                 if(!debounce) {
                     debounce = true;
                     curDebounce = GLFW_KEY_SPACE;
                     currScene = (currScene + 1) % INGAME_SCENE_COUNT;
-                    if(currScene != -1) {
+                    if(currScene != -2) {
                         drawTitle = false;
+                    }
+                    if(currScene == -1) {
+                        drawControls = true;
+                    }
+                    if(currScene != -1) {
+                        drawControls = false;
                     }
                     RebuildPipeline();
                 }
@@ -834,11 +881,11 @@ class Application : public BaseProject {
             float oldSteeringAng = steeringAng;
             glm::mat4 mView;
 
-            if(currScene == -1 && !ma_sound_is_playing(&titleMusic)) {
+            if((currScene == -2 || currScene == -1) && !ma_sound_is_playing(&titleMusic)) {
                     ma_sound_start(&titleMusic);
             }
             else {
-                if(currScene != -1 && ma_sound_is_playing(&titleMusic) && !ma_sound_is_playing(&ingameMusic)) {
+                if(currScene != -2 && currScene != -1 && ma_sound_is_playing(&titleMusic) && !ma_sound_is_playing(&ingameMusic)) {
                     ma_sound_stop(&titleMusic);
                     ma_sound_start(&ingameMusic);
                 }
@@ -1318,8 +1365,10 @@ int main(int argc, char* argv[]) {
 
     Application app;
 
-    // TODO better logo
-    std::cout << "\n\n\n\t\tTAXI DRIVER\n\n\n" << std::endl;
+    std::ifstream f("files/logo.txt");
+    if (f.is_open()) {
+        std::cout << f.rdbuf();
+    }
     int choose = 0;
     int oldChoose = 0;
     int gameMode = 0;
@@ -1329,6 +1378,7 @@ int main(int argc, char* argv[]) {
     float musicVolume = 25.0f;
     float soundVolume = 100.0f;
     do {
+        std::cout << "--------- MAIN MENU ---------\n" << std::endl;
         std::cout << "1 - Start the game" << std::endl;
         std::cout << "2 - Settings" << std::endl;
         std::cout << "3 - Exit" << std::endl;
@@ -1390,7 +1440,7 @@ int main(int argc, char* argv[]) {
     } while(choose == 2);
 
     app.graphicsSettings = graphicSetting;
-    app.gameMode = gameMode;
+    app.endlessGameMode = (gameMode == 1);
 
     std::cout << "[ SOUND ]: Initializing sound resources..." << std::endl;
     // initialize the miniaudio engine
