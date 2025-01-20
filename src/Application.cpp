@@ -104,7 +104,7 @@ class Application : public BaseProject {
 
         DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols, DSLarrow, DSLendgame;
 
-        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols, VDarrow, Vendgame;
+        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols, VDarrow, VDendgame;
 
         Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols, Parrow, Pendgame;
 
@@ -139,7 +139,6 @@ class Application : public BaseProject {
         float money = 0.0f;
         float wheelAndSteerAng = 0.0f;
         double pickupTime = 0.0;
-        double timeElapsed = 0.0;
 		bool openDoor = false;
 		bool closeDoor = false;
 		float openingDoorAngle = 0.0f;
@@ -725,7 +724,7 @@ class Application : public BaseProject {
             DSLtitle.cleanup();
             DSLcontrols.cleanup();
             DSLarrow.cleanup();
-            DSendgame.cleanup();
+            DSLendgame.cleanup();
 
             #if DEBUG
                 DSLsphere.cleanup();
@@ -748,7 +747,7 @@ class Application : public BaseProject {
 
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
-            if(!drawTitle && !drawControls) {
+            if(!drawTitle && !drawControls && !endGame) {
                 P.bind(commandBuffer);
 
                 for(int i = 0; i < 8; i++){
@@ -913,7 +912,7 @@ class Application : public BaseProject {
                 }
             }
 
-            if (glfwGetKey(window, GLFW_KEY_P)) {
+            if (glfwGetKey(window, GLFW_KEY_P) && currScene != 3) {
                 if (!debounce) {
                     debounce = true;
                     curDebounce = GLFW_KEY_P;
@@ -1232,7 +1231,16 @@ class Application : public BaseProject {
                     if(!endlessGameMode) {
                         currScene = 3;
                         endGame = true;
-                        RebuildPipleline();
+                        RebuildPipeline();
+                        if(ma_sound_is_playing(&idleEngineSound)) {
+                            ma_sound_stop(&idleEngineSound);
+                        }
+                        if(ma_sound_is_playing(&accelerationEngineSound)) {
+                            ma_sound_stop(&accelerationEngineSound);
+                        }
+                        std::cout << "\n\n\n\t--------- FINAL SCORE ---------\n" << std::endl;
+                        std::cout << "\tTotal earnings: " << money << " $"<< std::endl;
+                        std::cout << "\n\t--------- FINAL SCORE ---------" << std::endl;
                     }
                 }
 
