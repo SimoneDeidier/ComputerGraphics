@@ -97,6 +97,7 @@ class Application : public BaseProject {
         ma_sound accelerationEngineSound;
         ma_sound pickupSound;
         ma_sound moneySound;
+        ma_sound clacsonSound;
     
     protected:
         
@@ -133,15 +134,16 @@ class Application : public BaseProject {
         int lastSavedSceneValue;
         int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
         int random_index = -1;
+        int collisionCounter = 0;
         float wheelRoll = 0.0f;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
         float money = 0.0f;
         float wheelAndSteerAng = 0.0f;
+        float openingDoorAngle = 0.0f;
         double pickupTime = 0.0;
 		bool openDoor = false;
 		bool closeDoor = false;
-		float openingDoorAngle = 0.0f;
         bool alreadyInPhotoMode = false;
         bool isNight = false;
         bool drawTitle = true;
@@ -149,6 +151,7 @@ class Application : public BaseProject {
         bool pickupPointSelected = false;
         bool pickedPassenger = false;
         bool endGame = false;
+        bool inCollisionZone = false;
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
         glm::vec3 camPosInPhotoMode;
         glm::vec3 taxiPos = glm::vec3(0.0f, -0.2f, 0.0f); //initial pos of taxi
@@ -875,6 +878,8 @@ class Application : public BaseProject {
                 ma_sound_uninit(&pickupSound);
                 if(ma_sound_is_playing(&moneySound)) ma_sound_stop(&moneySound);
                 ma_sound_uninit(&moneySound);
+                if(ma_sound_is_playing(&clacsonSound)) ma_sound_stop(&clacsonSound);
+                ma_sound_uninit(&clacsonSound);
 
                 ma_engine_uninit(&engine);
 
@@ -1381,12 +1386,23 @@ class Application : public BaseProject {
                 }
 
                 glm::vec4 carCollisionSphereCenter = glm::vec4(0.0f);
+                collisionCounter = 0;
                 for(int i = 0; i < CARS; i++) {
                     carCollisionSphereCenter = mWorldCars[i][3];
                     if(glm::distance(glm::vec3(taxiCollisionSphereCenter), glm::vec3(carCollisionSphereCenter)) < 2 * COLLISION_SPHERE_RADIUS) {
-                        std::cout << "[ GAME ]: COLLISION!" << std::endl;
+                        collisionCounter++;
                     }
                 }
+                if(collisionCounter > 0 && !inCollisionZone) {
+                    inCollisionZone = true;
+                    money -= 100.0f;
+                    if(ma_sound_at_end(&clacsonSound)) ma_sound_seek_to_pcm_frame(&clacsonSound, 0);
+                    ma_sound_start(&clacsonSound);
+                }
+                else if(collisionCounter == 0 && inCollisionZone) {
+                    inCollisionZone = false;
+                }
+
 
                 glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), sphereCenter) * glm::scale(glm::mat4(1.0f), sphereScale);
                 uboSky.mvpMat = Prj * mView * (scaleMat);
@@ -1480,10 +1496,6 @@ int main(int argc, char* argv[]) {
 
     Application app;
 
-    std::ifstream f("files/logo.txt");
-    if (f.is_open()) {
-        std::cout << f.rdbuf();
-    }
     int choose = 0;
     int oldChoose = 0;
     int gameMode = 0;
@@ -1492,6 +1504,11 @@ int main(int argc, char* argv[]) {
     const char* gSettings[GRAPHICS_SETTINGS_COUNT] = {"Low", "Medium", "High"};
     float musicVolume = 25.0f;
     float soundVolume = 100.0f;
+    
+    std::ifstream f("files/logo.txt");
+    if (f.is_open()) {
+        std::cout << f.rdbuf();
+    }
     do {
         std::cout << "--------- MAIN MENU ---------\n" << std::endl;
         std::cout << "1 - Start the game" << std::endl;
@@ -1600,9 +1617,15 @@ int main(int argc, char* argv[]) {
     // initialize money sound
     result = ma_sound_init_from_file(&app.engine, "audios/money.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.moneySound);
     if(result != MA_SUCCESS) {
-        throw std::runtime_error("[ ERROR ]: Failed to initialize pickup sound!");
+        throw std::runtime_error("[ ERROR ]: Failed to initialize money sound!");
     }
     ma_sound_set_volume(&app.moneySound, soundVolume / 100.0f + 2.0f);
+    // intialize clacson sound
+    result = ma_sound_init_from_file(&app.engine, "audios/clacson.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.clacsonSound);
+    if(result != MA_SUCCESS) {
+        throw std::runtime_error("[ ERROR ]: Failed to initialize clacson sound!");
+    }
+    ma_sound_set_volume(&app.clacsonSound, soundVolume / 100.0f - 0.5f);
     std::cout << "[ SOUND ]: Sound resources initialized!" << std::endl;
 
     srand(time(NULL));
