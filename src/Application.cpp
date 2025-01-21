@@ -82,14 +82,8 @@ class Application : public BaseProject {
 
     public:
 
-        /* PUBLIC PARAMETER FOR GRAPHICS SETTINGS:
-        * 0 -> low ==> only direct light
-        * 1 -> medium ==> direct light + taxi lights
-        * 2 -> high ==> direct light + taxi lights + street lights
-        */
         int graphicsSettings = 2;
         bool endlessGameMode = false;
-
         ma_engine engine;
         ma_sound titleMusic;
         ma_sound ingameMusic;
@@ -101,7 +95,7 @@ class Application : public BaseProject {
     
     protected:
         
-        float Ar; // aspect ratio
+        float Ar;
 
         DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols, DSLarrow, DSLendgame;
 
@@ -129,12 +123,12 @@ class Application : public BaseProject {
             UniformBufferObject uboSphere[SPHERES];
         #endif
 
-        // Other application parameters
         int currScene = -2;
         int lastSavedSceneValue;
         int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
         int random_index = -1;
         int collisionCounter = 0;
+        int totDrivesCompleted = 0;
         float wheelRoll = 0.0f;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
@@ -265,6 +259,8 @@ class Application : public BaseProject {
         glm::vec4 pickupPointColor = glm::vec4(247.0f / 255.0f, 76.0f / 255.0f, 63.0f / 255.0f, 1.0f);
         glm::vec4 pickupPoint = glm::vec4(0.0f);
         glm::vec4 dropoffPoint = glm::vec4(0.0f);
+
+        glm::mat4 mWorldCars[CARS];
 
         std::unordered_map<int, bool> drawPeople = {{3, true}, {7, true}, {35, true}, {37, true}, {44, true}};
 
@@ -883,6 +879,13 @@ class Application : public BaseProject {
 
                 ma_engine_uninit(&engine);
 
+                if(endlessGameMode) {
+                    std::cout << "\n\n\n\t------------- FINAL SCORE -----------\n" << std::endl;
+                    std::cout << "\tTotal drives completed:\t" << totDrivesCompleted << std::endl;
+                    std::cout << "\tTotal earnings:        \t" << money << " $"<< std::endl;
+                    std::cout << "\n\t------------- FINAL SCORE -------------" << std::endl;
+                }
+
                 glfwSetWindowShouldClose(window, GL_TRUE);
             }
 
@@ -939,20 +942,10 @@ class Application : public BaseProject {
                 }
             }
             
-            // Integration with the timers and the controllers
             float deltaT;
             glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
             bool fire = false;
             getSixAxis(deltaT, m, r, fire);
-            // getSixAxis() is defined in Starter.hpp in the base class.
-            // It fills the float point variable passed in its first parameter with the time
-            // since the last call to the procedure.
-            // It fills vec3 in the second parameters, with three values in the -1,1 range corresponding
-            // to motion (with left stick of the gamepad, or WASD + RF keys on the keyboard)
-            // It fills vec3 in the third parameters, with three values in the -1,1 range corresponding
-            // to motion (with right stick of the gamepad, or Arrow keys + QE keys on the keyboard, or mouse)
-            // If fills the last boolean variable with true if fire has been pressed:
-            //          SPACE on the keyboard, A or B button on the Gamepad, Right mouse button
 
             if (autoTime) {
                 cTime += deltaT;
@@ -960,13 +953,15 @@ class Application : public BaseProject {
             }
 
             static float steeringAngCars[CARS];
-            for(int i = 0; i < CARS; i++) {
-                carPositions[i] += directions[i] * speedCar * deltaT;
-                if (glm::distance(carPositions[i], wayPoints[i][currentPoints[i]]) < 0.25f) {
-                    currentPoints[i] = (currentPoints[i] + 1) % wayPoints[i].size();
+            if(currScene != 2) {
+                for(int i = 0; i < CARS; i++) {
+                    carPositions[i] += directions[i] * speedCar * deltaT;
+                    if (glm::distance(carPositions[i], wayPoints[i][currentPoints[i]]) < 0.25f) {
+                        currentPoints[i] = (currentPoints[i] + 1) % wayPoints[i].size();
+                    }
+                    float targetSteering = atan2(directions[i].x, directions[i].z);
+                    steeringAngCars[i]= fmod(targetSteering + M_PI, 2.0f * M_PI) - M_PI;
                 }
-                float targetSteering = atan2(directions[i].x, directions[i].z);
-                steeringAngCars[i]= fmod(targetSteering + M_PI, 2.0f * M_PI) - M_PI;
             }
 
             static float steeringAng = 0.0f;
@@ -1199,10 +1194,11 @@ class Application : public BaseProject {
                                                             glm::translate(mWorldTaxi[1], glm::vec3(-0.6f, 0.6f, 2.6f))[3], // front right
                                                             glm::translate(mWorldTaxi[1], glm::vec3(0.6f, 0.6f, 2.6f))[3]}; // front left
                 
-                glm::mat4 mWorldCars[CARS];
-                for(int i = 0; i < CARS; i++) {
-                    mWorldCars[i] = glm::translate(glm::mat4(1.0), carPositions[i]) *
-                                    glm::rotate(glm::mat4(1.0), steeringAngCars[i], glm::vec3(0, 1, 0));
+                if(currScene != 2) {
+                    for(int i = 0; i < CARS; i++) {
+                        mWorldCars[i] = glm::translate(glm::mat4(1.0), carPositions[i]) *
+                                        glm::rotate(glm::mat4(1.0), steeringAngCars[i], glm::vec3(0, 1, 0));
+                    }
                 }
 
                 if(!pickupPointSelected) {
@@ -1246,6 +1242,9 @@ class Application : public BaseProject {
                         std::cout << "\n\n\n\t--------- FINAL SCORE ---------\n" << std::endl;
                         std::cout << "\tTotal earnings: " << money << " $"<< std::endl;
                         std::cout << "\n\t--------- FINAL SCORE ---------" << std::endl;
+                    }
+                    else {
+                        totDrivesCompleted++;
                     }
                 }
 
