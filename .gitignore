@@ -74,3 +74,17 @@ src/shaders/*.sh
 
 # Shader output files
 src/shaders/*.spv
+test/.idea/_Code_2023.iml
+test/.idea/modules.xml
+test/compileMac
+test/headers/.idea/headers.iml
+test/headers/.idea/modules.xml
+test/headers/.idea/workspace.xml
+test/.idea/workspace.xml
+test/shaders/ShaderVert.spv
+test/shaders/ShaderFrag.spv
+test/shaders/compile.sh
+test/modules/.idea/workspace.xml
+test/modules/.idea/modules.xml
+test/modules/.idea/modules.iml
+test/MeshLoader
