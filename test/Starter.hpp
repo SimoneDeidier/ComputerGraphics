@@ -2113,6 +2113,8 @@ void Model<Vert>::loadModelGLTF(std::string file, bool encoded) {
 		decomp = calloc(size, 1);
 		int n = sinflate(decomp, (int)size, &decrypted[16], decrypted.size()-16);
 		
+		std::cout << "\n\n\n\n\n" << reinterpret_cast<const char *>(decomp) << "\n\n\n\n\n" << std::endl;
+
 		if (!loader.LoadASCIIFromString(&model, &warn, &err, 
 						reinterpret_cast<const char *>(decomp), size, "/")) {
 			throw std::runtime_error(warn + err);

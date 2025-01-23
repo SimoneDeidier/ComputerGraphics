@@ -88,3 +88,7 @@ test/modules/.idea/workspace.xml
 test/modules/.idea/modules.xml
 test/modules/.idea/modules.iml
 test/MeshLoader
+test/compile
+test/shaders/compileShader
+test/shaders/Frag.spv
+test/shaders/Vert.spv
