@@ -26,8 +26,8 @@
 #define PICKUP_POINT_Y_OFFSET 2.0f
 #define ARROW_Y_OFFSET 3.25f
 
-#define DEBUG 0
-#define SPHERES 0
+#define DEBUG 1
+#define SPHERES 1
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
@@ -1485,8 +1485,17 @@ class Application : public BaseProject {
                 guboArrow.gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
                 DSarrow.map(currentImage, &guboArrow, sizeof(guboArrow), 1);
 
+                #if DEBUG
+                    glm::mat4 sphereMat = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, -30.0f)), glm::vec3(0.1f));
+                    uboSphere[0].mvpMat = Prj * mView * sphereMat;
+                    uboSphere[0].mMat = sphereMat;
+                    uboSphere[0].nMat = glm::inverse(glm::transpose(uboSphere[0].mMat));
+                    DSsphere[0].map(currentImage, &uboSphere[0], sizeof(uboSphere[0]), 0);
+                #endif
+
             }
         }
+
 };
 
 
