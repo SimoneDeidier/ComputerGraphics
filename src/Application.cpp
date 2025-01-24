@@ -20,6 +20,8 @@
 #define INGAME_SCENE_COUNT 2
 #define GAMEMODE_COUNT 2
 #define GRAPHICS_SETTINGS_COUNT 3
+#define EXT_COLL_BOX_PCOUNT 4
+#define TAXI_COLL_PCOUNT 4
 
 #define MIN_DISTANCE_TO_PICKUP 3.5f
 #define COLLISION_SPHERE_RADIUS 0.75f
@@ -27,7 +29,7 @@
 #define ARROW_Y_OFFSET 3.25f
 
 #define DEBUG 1
-#define SPHERES 1
+#define SPHERES 1 + 4 + 4
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
@@ -235,6 +237,16 @@ class Application : public BaseProject {
                                                         glm::vec3(-74.1f, 9.3f, -185.1f),
                                                         glm::vec3(149.1f, 9.3f, -182.1f),
                                                         glm::vec3(146.1f, 9.3f, 41.1f)};
+
+        glm::vec3 externalCollisionBoxPoints[EXT_COLL_BOX_PCOUNT] = {glm::vec3(-78.0f, 0.0f, 42.0f),
+                                                                    glm::vec3(-78.0f, 0.0f, -186.0f),
+                                                                    glm::vec3(150.0f, 0.0f, 42.0f),
+                                                                    glm::vec3(150.0f, 0.0f, -186.0f)};
+
+        glm::vec3 taxiCollisionPointOffsets[TAXI_COLL_PCOUNT] = {glm::vec3(-0.75f, 0.0f, -0.65f), // rear right
+                                                                glm::vec3(0.75f, 0.0f, -0.65f), // rear left
+                                                                glm::vec3(-0.75f, 0.0f, 2.6f), // front right
+                                                                glm::vec3(0.75f, 0.0f, 2.6f)}; // front left
 
         glm::vec4 pickupPoints[PICKUP_COUNT] = {glm::vec4(-79.0f, 0.0f, 0.0f, 0.0f),
                                                         glm::vec4(36.0f, 0.0f, -29.0f, 0.0f),
@@ -1486,14 +1498,33 @@ class Application : public BaseProject {
                 DSarrow.map(currentImage, &guboArrow, sizeof(guboArrow), 1);
 
                 #if DEBUG
-                    glm::mat4 sphereMat = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, -30.0f)), glm::vec3(0.1f));
-                    uboSphere[0].mvpMat = Prj * mView * sphereMat;
-                    uboSphere[0].mMat = sphereMat;
-                    uboSphere[0].nMat = glm::inverse(glm::transpose(uboSphere[0].mMat));
-                    DSsphere[0].map(currentImage, &uboSphere[0], sizeof(uboSphere[0]), 0);
-                #endif
+                    glm::mat4 sphereMat;
+                    for(int i = 0; i < EXT_COLL_BOX_PCOUNT; i++) {
+                        sphereMat = glm::scale(glm::translate(glm::translate(glm::mat4(1.0), externalCollisionBoxPoints[i]), glm::vec3(0.0f, 0.5f, 0.0f)), glm::vec3(0.1f));
+                        uboSphere[i].mvpMat = Prj * mView * sphereMat;
+                        uboSphere[i].mMat = sphereMat;
+                        uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
+                        DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
+                    }
+                    sphereMat = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 0.5f, -30.0f)), glm::vec3(0.1f));
+                    uboSphere[4].mvpMat = Prj * mView * sphereMat;
+                    uboSphere[4].mMat = sphereMat;
+                    uboSphere[4].nMat = glm::inverse(glm::transpose(uboSphere[4].mMat));
+                    DSsphere[4].map(currentImage, &uboSphere[4], sizeof(uboSphere[4]), 0);
+                    for(int i = 5; i < 5 + TAXI_COLL_PCOUNT; i++) {
+                        sphereMat = glm::scale(glm::translate(glm::translate(glm::mat4(1.0f), taxiPos), taxiCollisionPointOffsets[i - 5]), glm::vec3(0.1f));
+                        uboSphere[i].mvpMat = Prj * mView * sphereMat;
+                        uboSphere[i].mMat = sphereMat;
+                        uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
+                        DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
+                    }           
+                  #endif
 
             }
+        }
+
+        bool checkCollision(void) {
+            return false;
         }
 
 };
