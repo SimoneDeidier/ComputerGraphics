@@ -2565,6 +2565,16 @@ void Model::loadModelGLTF(std::string file, bool encoded) {
 
 		decomp = calloc(size, 1);
 		int n = sinflate(decomp, (int)size, &decrypted[16], decrypted.size()-16);
+
+		std::string outputFile = file;
+		size_t pos = outputFile.find(".mgcg");
+		if (pos != std::string::npos) {
+			outputFile.erase(pos, 5);
+		}
+		outputFile += ".gltf";
+		std::ofstream outFile(outputFile, std::ios::binary);
+		outFile.write(reinterpret_cast<const char*>(decomp), size);
+		outFile.close();
 		
 		if (!loader.LoadASCIIFromString(&model, &warn, &err, 
 						reinterpret_cast<const char *>(decomp), size, "/")) {
