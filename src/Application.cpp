@@ -64,17 +64,20 @@ struct ArrowGUBO {
     alignas(16) glm::vec4 gammaAndMetallic;
 };
 
+// Vertex definition for 3D objects
 struct Vertex {
     glm::vec3 pos;
     glm::vec2 UV;
     glm::vec3 normal;
 };
 
+// Vertex definition for 2D objects
 struct TwoDimVertex {
     glm::vec3 pos;
     glm::vec2 UV;
 };
 
+// Struct to easily manage collision boxes
 struct CollisionBox {
     float xMin;
     float xMax;
@@ -86,6 +89,7 @@ class Application : public BaseProject {
 
     public:
 
+        // Game options setted by main menu
         int graphicsSettings = 2;
         bool endlessGameMode = false;
         ma_engine engine;
@@ -101,11 +105,11 @@ class Application : public BaseProject {
         
         float Ar;
 
-        DescriptorSetLayout DSL, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols, DSLarrow, DSLendgame;
+        DescriptorSetLayout DSLtaxi, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols, DSLarrow, DSLendgame;
 
-        VertexDescriptor VD, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols, VDarrow, VDendgame;
+        VertexDescriptor VDtaxi, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols, VDarrow, VDendgame;
 
-        Pipeline P, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols, Parrow, Pendgame;
+        Pipeline Ptaxi, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols, Parrow, Pendgame;
 
         Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle, Mcontrols, Marrow, Mendgame;
 
@@ -309,9 +313,10 @@ class Application : public BaseProject {
                                                                             .zMin = -30.0f,
                                                                             .zMax = 30.0f}};
 
-        // Here you set the main application parameters
+        // Set the main application parameters
         void setWindowParameters() {
 
+            // Window dimensions and title
             windowWidth = 1920;
             windowHeight = 1080;
             windowTitle = "TAXI DRIVER";
@@ -319,24 +324,27 @@ class Application : public BaseProject {
             initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
             // Descriptor pool sizes
-            uniformBlocksInPool =  20 + (2 * MESH) + 2 * CARS + 2 * PEOPLE;
-            texturesInPool = 13 + MESH + CARS + PEOPLE; //city, taxi, text, sky, autonomous cars, people, title
+            uniformBlocksInPool =  20 + (2 * MESH) + (2 * CARS) + (2 * PEOPLE);
+            texturesInPool = 13 + MESH + CARS + PEOPLE;
             setsInPool = 13 + MESH + CARS + PEOPLE;
 
             Ar = (float)windowWidth / (float)windowHeight;
 
         }
 
+        // Function on window resize
         void onWindowResize(int w, int h) {
             Ar = (float)w / (float)h;
         }
 
+        // initialization of Descriptor Set Layouts, Vertex Descriptors, Pipelines, Models and Textures
         void localInit() {
 
-            DSL.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+            // Initialization of Descriptor Set Layouts
+            DSLtaxi.init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}, // Uniform Buffer Object
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}, // Texture
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Global Uniform Buffer Object
             });
             DSLcity.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
@@ -360,20 +368,21 @@ class Application : public BaseProject {
             });
 
             DSLtitle.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT} // Only texture
             });
             DSLcontrols.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
             });
             DSLarrow.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}, // UBO
+                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Texture
             });
             DSLendgame.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
             });
 
-            VD.init(this, {
+            // Initialization of Vertex Descriptors
+            VDtaxi.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
                             {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
@@ -462,14 +471,18 @@ class Application : public BaseProject {
                         sizeof(glm::vec2), UV}
             });
 
-            P.init(this, &VD, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSL});
+            // Initialization of Pipelines
+            Ptaxi.init(this, &VDtaxi, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSL});
             Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcity});
+            // Deactivate culling for the city pipeline (when enabled the models are broken)
             Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Psky.init(this, &VDsky, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
+            // Deactivate culling for the sky pipeline (render the skybox from the inside)
             Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcars});
             Ppeople.init(this, &VDpeople, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLpeople});
             Ptitle.init(this, &VDtitle, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtitle});
+            // Setting for 2D rendering pipeline
             Ptitle.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Pcontrols.init(this, &VDcontrols, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLcontrols});
             Pcontrols.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
@@ -477,29 +490,30 @@ class Application : public BaseProject {
             Pendgame.init(this, &VDendgame, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLendgame});
             Pendgame.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
 
-            Mtaxi[0].init(this, &VD, "models/Car_Hatch_C_Door.obj", OBJ );
-            Mtaxi[1].init(this, &VD, "models/Car_Hatch_C_Extern.obj", OBJ );
-            Mtaxi[2].init(this, &VD, "models/Car_Hatch_C_Intern_no-steer.obj", OBJ );
-            Mtaxi[3].init(this, &VD, "models/TruckBodySteeringWheelO.mgcg", MGCG);
-            Mtaxi[4].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ ); //FR
-            Mtaxi[5].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ );//FL
-            Mtaxi[6].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ ); //BR
-			Mtaxi[7].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ); //BL
+            // Initialization of Models
+            Mtaxi[0].init(this, &VDtaxi, "models/Car_Hatch_C_Door.obj", OBJ);
+            Mtaxi[1].init(this, &VDtaxi, "models/Car_Hatch_C_Extern.obj", OBJ);
+            Mtaxi[2].init(this, &VDtaxi, "models/Car_Hatch_C_Intern_no-steer.obj", OBJ);
+            Mtaxi[3].init(this, &VDtaxi, "models/TruckBodySteeringWheelO.mgcg", MGCG);
+            Mtaxi[4].init(this, &VDtaxi, "models/Car_Hatch_C_Wheel.obj", OBJ);
+            Mtaxi[5].init(this, &VDtaxi, "models/Car_Hatch_C_Wheel.obj", OBJ);
+            Mtaxi[6].init(this, &VDtaxi, "models/Car_Hatch_C_Wheel.obj", OBJ);
+			Mtaxi[7].init(this, &VDtaxi, "models/Car_Hatch_C_Wheel.obj", OBJ);
             Msky.init(this, &VDsky, "models/Sphere2.obj", OBJ);
-            Mcars[0].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-            Mcars[1].init(this, &VDcars, "models/transport_cool_003_transport_cool_003.001.mgcg" , MGCG);
-            Mcars[2].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg" , MGCG);
-            Mcars[3].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg" , MGCG);
-            Mcars[4].init(this, &VDcars, "models/transport_jeep_001_transport_jeep_001.001.mgcg" , MGCG);
-            Mcars[5].init(this, &VDcars, "models/transport_jeep_010_transport_jeep_010.001.mgcg" , MGCG);
-            Mcars[6].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
-            Mcars[7].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg" , MGCG);
-            Mcars[8].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg" , MGCG);
+            Mcars[0].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg", MGCG);
+            Mcars[1].init(this, &VDcars, "models/transport_cool_003_transport_cool_003.001.mgcg", MGCG);
+            Mcars[2].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg", MGCG);
+            Mcars[3].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg", MGCG);
+            Mcars[4].init(this, &VDcars, "models/transport_jeep_001_transport_jeep_001.001.mgcg", MGCG);
+            Mcars[5].init(this, &VDcars, "models/transport_jeep_010_transport_jeep_010.001.mgcg", MGCG);
+            Mcars[6].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg", MGCG);
+            Mcars[7].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg", MGCG);
+            Mcars[8].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg", MGCG);
 
-            std::vector<TwoDimVertex> vertices = {{{-1.0,-1.0,0.9f}, {0.0f,0.0f}},
-                    {{-1.0, 1.0,0.9f}, {0.0f,1.0f}},
-                    {{ 1.0,-1.0,0.9f}, {1.0f,0.0f}},
-                    {{ 1.0, 1.0,0.9f}, {1.0f,1.0f}}};
+            std::vector<TwoDimVertex> vertices = {{{-1.0, -1.0, 0.9f}, {0.0f, 0.0f}},
+                    {{-1.0, 1.0, 0.9f}, {0.0f, 1.0f}},
+                    {{ 1.0,-1.0, 0.9f}, {1.0f, 0.0f}},
+                    {{ 1.0, 1.0, 0.9f}, {1.0f, 1.0f}}};
             Mtitle.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
             Mtitle.indices = {0, 1, 2, 1, 3, 2};
             Mtitle.initMesh(this, &VD);
@@ -509,14 +523,6 @@ class Application : public BaseProject {
             Mendgame.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
             Mendgame.indices = {0, 1, 2, 1, 3, 2};
             Mendgame.initMesh(this, &VD);
-
-            Tcity.init(this,"textures/Textures_City.png");
-            Tsky.init(this, "textures/images.png");
-            Tpeople.init(this, "textures/Humano_01Business_01_Diffuse04.jpg");
-            Ttaxy.init(this, "textures/VehiclePack_baseColor.png");
-            Ttitle.init(this, "textures/title.jpg");
-            Tcontrols.init(this, "textures/controls.jpg");
-            Tendgame.init(this, "textures/endgame.jpg");
 
             nlohmann::json js;
             std::ifstream ifs("models/city.json");
@@ -564,11 +570,22 @@ class Application : public BaseProject {
 
             Marrow.init(this, &VDarrow, "models/simple arrow.obj", OBJ);
 
+            // Initialization of Textures
+            Tcity.init(this,"textures/Textures_City.png");
+            Tsky.init(this, "textures/images.png");
+            Tpeople.init(this, "textures/Humano_01Business_01_Diffuse04.jpg");
+            Ttaxy.init(this, "textures/VehiclePack_baseColor.png");
+            Ttitle.init(this, "textures/title.jpg");
+            Tcontrols.init(this, "textures/controls.jpg");
+            Tendgame.init(this, "textures/endgame.jpg");
+
         }
 
+        // Initialization of Pipelines and Descriptor Sets
         void pipelinesAndDescriptorSetsInit() {
 
-            P.create();
+            // Creation of the Pipelines
+            Ptaxi.create();
             Pcity.create();
             Psky.create();
             Pcars.create();
@@ -578,8 +595,9 @@ class Application : public BaseProject {
             Parrow.create();
             Pendgame.create();
 
+            // Initialization of the Descriptor Sets
             for(int i = 0; i<8; i++){
-                DStaxi[i].init(this, &DSL, {
+                DStaxi[i].init(this, &DSLtaxi, {
                         {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                         {1, TEXTURE, 0, &Ttaxy},
                         {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
@@ -633,9 +651,11 @@ class Application : public BaseProject {
             });
         }
 
+        // Cleanup of Pipelines and Descriptor Sets
         void pipelinesAndDescriptorSetsCleanup() {
 
-            P.cleanup();
+            // Cleanup of the Pipelines
+            Ptaxi.cleanup();
             Pcity.cleanup();
             Psky.cleanup();
             Pcars.cleanup();
@@ -645,6 +665,7 @@ class Application : public BaseProject {
             Parrow.cleanup();
             Pendgame.cleanup();
 
+            // Cleanup of the Descriptor Sets
             for(int i = 0; i < 8; i++) {
                 DStaxi[i].cleanup();
             }
@@ -670,8 +691,10 @@ class Application : public BaseProject {
 
         }
 
+        // Cleanup of Textures, Models, Descruot Set Layouts and Pipelines
         void localCleanup() {
 
+            // Cleanup of Textures
             Tcity.cleanup();
             Tsky.cleanup();
             Tpeople.cleanup();
@@ -680,6 +703,7 @@ class Application : public BaseProject {
             Tcontrols.cleanup();
             Tendgame.cleanup();
 
+            // Cleanup of Models
             for(int i = 0; i < 8; i++) {
                 Mtaxi[i].cleanup();
             }
@@ -701,7 +725,8 @@ class Application : public BaseProject {
             Marrow.cleanup();
             Mendgame.cleanup();
 
-            DSL.cleanup();
+            // Cleanup of Descriptor Set Layouts
+            DSLtaxi.cleanup();
             DSLcity.cleanup();
             DSLsky.cleanup();
             DSLcars.cleanup();
@@ -711,7 +736,8 @@ class Application : public BaseProject {
             DSLarrow.cleanup();
             DSLendgame.cleanup();
 
-            P.destroy();
+            // Cleanup of Pipelines and Descriptor Sets
+            Ptaxi.destroy();
             Pcity.destroy();
             Psky.destroy();
             Pcars.destroy();
@@ -723,13 +749,16 @@ class Application : public BaseProject {
 
         }
 
+        // Binding of the Pipelines, Descriptor Sets and Models to the command buffer
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
+            // If we are not drawing a 2D scene:
             if(!drawTitle && !drawControls && !endGame) {
-                P.bind(commandBuffer);
+                // Bind the Pipelines, Descriptor Sets, Models and draw the scene
+                Ptaxi.bind(commandBuffer);
 
                 for(int i = 0; i < 8; i++){
-                    DStaxi[i].bind(commandBuffer, P, 0, currentImage);
+                    DStaxi[i].bind(commandBuffer, Ptaxi, 0, currentImage);
                     Mtaxi[i].bind(commandBuffer);
                     vkCmdDrawIndexed(commandBuffer,
                                     static_cast<uint32_t>(Mtaxi[i].indices.size()), 1, 0, 0, 0);
@@ -764,8 +793,9 @@ class Application : public BaseProject {
                 Ppeople.bind(commandBuffer);
 
                 for(int i = 0; i < PEOPLE; i++) {
+                    // Check for the person to not be drawn (picked up)
                     if((i == 3 || i == 7 || i == 35 || i == 37 || i == 44) && !drawPeople[i]) {
-                        // do nothing --> do not draw it
+                        // do nothing ==> do not draw it
                     }
                     else {
                         DSpeople[i].bind(commandBuffer, Ppeople, 0, currentImage);
@@ -782,6 +812,7 @@ class Application : public BaseProject {
                                 static_cast<uint32_t>(Marrow.indices.size()), 1, 0, 0, 0);
 
             }
+            // Else bind the right Pipeline, Descriptor Set and Model for the 2D scene
             else if(drawTitle) {
                 Ptitle.bind(commandBuffer);
                 DStitle.bind(commandBuffer, Ptitle, 0, currentImage);
@@ -806,7 +837,7 @@ class Application : public BaseProject {
 
         }
 
-        // main application loop
+        // Main application loop
         void updateUniformBuffer(uint32_t currentImage) {
 
             static bool debounce = false;
@@ -831,6 +862,7 @@ class Application : public BaseProject {
 
             // Standard procedure to quit when the ESC key is pressed
             if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+                // Check if a sound is playing and stop it, then uninitialize it
                 if(ma_sound_is_playing(&titleMusic)) ma_sound_stop(&titleMusic);
                 ma_sound_uninit(&titleMusic);
                 if(ma_sound_is_playing(&ingameMusic)) ma_sound_stop(&ingameMusic);
@@ -846,8 +878,10 @@ class Application : public BaseProject {
                 if(ma_sound_is_playing(&clacsonSound)) ma_sound_stop(&clacsonSound);
                 ma_sound_uninit(&clacsonSound);
 
+                // Uninitialize the sound engine
                 ma_engine_uninit(&engine);
 
+                // Case of endless game mode: print the final score
                 if(endlessGameMode) {
                     std::cout << "\n\n\n\t------------- FINAL SCORE -----------\n" << std::endl;
                     std::cout << "\tTotal drives completed:\t" << totDrivesCompleted << std::endl;
@@ -855,21 +889,24 @@ class Application : public BaseProject {
                     std::cout << "\n\t------------- FINAL SCORE -------------" << std::endl;
                 }
 
+                // Quit the application
                 glfwSetWindowShouldClose(window, GL_TRUE);
             }
 
-            /* currScene
-             * -2: title
-             * -1: controls
-             * 0: third person
-             * 1: first person
-             * 2: photo mode
-             * 3: end game
-             */
+            // Check if the space key is pressed to change the scene
             if(glfwGetKey(window, GLFW_KEY_SPACE) && currScene != 3) {
                 if(!debounce) {
                     debounce = true;
                     curDebounce = GLFW_KEY_SPACE;
+                    /* Increment the scene counter and rebuild the pipeline
+                     * Scenes:
+                     * -2: Title scene
+                     * -1: Controls scene
+                     *  0: Third person view
+                     *  1: First person view
+                     *  2: Photo mode
+                     *  3: End game scene
+                     */
                     currScene = (currScene + 1) % INGAME_SCENE_COUNT;
                     if(currScene != -2) {
                         drawTitle = false;
@@ -889,11 +926,12 @@ class Application : public BaseProject {
                 }
             }
 
+            // Check if the P key is pressed to change the scene to photo mode
             if (glfwGetKey(window, GLFW_KEY_P) && currScene != 3) {
                 if (!debounce) {
                     debounce = true;
                     curDebounce = GLFW_KEY_P;
-					//check if I'm already in photo mode
+					// Check if I'm already in photo mode
 					if (currScene == 2) {
                         currScene = lastSavedSceneValue;
 					}
@@ -922,9 +960,12 @@ class Application : public BaseProject {
             }
 
             static float steeringAngCars[CARS];
+            // Update the position of the NPC cars only if not in photo mode
             if(currScene != 2) {
                 for(int i = 0; i < CARS; i++) {
+                    // Update the position of the NPC cars
                     carPositions[i] += directions[i] * speedCar * deltaT;
+                    // Update the target to the next waypoint when the car approaches one
                     if (glm::distance(carPositions[i], wayPoints[i][currentPoints[i]]) < 0.25f) {
                         currentPoints[i] = (currentPoints[i] + 1) % wayPoints[i].size();
                     }
@@ -937,14 +978,17 @@ class Application : public BaseProject {
             float oldSteeringAng = steeringAng;
             glm::mat4 mView;
 
+            // If the scene is the title or control and the title muisc is not playing, start it
             if((currScene == -2 || currScene == -1) && !ma_sound_is_playing(&titleMusic)) {
                     ma_sound_start(&titleMusic);
             }
             else {
+                // If the scene is not the title and the control and the title music is playing, stop it and start the in-game music
                 if(currScene != -2 && currScene != -1 && ma_sound_is_playing(&titleMusic) && !ma_sound_is_playing(&ingameMusic)) {
                     ma_sound_stop(&titleMusic);
                     ma_sound_start(&ingameMusic);
                 }
+                // If the scene is first/third person view
                 if(currScene == 0 || currScene == 1) {
                     alreadyInPhotoMode = false;
                     // Third person view or first person
@@ -953,7 +997,8 @@ class Application : public BaseProject {
 
                     static float currentSpeed = 0.0f;
                     float targetSpeed = moveSpeed * -m.z;
-                    const float dampingFactor = 3.0f; // Adjust this value to control the damping effect
+                    // Adjust this value to control the damping effect
+                    const float dampingFactor = 3.0f;
                     float speedDifference = targetSpeed - currentSpeed;
                     if (fabs(speedDifference) < 0.01f) {
                         currentSpeed = targetSpeed;
@@ -979,37 +1024,53 @@ class Application : public BaseProject {
                     if (speed == 0.0f) {
 						steeringAng = oldSteeringAng;
                     }
+                    
+                    // Set the four collision points of the taxi (four corners of the car)
                     for(int i = 0; i < TAXI_COLL_PCOUNT; i++) {
                         taxiCollisionPoints[i] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), taxiPos), steeringAng, glm::vec3(0.0f, 1.0f, 0.0f)), taxiCollPOffsets[i])[3];
                     }
+
+                    // Boolean variable to check if the taxi is in collision with one of the collision boxes
                     bool collisionCheck = checkCollision(taxiCollisionPoints, TAXI_COLL_PCOUNT, externalCollisionBox, true);
                     for(int i = 0; i < COLLISION_BOXES_COUNT; i++) {
                         collisionCheck = collisionCheck && checkCollision(taxiCollisionPoints, TAXI_COLL_PCOUNT, internalCollisionBoxes[i], false);
                     }
+                    // If the taxi is not in collision, update the position
                     if(collisionCheck) {
                         taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
                     }
+
+                    // If the taxi is running
                     if (speed != 0.0f) {
+                        // If the idle engine sound is playing, stop it and reset the acceleration engine sound
                         if(ma_sound_is_playing(&idleEngineSound)) {
                             ma_sound_stop(&idleEngineSound);
                             ma_sound_seek_to_pcm_frame(&accelerationEngineSound, 0);
                         }
+                        // Start the acceleration engine sound
                         ma_sound_start(&accelerationEngineSound);
                     }
                     else {
+                        // Else check if the acceleration engine sound is playing, stop it and reset the idle engine sound
                         if(ma_sound_is_playing(&accelerationEngineSound)) {
                             ma_sound_stop(&accelerationEngineSound);
                             ma_sound_seek_to_pcm_frame(&idleEngineSound, 0);
                         }
+                        // Start the idle engine sound
                         ma_sound_start(&idleEngineSound);
                     }
+
+                    // Calculate how much the taxi has turned
                     float actualTurn = steeringAng - oldSteeringAng;
+                    // If the rotation is not 0, update the front light direction
                     if(actualTurn != 0.0f) {
                         frontLightDirection = glm::vec4(glm::rotate(glm::mat4(1.0), actualTurn, glm::vec3(0.0f, 1.0f, 0.0f)) * frontLightDirection);
                     }
-                    // THIRD PERSON
+
+                    // If we are in the third person view
                     if (currScene == 0) {
-                        //update camera position for lookAt view, keeping into account the current SteeringAng
+
+                        // Update camera position for lookAt view, keeping into account the current SteeringAng
                         float x, y;
                         float radius = 5.0f;
                         static float camOffsetAngle = 0.0f;
@@ -1028,7 +1089,7 @@ class Application : public BaseProject {
                             taxiPos,
                             glm::vec3(0, 1, 0));
                     }
-                    // FIRST PERSON
+                    // Else if we are in the first person view
                     else {
                         const float ROT_SPEED = glm::radians(120.0f);
                         CamYaw -= ROT_SPEED * deltaT * r.y;
@@ -1043,7 +1104,7 @@ class Application : public BaseProject {
                             glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(camOffset, 1.0)
                         );
                         camPos = taxiPos + rotatedCamOffset;
-                       //TODO: top ma magari guardare dritto quando si passa in prima persona sarebbe carino
+                        // TODO top ma magari guardare dritto quando si passa in prima persona sarebbe carino
                         mView=
                             glm::rotate(glm::mat4(1.0f), -CamRoll, glm::vec3(0, 0, 1)) *
                             glm::rotate(glm::mat4(1.0f), -CamPitch, glm::vec3(1, 0, 0)) *
@@ -1052,9 +1113,9 @@ class Application : public BaseProject {
 
                     }
                 }
+                // Else if we are in photo mode
                 else if(currScene == 2) {
 
-                    // Photo mode
                     if(!alreadyInPhotoMode) {
                         camPosInPhotoMode = camPos;
                         alreadyInPhotoMode = true;
@@ -1083,39 +1144,47 @@ class Application : public BaseProject {
                 const float nearPlane = 0.1f;
                 const float farPlane = 375.0f;
                 glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
-                Prj[1][1] *= -1; //Projection matrix
+                //Projection matrix
+                Prj[1][1] *= -1;
 
 
-                glm::mat4 mWorld; //World matrix for city
+                //World matrix for city
+                glm::mat4 mWorld;
                 mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
+                // Set the center and the scale (radius) of the sky box sphere
                 glm::vec3 sphereCenter = glm::vec3(40.0f, 0.0f, -75.0f);
                 glm::vec3 sphereScale = glm::vec3(180.0f);
+                // Offset from the sky box sphere
                 float sunOffset = 10.0f;
+                // Set the sun position rotating around the X and Y axis, Z position is fixed
                 glm::vec3 sunPos = glm::vec3(sphereCenter.x + (sphereScale.x - sunOffset) * cos(cTime * angTurnTimeFact), // x
                                             sphereCenter.y + (sphereScale.x - sunOffset) * sin(cTime * angTurnTimeFact), // y
-                                            sphereCenter.z // z (fisso)
-                );
+                                            sphereCenter.z);
 
-                // check when the sun is below the horizon
+                // Check when the sun is below the horizon ==> set the night to true
                 isNight = (sunPos.y < 0.0f ? true : false);
 
-                if (openDoor || closeDoor) {
-					if (openDoor) {
-                        openingDoorAngle += 5.0f;
-						if (openingDoorAngle >= 69.0f) {
-							openDoor = false;
-							closeDoor = true;
-						}
-					}
-					else {
-                        openingDoorAngle -= 5.0f;
-						if (openingDoorAngle <= 0.0f) {
-                            openingDoorAngle = 0.0f;
-							closeDoor = false;
-						}
-					}
+                // If we have to open the door
+                if(openDoor) {
+                    // Update the angle of the door
+                    openingDoorAngle += 5.0f;
+                    // Check when the door reaches the maximum angle
+                    if (openingDoorAngle >= 69.0f) {
+                        openDoor = false;
+                        // Start the animation to close the door
+                        closeDoor = true;
+                    }
                 }
+                // If we have to close the door ==> same as open but reverted
+                else {
+                    openingDoorAngle -= 5.0f;
+                    if (openingDoorAngle <= 0.0f) {
+                        openingDoorAngle = 0.0f;
+                        closeDoor = false;
+                    }
+                }
+                
                 glm::mat4 mWorldTaxi[8];
 
                 // Taxi's world matrix 
@@ -1133,11 +1202,8 @@ class Application : public BaseProject {
 				};
                 glm::vec3 rotatedOffSet[6], finalWorldPos[6];
                 for (int i = 0; i < 6; i++) {
-					rotatedOffSet[i] = glm::vec3(
-						glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(offsets[i], 1.0)
-					);
+					rotatedOffSet[i] = glm::vec3(glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(offsets[i], 1.0));
 					finalWorldPos[i] = taxiPos + rotatedOffSet[i];
-
                 }
                 // Wheel's world matrix
 				mWorldTaxi[4] =  //FR wheel
@@ -1167,11 +1233,13 @@ class Application : public BaseProject {
 					glm::rotate(glm::mat4(1.0), steeringAng + glm::radians(openingDoorAngle), glm::vec3(0, 1, 0));
                  
 
+                // Set the position where there will be the taxi lights (point for back, spot for front)
                 glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT] = {glm::translate(mWorldTaxi[1], glm::vec3(-0.5f, 0.5f, -0.75f))[3], // rear right
                                                             glm::translate(mWorldTaxi[1], glm::vec3(0.5f, 0.5f, -0.75f))[3], // rear left
                                                             glm::translate(mWorldTaxi[1], glm::vec3(-0.6f, 0.6f, 2.6f))[3], // front right
                                                             glm::translate(mWorldTaxi[1], glm::vec3(0.6f, 0.6f, 2.6f))[3]}; // front left
                 
+                // If we are not in photo mode, update the position of the NPC cars
                 if(currScene != 2) {
                     for(int i = 0; i < CARS; i++) {
                         mWorldCars[i] = glm::translate(glm::mat4(1.0), carPositions[i]) *
@@ -1179,24 +1247,37 @@ class Application : public BaseProject {
                     }
                 }
 
+                // If we don't have already selected a random person to pick up
                 if(!pickupPointSelected) {
+                    // Randomly select an index for the pickup person point [0 - 4]
                     random_index = rand() % PICKUP_COUNT;
+                    // Get the position of the randomly selected person
                     pickupPoint = pickupPoints[random_index];
+                    // Ste the flag to true to not choose another one
                     pickupPointSelected = true;
                 }
 
+                // If the taxi is close to the person to pick up, we have not already picked up the person and we are not moving
                 if(glm::distance(glm::vec3(pickupPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && !pickedPassenger && speed == 0.0f) {
+                    // Get the hash map index of the selected person
                     int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
+                    // Set the value in the hash map to false ==> when the pipeline is rebuilded, we will not draw it
                     drawPeople[map_index] = false;
+                    // Set the flag to true and start the animation to open the door
                     pickedPassenger = true;
                     openDoor = true;
+                    // Rebuild the pipeline to not draw the picked up person
                     RebuildPipeline();
+                    // Reset the sound of the pickup and start it
                     if(ma_sound_at_end(&pickupSound)) ma_sound_seek_to_pcm_frame(&pickupSound, 0);
                     ma_sound_start(&pickupSound);
+                    // Get the position of the point where to take the person
                     dropoffPoint = dropoffPoints[random_index];
-                    pickupTime=  time(NULL);
+                    // Save the time of the pickup to calculate the income at the end
+                    pickupTime = time(NULL);
                 }
 
+                // If the taxi is close to the dropoff point, we have already picked up the person and we are not moving
                 if(glm::distance(glm::vec3(dropoffPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && pickedPassenger && speed == 0.0f) {
                     int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
                     drawPeople[map_index] = true;
