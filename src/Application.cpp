@@ -7,8 +7,6 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "headers/miniaudio.h"
 
-// TODO normale della città invertite (check sullo scaling - coeff. negativi dispari)
-
 #define MESH 210
 #define CARS 9
 #define STREET_LIGHT_COUNT 36
@@ -27,9 +25,6 @@
 #define COLLISION_SPHERE_RADIUS 0.75f
 #define PICKUP_POINT_Y_OFFSET 2.0f
 #define ARROW_Y_OFFSET 3.25f
-
-#define DEBUG 0
-#define SPHERES 4
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
@@ -80,7 +75,7 @@ struct TwoDimVertex {
     glm::vec2 UV;
 };
 
-struct collisionBox {
+struct CollisionBox {
     float xMin;
     float xMax;
     float zMin;
@@ -122,15 +117,6 @@ class Application : public BaseProject {
         GlobalUniformBufferObject guboTaxi[TAXI_ELEMENTS], guboCars[CARS], guboCity[MESH], guboPeople[PEOPLE];
         SkyGUBO guboSky;
         ArrowGUBO guboArrow;
-
-        #if DEBUG
-            DescriptorSetLayout DSLsphere;
-            VertexDescriptor VDsphere;
-            Pipeline Psphere;
-            Model Msphere[SPHERES];
-            DescriptorSet DSsphere[SPHERES];
-            UniformBufferObject uboSphere[SPHERES];
-        #endif
 
         int currScene = -2;
         int lastSavedSceneValue;
@@ -279,14 +265,14 @@ class Application : public BaseProject {
 
         std::unordered_map<int, bool> drawPeople = {{3, true}, {7, true}, {35, true}, {37, true}, {44, true}};
 
-        const collisionBox externalCollisionBox = {
+        const CollisionBox externalCollisionBox = {
             .xMin = -78.0f,
             .xMax = 150.0f,
             .zMin = -186.0f,
             .zMax = 42.0f
         };
 
-        const collisionBox internalCollisionBoxes[COLLISION_BOXES_COUNT] = {{.xMin = -66.0f,
+        const CollisionBox internalCollisionBoxes[COLLISION_BOXES_COUNT] = {{.xMin = -66.0f,
                                                                             .xMax = -6.0f,
                                                                             .zMin = -174.0f,
                                                                             .zMax = -114.0f},
@@ -333,9 +319,9 @@ class Application : public BaseProject {
             initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
             // Descriptor pool sizes
-            uniformBlocksInPool =  (2 * MESH) + 16+2+2*CARS+2*PEOPLE + (DEBUG ? SPHERES : 0) + 2;
-            texturesInPool = MESH + 8 +1+1+CARS+PEOPLE+3; //city, taxi, text, sky, autonomous cars, people, title
-            setsInPool = MESH + 8 +1+1+CARS+PEOPLE+ (DEBUG ? SPHERES : 0) + 3;
+            uniformBlocksInPool =  20 + (2 * MESH) + 2 * CARS + 2 * PEOPLE;
+            texturesInPool = 13 + MESH + CARS + PEOPLE; //city, taxi, text, sky, autonomous cars, people, title
+            setsInPool = 13 + MESH + CARS + PEOPLE;
 
             Ar = (float)windowWidth / (float)windowHeight;
 
@@ -386,12 +372,6 @@ class Application : public BaseProject {
             DSLendgame.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
             });
-
-            #if DEBUG
-                DSLsphere.init(this, {
-                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
-                });
-            #endif
 
             VD.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -482,26 +462,13 @@ class Application : public BaseProject {
                         sizeof(glm::vec2), UV}
             });
 
-            #if DEBUG
-                VDsphere.init(this, {
-                        {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-                }, {
-                                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                                        sizeof(glm::vec3), POSITION},
-                                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                                        sizeof(glm::vec2), UV},
-                                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
-                                        sizeof(glm::vec3), NORMAL}
-                        });
-            #endif
-
-            P.init(this, &VD, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSL});
-            Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcity});
+            P.init(this, &VD, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSL});
+            Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcity});
             Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Psky.init(this, &VDsky, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
-            Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false); //todo cosa dovevamo fare quando telecamera dentro una stanza
-            Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLcars});
-            Ppeople.init(this, &VDpeople, "shaders/BaseVert.spv", "shaders/TaxiFrag.spv", {&DSLpeople});
+            Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+            Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcars});
+            Ppeople.init(this, &VDpeople, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLpeople});
             Ptitle.init(this, &VDtitle, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtitle});
             Ptitle.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Pcontrols.init(this, &VDcontrols, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLcontrols});
@@ -510,16 +477,9 @@ class Application : public BaseProject {
             Pendgame.init(this, &VDendgame, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLendgame});
             Pendgame.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
 
-
-            #if DEBUG
-                Psphere.init(this, &VDsphere, "shaders/BaseVert.spv", "shaders/DEBUGFrag.spv", {&DSLsphere});
-            #endif
-
-
             Mtaxi[0].init(this, &VD, "models/Car_Hatch_C_Door.obj", OBJ );
             Mtaxi[1].init(this, &VD, "models/Car_Hatch_C_Extern.obj", OBJ );
             Mtaxi[2].init(this, &VD, "models/Car_Hatch_C_Intern_no-steer.obj", OBJ );
-            //Mtaxi[3].init(this, &VD, "models/Car_Hatch_C_Steer.obj", OBJ );
             Mtaxi[3].init(this, &VD, "models/TruckBodySteeringWheelO.mgcg", MGCG);
             Mtaxi[4].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ ); //FR
             Mtaxi[5].init(this, &VD, "models/Car_Hatch_C_Wheel.obj", OBJ );//FL
@@ -535,12 +495,6 @@ class Application : public BaseProject {
             Mcars[6].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg" , MGCG);
             Mcars[7].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg" , MGCG);
             Mcars[8].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg" , MGCG);
-
-            #if DEBUG
-                for (int i = 0; i < SPHERES; i++) {
-                    Msphere[i].init(this, &VDsphere, "models/Sphere2.obj", OBJ);
-                }
-            #endif
 
             std::vector<TwoDimVertex> vertices = {{{-1.0,-1.0,0.9f}, {0.0f,0.0f}},
                     {{-1.0, 1.0,0.9f}, {0.0f,1.0f}},
@@ -624,10 +578,6 @@ class Application : public BaseProject {
             Parrow.create();
             Pendgame.create();
 
-            #if DEBUG
-                Psphere.create();
-            #endif
-
             for(int i = 0; i<8; i++){
                 DStaxi[i].init(this, &DSL, {
                         {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
@@ -681,14 +631,6 @@ class Application : public BaseProject {
             DSendgame.init(this, &DSLendgame, {
                 {0, TEXTURE, 0, &Tendgame}
             });
-
-            #if DEBUG
-                for (int i = 0; i < SPHERES; i++) {
-                    DSsphere[i].init(this, &DSLsphere, {
-                            {0, UNIFORM, sizeof(UniformBufferObject), nullptr}
-                    });
-                }
-            #endif
         }
 
         void pipelinesAndDescriptorSetsCleanup() {
@@ -702,10 +644,6 @@ class Application : public BaseProject {
             Pcontrols.cleanup();
             Parrow.cleanup();
             Pendgame.cleanup();
-
-            #if DEBUG
-                Psphere.cleanup();
-            #endif
 
             for(int i = 0; i < 8; i++) {
                 DStaxi[i].cleanup();
@@ -730,11 +668,6 @@ class Application : public BaseProject {
             DSarrow.cleanup();
             DSendgame.cleanup();
 
-            #if DEBUG
-                for (int i = 0; i < SPHERES; i++) {
-                    DSsphere[i].cleanup();
-                }
-            #endif
         }
 
         void localCleanup() {
@@ -768,12 +701,6 @@ class Application : public BaseProject {
             Marrow.cleanup();
             Mendgame.cleanup();
 
-            #if DEBUG
-                for (int i = 0; i < SPHERES; i++) {
-                    Msphere[i].cleanup();
-                }
-            #endif
-
             DSL.cleanup();
             DSLcity.cleanup();
             DSLsky.cleanup();
@@ -783,10 +710,6 @@ class Application : public BaseProject {
             DSLcontrols.cleanup();
             DSLarrow.cleanup();
             DSLendgame.cleanup();
-
-            #if DEBUG
-                DSLsphere.cleanup();
-            #endif
 
             P.destroy();
             Pcity.destroy();
@@ -798,9 +721,6 @@ class Application : public BaseProject {
             Parrow.destroy();
             Pendgame.destroy();
 
-            #if DEBUG
-                Psphere.destroy();
-            #endif
         }
 
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
@@ -884,16 +804,6 @@ class Application : public BaseProject {
                                 static_cast<uint32_t>(Mendgame.indices.size()), 1, 0, 0, 0);
             }
 
-            #if DEBUG
-            Psphere.bind(commandBuffer);
-
-                for (int i = 0; i < SPHERES; i++) {
-                    DSsphere[i].bind(commandBuffer, Psphere, 0, currentImage);
-                    Msphere[i].bind(commandBuffer);
-                    vkCmdDrawIndexed(commandBuffer,
-                                    static_cast<uint32_t>(Msphere[i].indices.size()), 1, 0, 0, 0);
-                }
-            #endif
         }
 
         // main application loop
@@ -1171,7 +1081,7 @@ class Application : public BaseProject {
                 }
 
                 const float nearPlane = 0.1f;
-                const float farPlane = 280.0f;
+                const float farPlane = 375.0f;
                 glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
                 Prj[1][1] *= -1; //Projection matrix
 
@@ -1553,20 +1463,10 @@ class Application : public BaseProject {
                 guboArrow.gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
                 DSarrow.map(currentImage, &guboArrow, sizeof(guboArrow), 1);
 
-                #if DEBUG
-                    for(int i = 0; i < TAXI_COLL_PCOUNT; i++) {
-                        glm::mat4 sphereMat = glm::scale(glm::translate(glm::mat4(1.0f), taxiCollisionPoints[i]), glm::vec3(0.1f));
-                        uboSphere[i].mvpMat = Prj * mView * sphereMat;
-                        uboSphere[i].mMat = sphereMat;
-                        uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
-                        DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
-                    }           
-                  #endif
-
             }
         }
 
-        bool checkCollision(glm::vec3 *points, int dim, collisionBox collBox, bool ext) {
+        bool checkCollision(glm::vec3 *points, int dim, CollisionBox collBox, bool ext) {
             if(ext) {
                 for(int i = 0; i < dim; i++) {
                     if(points[i].x <= collBox.xMin || points[i].x >= collBox.xMax || points[i].z <= collBox.zMin || points[i].z >= collBox.zMax) {
