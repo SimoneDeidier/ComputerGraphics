@@ -16,35 +16,36 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
     vec4 gammaAndMetallic;
 } gubo;
 
-// Colori per i vari momenti della giornata
-vec3 dayColor = vec3(0.0, 249.0  / 255.0, 1.0);  // Colore del cielo di giorno
-vec3 nightColor = vec3(17.0 / 255.0, 17.0 / 255.0, 54.0 / 255.0);  // Colore del cielo di notte
-vec3 sunsetColor = vec3(242.0 / 255.0, 72.0 / 255.0, 15.0 / 255.0);  // Colore del cielo al tramonto
+// Colors for the moments of the day
+vec3 dayColor = vec3(0.0, 249.0  / 255.0, 1.0);  //day color
+vec3 nightColor = vec3(25.0 / 255.0, 25.0 / 255.0, 112.0 / 255.0);  //night color
+vec3 sunsetColor = vec3(242.0 / 255.0, 72.0 / 255.0, 15.0 / 255.0);  //sunset color
 
-// Funzione per calcolare il colore del cielo in base alla direzione della luce
+//function that compute the color of the sky based on the elevation of the sun
 vec3 calculateSkyColor(vec3 lightDir) {
 
     vec3 normalizedLightDir = normalize(lightDir);
-    // Calcola l'elevazione (dot rispetto all'asse verticale)
+    // Computation of the elevation -> dot product between light dir and the normal vector representing y axis
+    // Get values between -1 and 1 (I get the cosine because the vector are normalized)
     float elevation = dot(normalizedLightDir, vec3(0.0, 1.0, 0.0));
 
-    // Mappa l'elevazione da [-1, 1] a [0, 1]
+    // Map the elevation from [-1, 1] to [0, 1]
     float t = clamp(elevation * 0.5 + 0.5, 0.0, 1.0);
 
-    // Determina il colore in base alla posizione del sole
+    // Return the correct color based on t
     if (t < 0.3) {
-        // Notte piena
+        // Night
         return nightColor;
     } else if (t < 0.5) {
-        // Transizione tra notte e giorno
+        //Gradually change the color from night to sunset
         float mixFactor = smoothstep(0.3, 0.5, t);
         return mix(nightColor, sunsetColor, mixFactor);
     }else if (t < 0.65) {
-        // Transizione tra notte e giorno
+        //Gradually change the color from sunset to day
         float mixFactor = smoothstep(0.5, 0.65, t);
         return mix(sunsetColor, dayColor, mixFactor);
     } else {
-        // Giorno pieno
+        // Day
         return dayColor;
     }
 }
@@ -70,7 +71,7 @@ void main() {
     // Calcola il colore del cielo in base alla posizione del sole
     vec3 skyColor = calculateSkyColor(gubo.lightDir.xyz);
 
-    vec3 finalColor = mix(Albedo, skyColor, 0.3);
+    vec3 finalColor = mix(Albedo, skyColor, 0.75);
 
     outColor = vec4(brdf * lightColor+ finalColor + Ambient, 1.0);
 

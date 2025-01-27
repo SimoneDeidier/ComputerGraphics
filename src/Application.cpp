@@ -7,10 +7,13 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "headers/miniaudio.h"
 
+// Number of models in the city json
 #define MESH 210
+// Number of autonomus cars
 #define CARS 9
 #define STREET_LIGHT_COUNT 36
 #define MAX_STREET_LIGHTS 5
+// Number of people in the city
 #define PEOPLE 45
 #define TAXI_ELEMENTS 8
 #define TAXI_LIGHT_COUNT 4
@@ -537,6 +540,7 @@ class Application : public BaseProject {
             Mendgame.indices = {0, 1, 2, 1, 3, 2};
             Mendgame.initMesh(this, &VDendgame);
 
+            // Initialization of the models of the city (from json)
             nlohmann::json js;
             std::ifstream ifs("models/city.json");
             if (!ifs.is_open()) {
@@ -559,6 +563,7 @@ class Application : public BaseProject {
                 exit(1);
             }
 
+            // Initialization of people's models (from json)
             nlohmann::json js2;
             std::ifstream ifs2("models/people.json");
             if (!ifs2.is_open()) {
@@ -864,12 +869,15 @@ class Application : public BaseProject {
             static float CamYaw = M_PI;
             static float CamRoll = 0.0f;
 
+            //vector with all the directions of the cars
             glm::vec3 directions[CARS];
 
+            //Computation of the direction for each car (point to reach - pos of the car)
             for(int i = 0; i < CARS; i++) {
                 directions[i] = glm::normalize(wayPoints[i][currentPoints[i]] - carPositions[i]);
             }
 
+            //speed for NPC cars
             float speedCar= 4.0f;
             float speed = 0.0f;
 
@@ -978,11 +986,15 @@ class Application : public BaseProject {
                 for(int i = 0; i < CARS; i++) {
                     // Update the position of the NPC cars
                     carPositions[i] += directions[i] * speedCar * deltaT;
-                    // Update the target to the next waypoint when the car approaches one
+                    // If the distance between the car's current position and the current waypoint is less than 0.25
+                    // Update the current waypoint index to point to the next waypoint
                     if (glm::distance(carPositions[i], wayPoints[i][currentPoints[i]]) < 0.25f) {
                         currentPoints[i] = (currentPoints[i] + 1) % wayPoints[i].size();
                     }
+
+                    // Compute the steering angle towards the next waypoint
                     float targetSteering = atan2(directions[i].x, directions[i].z);
+                    // Normalize the steering angle between -π and π
                     steeringAngCars[i]= fmod(targetSteering + M_PI, 2.0f * M_PI) - M_PI;
                 }
             }
@@ -1161,7 +1173,7 @@ class Application : public BaseProject {
                 Prj[1][1] *= -1;
 
 
-                //World matrix for city
+                //World matrix for the city
                 glm::mat4 mWorld;
                 mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
@@ -1320,6 +1332,10 @@ class Application : public BaseProject {
                     }
                 }
 
+                // This block reads the "city.json" file to configure and update the city's mesh instances, lighting,
+                // and other scene parameters for rendering. For each mesh instance, it extracts transformation matrices
+                // and calculates related data, such as normal and MVP matrices. It also sets up lighting parameters,
+                // including the nearest streetlights, vehicle lights.
                 nlohmann::json js;
                 std::ifstream ifs2("models/city.json");
                 if (!ifs2.is_open()) {
@@ -1380,6 +1396,12 @@ class Application : public BaseProject {
                     exit(1);
                 }
 
+                // This loop configures the transformation matrices, lighting, and graphical settings for each taxi object in the scene.
+                // For each taxi:
+                // - The Model-View-Projection (MVP) matrix, model matrix (`mMat`), and normal matrix (`nMat`) are calculated and stored in `uboTaxi`.
+                // - The taxi's descriptor set (`DStaxi`) is updated with these matrices for rendering.
+                // - Lighting parameters, such as the sun's position and color, as well as taxi-specific light positions, are configured in `guboTaxi`.
+                // - Finally, this data is mapped to the descriptor set for rendering each taxi with its specific configurations.
                 for(int i=0; i<8; i++){
                     uboTaxi[i].mMat = mWorldTaxi[i];
                     uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
@@ -1418,8 +1440,14 @@ class Application : public BaseProject {
                 }
 
                 glm::vec4 taxiCollisionSphereCenter = glm::translate(mWorldTaxi[1], glm::vec3(0.0f, 0.0f, 1.0f))[3];
-                
 
+
+                // This loop configures the transformation matrices, lighting, and graphical settings for each taxi object in the scene.
+                // For each car:
+                // - The Model-View-Projection (MVP) matrix, model matrix (`mMat`), and normal matrix (`nMat`) are calculated and stored in `uboCars`.
+                // - The taxi's descriptor set (`DScars`) is updated with these matrices for rendering.
+                // - Lighting parameters, such as the sun's position and color, as well as taxi-specific light positions, are configured in `guboCars`.
+                // - Finally, this data is mapped to the descriptor set for rendering each taxi with its specific configurations.
                 for(int i = 0; i < CARS; i++) {
                     uboCars[i].mvpMat = Prj * mView * mWorldCars[i];
                     uboCars[i].mMat = mWorldCars[i];
@@ -1474,7 +1502,13 @@ class Application : public BaseProject {
                     inCollisionZone = false;
                 }
 
-
+                // This code block sets up the sky's transformations, lighting parameters.
+                // It first calculates a transformation matrix (`scaleMat`) to position and scale the sky object
+                // based on its center (`sphereCenter`) and scale (`sphereScale`). The Model-View-Projection (MVP)
+                // matrix, model matrix (`mMat`), and normal matrix (`nMat`) are updated accordingly.
+                // The uniform buffer objects (`uboSky` and `guboSky`) are populated with data such as the sun's
+                // position and color, the camera's position, and graphical settings like gamma and metallic values.
+                // Finally, the data is mapped to the descriptor sets (`DSsky`) to prepare for rendering the sky.
                 glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), sphereCenter) * glm::scale(glm::mat4(1.0f), sphereScale);
                 uboSky.mvpMat = Prj * mView * (scaleMat);
                 uboSky.mMat = scaleMat;
@@ -1486,6 +1520,11 @@ class Application : public BaseProject {
                 guboSky.gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
                 DSsky.map(currentImage, &guboSky, sizeof(guboSky), 2);
 
+
+                // Loads instances from `people.json`.
+                // - Reads transformation matrices and calculates model (`mMat`), normal (`nMat`), and MVP matrices for each person.
+                // - Configures lighting, nearest streetlights, and rendering settings for each instance.
+                // - Updates descriptor sets (`DSpeople` and `guboPeople`) for rendering.
                 nlohmann::json js3;
                 std::ifstream ifs3("models/people.json");
                 if (!ifs3.is_open()) {
