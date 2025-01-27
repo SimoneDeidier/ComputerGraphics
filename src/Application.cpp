@@ -122,19 +122,21 @@ class Application : public BaseProject {
         SkyGUBO guboSky;
         ArrowGUBO guboArrow;
 
-        int currScene = -2;
+        int currScene = -2; // Variables used for the scene management
         int lastSavedSceneValue;
-        int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};
-        int random_index = -1;
-        int collisionCounter = 0;
-        int totDrivesCompleted = 0;
+        int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};  // Variable for the NPC cars
+        int random_index = -1;  // Index used to choose randomically the person to pickup
+        int collisionCounter = 0;   // Variable used to count on how many NPC care we are colliding
+        int totDrivesCompleted = 0; // Variables used to count the number of drives completed
         float wheelRoll = 0.0f;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
-        float money = 0.0f;
+        float money = 0.0f; // Variable used to store the money earned
         float wheelAndSteerAng = 0.0f;
         float openingDoorAngle = 0.0f;
-        double pickupTime = 0.0;
+        double pickupTime = 0.0;    // Variable used to time the pickup and dropoff
+
+        // Boolean flag used in the code
 		bool openDoor = false;
 		bool closeDoor = false;
         bool alreadyInPhotoMode = false;
@@ -145,11 +147,13 @@ class Application : public BaseProject {
         bool pickedPassenger = false;
         bool endGame = false;
         bool inCollisionZone = false;
-        glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); //initial pos of camera
-        glm::vec3 camPosInPhotoMode;
-        glm::vec3 taxiPos = glm::vec3(0.0f, -0.2f, 0.0f); //initial pos of taxi
 
-        glm::vec3 carPositions[CARS] = {glm::vec3(-72.0f, -0.2f, 36.0f), //initial pos of car
+        glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); // Initial pos of camera
+        glm::vec3 camPosInPhotoMode;
+        glm::vec3 taxiPos = glm::vec3(0.0f, -0.2f, 0.0f);   // Initial pos of taxi
+
+        // Initial positions of the NPC cars
+        glm::vec3 carPositions[CARS] = {glm::vec3(-72.0f, -0.2f, 36.0f),
                                     glm::vec3(5.0f, -0.2f, 36.0f),
                                     glm::vec3(72.0f, -0.2f, 36.0f),
                                     glm::vec3(-36.0f, -0.2f, -108.0f),
@@ -159,7 +163,7 @@ class Application : public BaseProject {
                                     glm::vec3(36.0f, -0.2f, -112.0f),
                                     glm::vec3(108.0f, -0.2f, -112.0f)};
 
-
+        // Waypoints for the NPC cars movements
         std::vector<glm::vec3> wayPoints1={glm::vec3(-69.0f, -0.2f, 33.0f),
                                         glm::vec3(-69.0f, -0.2f, -33.0f),
                                         glm::vec3(-3.0f, -0.2f, -33.0f),
@@ -198,6 +202,7 @@ class Application : public BaseProject {
                                         glm::vec3(141.0f, -0.2f, -111.0f)};
         std::vector<glm::vec3> wayPoints[CARS] = {wayPoints1, wayPoints2, wayPoints3, wayPoints4, wayPoints5, wayPoints6, wayPoints7, wayPoints8, wayPoints9};
 
+        // Positions of the streetlights used by the shaders
         glm::vec3 streetlightPos[STREET_LIGHT_COUNT] = {glm::vec3(-1.65f, 9.3f, -22.2f),
                                                         glm::vec3(-1.65f, 9.3f, -94.2f),
                                                         glm::vec3(-1.65f, 9.3f, -166.2f),
@@ -235,24 +240,28 @@ class Application : public BaseProject {
                                                         glm::vec3(149.1f, 9.3f, -182.1f),
                                                         glm::vec3(146.1f, 9.3f, 41.1f)};
 
+        // Offsets of the collision points from the starting position of the taxi
         glm::vec3 taxiCollPOffsets[TAXI_COLL_PCOUNT] = {glm::vec3(-0.85f, 0.0f, -0.65f), // rear right
                                                                 glm::vec3(0.85f, 0.0f, -0.65f), // rear left
                                                                 glm::vec3(-0.85f, 0.0f, 2.7f), // front right
                                                                 glm::vec3(0.85f, 0.0f, 2.7f)}; // front left
         glm::vec3 taxiCollisionPoints[TAXI_COLL_PCOUNT];
 
+        // List of five persons to pickup (one choosen randomically)
         glm::vec4 pickupPoints[PICKUP_COUNT] = {glm::vec4(-79.0f, 0.0f, 0.0f, 0.0f),
                                                         glm::vec4(36.0f, 0.0f, -29.0f, 0.0f),
                                                         glm::vec4(26.0f, 0.0f, -115.0f, 0.0f),
                                                         glm::vec4(7.0f, 0.0f, -144.0f, 0.0f),
                                                         glm::vec4(151.0f, 0.0f, -144.0f, 0.0f)};
 
+        // List of five dropoff points (one for each person)
         glm::vec4 dropoffPoints[PICKUP_COUNT] = {glm::vec4(95.69f, 0.0f, -187.0f, 0.0f),
                                                     glm::vec4(-80.0f, 0.0f, -184.0f, 0.0f),
                                                     glm::vec4(136.0f, 0.0f, -72.16f, 0.0f),
                                                     glm::vec4(107.84f, 0.0f, 44.0f, 0.0f),
                                                     glm::vec4(-7.0f, 0.0f, -46.13f, 0.0f)};
 
+        // Some values used in the the majority of the shaders 
         glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
         glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
         glm::vec4 frontLightDirection = glm::vec4(0.0f, -1.0f * glm::abs(glm::sin(glm::radians(2.0f))), -1.0f * glm::abs(glm::cos(glm::radians(2.0f))), 0.0f);
@@ -267,8 +276,11 @@ class Application : public BaseProject {
 
         glm::mat4 mWorldCars[CARS];
 
+        // Hash map used to check what people we don't want to draw (it has been picked up)
+        // Easy working ==> when a person has been picked up, we set the value to false
         std::unordered_map<int, bool> drawPeople = {{3, true}, {7, true}, {35, true}, {37, true}, {44, true}};
 
+        // Collision box of the city (external collision box)
         const CollisionBox externalCollisionBox = {
             .xMin = -78.0f,
             .xMax = 150.0f,
@@ -276,6 +288,7 @@ class Application : public BaseProject {
             .zMax = 42.0f
         };
 
+        // Collision boxes of the city (internal collision boxes)
         const CollisionBox internalCollisionBoxes[COLLISION_BOXES_COUNT] = {{.xMin = -66.0f,
                                                                             .xMax = -6.0f,
                                                                             .zMin = -174.0f,
