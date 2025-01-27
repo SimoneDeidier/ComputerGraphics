@@ -20,16 +20,16 @@
 #define INGAME_SCENE_COUNT 2
 #define GAMEMODE_COUNT 2
 #define GRAPHICS_SETTINGS_COUNT 3
-#define EXT_COLL_BOX_PCOUNT 4
 #define TAXI_COLL_PCOUNT 4
+#define COLLISION_BOXES_COUNT 9
 
-#define MIN_DISTANCE_TO_PICKUP 3.5f
+#define MIN_DISTANCE_TO_PICKUP 4.75f
 #define COLLISION_SPHERE_RADIUS 0.75f
 #define PICKUP_POINT_Y_OFFSET 2.0f
 #define ARROW_Y_OFFSET 3.25f
 
-#define DEBUG 1
-#define SPHERES 1 + 4 + 4
+#define DEBUG 0
+#define SPHERES 4
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
@@ -78,6 +78,13 @@ struct Vertex {
 struct TwoDimVertex {
     glm::vec3 pos;
     glm::vec2 UV;
+};
+
+struct collisionBox {
+    float xMin;
+    float xMax;
+    float zMin;
+    float zMax;
 };
 
 class Application : public BaseProject {
@@ -238,15 +245,11 @@ class Application : public BaseProject {
                                                         glm::vec3(149.1f, 9.3f, -182.1f),
                                                         glm::vec3(146.1f, 9.3f, 41.1f)};
 
-        glm::vec3 externalCollisionBoxPoints[EXT_COLL_BOX_PCOUNT] = {glm::vec3(-78.0f, 0.0f, 42.0f),
-                                                                    glm::vec3(-78.0f, 0.0f, -186.0f),
-                                                                    glm::vec3(150.0f, 0.0f, 42.0f),
-                                                                    glm::vec3(150.0f, 0.0f, -186.0f)};
-
-        glm::vec3 taxiCollisionPointOffsets[TAXI_COLL_PCOUNT] = {glm::vec3(-0.75f, 0.0f, -0.65f), // rear right
-                                                                glm::vec3(0.75f, 0.0f, -0.65f), // rear left
-                                                                glm::vec3(-0.75f, 0.0f, 2.6f), // front right
-                                                                glm::vec3(0.75f, 0.0f, 2.6f)}; // front left
+        glm::vec3 taxiCollPOffsets[TAXI_COLL_PCOUNT] = {glm::vec3(-0.85f, 0.0f, -0.65f), // rear right
+                                                                glm::vec3(0.85f, 0.0f, -0.65f), // rear left
+                                                                glm::vec3(-0.85f, 0.0f, 2.7f), // front right
+                                                                glm::vec3(0.85f, 0.0f, 2.7f)}; // front left
+        glm::vec3 taxiCollisionPoints[TAXI_COLL_PCOUNT];
 
         glm::vec4 pickupPoints[PICKUP_COUNT] = {glm::vec4(-79.0f, 0.0f, 0.0f, 0.0f),
                                                         glm::vec4(36.0f, 0.0f, -29.0f, 0.0f),
@@ -275,6 +278,50 @@ class Application : public BaseProject {
         glm::mat4 mWorldCars[CARS];
 
         std::unordered_map<int, bool> drawPeople = {{3, true}, {7, true}, {35, true}, {37, true}, {44, true}};
+
+        const collisionBox externalCollisionBox = {
+            .xMin = -78.0f,
+            .xMax = 150.0f,
+            .zMin = -186.0f,
+            .zMax = 42.0f
+        };
+
+        const collisionBox internalCollisionBoxes[COLLISION_BOXES_COUNT] = {{.xMin = -66.0f,
+                                                                            .xMax = -6.0f,
+                                                                            .zMin = -174.0f,
+                                                                            .zMax = -114.0f},
+                                                                            {.xMin = 6.0f,
+                                                                            .xMax = 66.0f,
+                                                                            .zMin = -174.0f,
+                                                                            .zMax = -114.0f},
+                                                                            {.xMin = 78.0f,
+                                                                            .xMax = 138.0f,
+                                                                            .zMin = -174.0f,
+                                                                            .zMax = -114.0f},
+                                                                            {.xMin = -66.0f,
+                                                                            .xMax = -6.0f,
+                                                                            .zMin = -102.0f,
+                                                                            .zMax = -42.0f},
+                                                                            {.xMin = 6.0f,
+                                                                            .xMax = 66.0f,
+                                                                            .zMin = -102.0f,
+                                                                            .zMax = -42.0f},
+                                                                            {.xMin = 78.0f,
+                                                                            .xMax = 138.0f,
+                                                                            .zMin = -102.0f,
+                                                                            .zMax = -42.0f},
+                                                                            {.xMin = -66.0f,
+                                                                            .xMax = -6.0f,
+                                                                            .zMin = -30.0f,
+                                                                            .zMax = 30.0f},
+                                                                            {.xMin = 6.0f,
+                                                                            .xMax = 66.0f,
+                                                                            .zMin = -30.0f,
+                                                                            .zMax = 30.0f},
+                                                                            {.xMin = 78.0f,
+                                                                            .xMax = 138.0f,
+                                                                            .zMin = -30.0f,
+                                                                            .zMax = 30.0f}};
 
         // Here you set the main application parameters
         void setWindowParameters() {
@@ -1022,7 +1069,16 @@ class Application : public BaseProject {
                     if (speed == 0.0f) {
 						steeringAng = oldSteeringAng;
                     }
-                    taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
+                    for(int i = 0; i < TAXI_COLL_PCOUNT; i++) {
+                        taxiCollisionPoints[i] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), taxiPos), steeringAng, glm::vec3(0.0f, 1.0f, 0.0f)), taxiCollPOffsets[i])[3];
+                    }
+                    bool collisionCheck = checkCollision(taxiCollisionPoints, TAXI_COLL_PCOUNT, externalCollisionBox, true);
+                    for(int i = 0; i < COLLISION_BOXES_COUNT; i++) {
+                        collisionCheck = collisionCheck && checkCollision(taxiCollisionPoints, TAXI_COLL_PCOUNT, internalCollisionBoxes[i], false);
+                    }
+                    if(collisionCheck) {
+                        taxiPos = taxiPos + glm::vec3(speed * sin(steeringAng), 0.0f, speed * cos(steeringAng));
+                    }
                     if (speed != 0.0f) {
                         if(ma_sound_is_playing(&idleEngineSound)) {
                             ma_sound_stop(&idleEngineSound);
@@ -1498,21 +1554,8 @@ class Application : public BaseProject {
                 DSarrow.map(currentImage, &guboArrow, sizeof(guboArrow), 1);
 
                 #if DEBUG
-                    glm::mat4 sphereMat;
-                    for(int i = 0; i < EXT_COLL_BOX_PCOUNT; i++) {
-                        sphereMat = glm::scale(glm::translate(glm::translate(glm::mat4(1.0), externalCollisionBoxPoints[i]), glm::vec3(0.0f, 0.5f, 0.0f)), glm::vec3(0.1f));
-                        uboSphere[i].mvpMat = Prj * mView * sphereMat;
-                        uboSphere[i].mMat = sphereMat;
-                        uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
-                        DSsphere[i].map(currentImage, &uboSphere[i], sizeof(uboSphere[i]), 0);
-                    }
-                    sphereMat = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 0.5f, -30.0f)), glm::vec3(0.1f));
-                    uboSphere[4].mvpMat = Prj * mView * sphereMat;
-                    uboSphere[4].mMat = sphereMat;
-                    uboSphere[4].nMat = glm::inverse(glm::transpose(uboSphere[4].mMat));
-                    DSsphere[4].map(currentImage, &uboSphere[4], sizeof(uboSphere[4]), 0);
-                    for(int i = 5; i < 5 + TAXI_COLL_PCOUNT; i++) {
-                        sphereMat = glm::scale(glm::translate(glm::translate(glm::mat4(1.0f), taxiPos), taxiCollisionPointOffsets[i - 5]), glm::vec3(0.1f));
+                    for(int i = 0; i < TAXI_COLL_PCOUNT; i++) {
+                        glm::mat4 sphereMat = glm::scale(glm::translate(glm::mat4(1.0f), taxiCollisionPoints[i]), glm::vec3(0.1f));
                         uboSphere[i].mvpMat = Prj * mView * sphereMat;
                         uboSphere[i].mMat = sphereMat;
                         uboSphere[i].nMat = glm::inverse(glm::transpose(uboSphere[i].mMat));
@@ -1523,8 +1566,22 @@ class Application : public BaseProject {
             }
         }
 
-        bool checkCollision(void) {
-            return false;
+        bool checkCollision(glm::vec3 *points, int dim, collisionBox collBox, bool ext) {
+            if(ext) {
+                for(int i = 0; i < dim; i++) {
+                    if(points[i].x <= collBox.xMin || points[i].x >= collBox.xMax || points[i].z <= collBox.zMin || points[i].z >= collBox.zMax) {
+                        return false;
+                    }
+                }
+            }
+            else {
+                for(int i = 0; i < dim; i++) {
+                    if((points[i].x >= collBox.xMin && points[i].x <= collBox.xMax) && (points[i].z >= collBox.zMin && points[i].z <= collBox.zMax)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
 };
