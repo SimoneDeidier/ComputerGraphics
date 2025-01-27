@@ -472,7 +472,7 @@ class Application : public BaseProject {
             });
 
             // Initialization of Pipelines
-            Ptaxi.init(this, &VDtaxi, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSL});
+            Ptaxi.init(this, &VDtaxi, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLtaxi});
             Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcity});
             // Deactivate culling for the city pipeline (when enabled the models are broken)
             Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
@@ -516,13 +516,13 @@ class Application : public BaseProject {
                     {{ 1.0, 1.0, 0.9f}, {1.0f, 1.0f}}};
             Mtitle.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
             Mtitle.indices = {0, 1, 2, 1, 3, 2};
-            Mtitle.initMesh(this, &VD);
+            Mtitle.initMesh(this, &VDtitle);
             Mcontrols.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
             Mcontrols.indices = {0, 1, 2, 1, 3, 2};
-            Mcontrols.initMesh(this, &VD);
+            Mcontrols.initMesh(this, &VDcontrols);
             Mendgame.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
             Mendgame.indices = {0, 1, 2, 1, 3, 2};
-            Mendgame.initMesh(this, &VD);
+            Mendgame.initMesh(this, &VDendgame);
 
             nlohmann::json js;
             std::ifstream ifs("models/city.json");
