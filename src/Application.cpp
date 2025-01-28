@@ -491,7 +491,7 @@ class Application : public BaseProject {
             Ptaxi.init(this, &VDtaxi, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLtaxi});
             Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcity});
             // Deactivate culling for the city pipeline (when enabled the models are broken)
-            Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+            //Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Psky.init(this, &VDsky, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
             // Deactivate culling for the sky pipeline (render the skybox from the inside)
             Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
