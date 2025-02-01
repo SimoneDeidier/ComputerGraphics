@@ -1128,7 +1128,6 @@ class Application : public BaseProject {
                             glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(camOffset, 1.0)
                         );
                         camPos = taxiPos + rotatedCamOffset;
-                        // TODO top ma magari guardare dritto quando si passa in prima persona sarebbe carino
                         mView=
                             glm::rotate(glm::mat4(1.0f), -CamRoll, glm::vec3(0, 0, 1)) *
                             glm::rotate(glm::mat4(1.0f), -CamPitch, glm::vec3(1, 0, 0)) *
@@ -1441,7 +1440,7 @@ class Application : public BaseProject {
                 glm::vec4 taxiCollisionSphereCenter = glm::translate(mWorldTaxi[1], glm::vec3(0.0f, 0.0f, 1.0f))[3];
 
 
-                // This loop configures the transformation matrices, lighting, and graphical settings for each taxi object in the scene.
+                // This loop configures the transformation matrices, lighting, and graphical settings for each (autonomous) car in the scene.
                 // For each car:
                 // - The Model-View-Projection (MVP) matrix, model matrix (`mMat`), and normal matrix (`nMat`) are calculated and stored in `uboCars`.
                 // - The taxi's descriptor set (`DScars`) is updated with these matrices for rendering.
