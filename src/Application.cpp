@@ -1,5 +1,4 @@
 #include "headers/Starter.hpp"
-#include "headers/TextMaker.hpp"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -129,7 +128,7 @@ class Application : public BaseProject {
         int lastSavedSceneValue;
         int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};  // Variable for the NPC cars
         int random_index = -1;  // Index used to choose randomically the person to pickup
-        int collisionCounter = 0;   // Variable used to count on how many NPC care we are colliding
+        int collisionCounter = 0;   // Variable used to count on how many NPC cars we are colliding
         int totDrivesCompleted = 0; // Variables used to count the number of drives completed
         float wheelRoll = 0.0f;
         float CamAlpha = 0.0f;
