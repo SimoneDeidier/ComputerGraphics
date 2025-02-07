@@ -7,14 +7,28 @@ layout(location = 2) in vec3 fragNormal;
 
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 1) uniform sampler2D textureSampler;
+layout(set = 0, binding = 1) uniform sampler2D textureSampler;
 
-layout(binding = 2) uniform GlobalUniformBufferObject {
-    vec4 lightDir;
-    vec4 lightColor;
-    vec4 eyePos;
-    vec4 gammaAndMetallic;
+layout(set = 1, binding = 0) uniform GlobalUniformBufferObject {
+	vec4 directLightPos;
+	vec4 directLightColor;
+	vec4 taxiLightPos[4];
+	vec4 frontLightColor;
+	vec4 rearLightColor;
+	vec4 frontLightDirection;
+	vec4 frontLightCosines;
+	vec4 streetLightCol;
+	vec4 streetLightDirection;
+	vec4 streetLightCosines;
+	vec4 pickupPointPos;
+	vec4 pickupPointCol;
+	vec4 eyePos;
+	vec4 settingsAndNight;
 } gubo;
+
+layout(set = 0, binding = 2) uniform SkyUniformBufferObject {
+    vec4 gammaAndMetallic;
+} subo;
 
 // Colors for the moments of the day
 vec3 dayColor = vec3(0.0, 249.0  / 255.0, 1.0);  //day color
@@ -61,15 +75,15 @@ void main() {
     vec3 Norm = normalize(fragNormal);
     vec3 ViewerDir = normalize(gubo.eyePos.xyz - fragPos);
     vec3 Albedo = texture(textureSampler, fragUV).rgb;
-    vec3 LightDir = normalize(gubo.lightDir.xyz - fragPos);
-    vec3 lightColor = gubo.lightColor.rgb;
+    vec3 LightDir = normalize(gubo.directLightPos.xyz - fragPos);
+    vec3 lightColor = gubo.directLightColor.rgb;
     vec3 Ambient = 0.05 * Albedo;
     int val=0;
 
-    vec3 brdf = BRDF(ViewerDir, Norm, LightDir, Albedo, vec3(gubo.gammaAndMetallic.y), gubo.gammaAndMetallic.x);
+    vec3 brdf = BRDF(ViewerDir, Norm, LightDir, Albedo, vec3(subo.gammaAndMetallic.y), subo.gammaAndMetallic.x);
 
     // Calcola il colore del cielo in base alla posizione del sole
-    vec3 skyColor = calculateSkyColor(gubo.lightDir.xyz);
+    vec3 skyColor = calculateSkyColor(gubo.directLightPos.xyz);
 
     vec3 finalColor = mix(Albedo, skyColor, 0.75);
 

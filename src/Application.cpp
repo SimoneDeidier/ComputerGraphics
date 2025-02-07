@@ -43,20 +43,21 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec4 rearLightCol;
     alignas(16) glm::vec4 frontLightDir;
     alignas(16) glm::vec4 frontLightCosines;
-    alignas(16) glm::vec4 streetLightPos[MAX_STREET_LIGHTS];
     alignas(16) glm::vec4 streetLightCol;
     alignas(16) glm::vec4 streetLightDirection;
     alignas(16) glm::vec4 streetLightCosines;
     alignas(16) glm::vec4 pickupPointPos;
     alignas(16) glm::vec4 pickupPointCol;
     alignas(16) glm::vec4 eyePos;
-    alignas(16) glm::vec4 gammaMetallicSettingsNight;
+    alignas(16) glm::vec4 settingsAndNight;
+};
+
+struct LocalGUBO {
+    alignas(16) glm::vec4 streetLightPos[MAX_STREET_LIGHTS];
+    alignas(16) glm::vec4 gammaAndMetallic;
 };
 
 struct SkyGUBO {
-	alignas(16) glm::vec4 lightDir;
-    alignas(16) glm::vec4 lightColor;
-	alignas(16) glm::vec4 eyePos;
     alignas(16) glm::vec4 gammaAndMetallic;
 };
 
@@ -108,21 +109,22 @@ class Application : public BaseProject {
         
         float Ar;
 
-        DescriptorSetLayout DSLtaxi, DSLcity, DSLsky, DSLcars, DSLpeople, DSLtitle, DSLcontrols, DSLarrow, DSLendgame;
+        VertexDescriptor VDthreeDim, VDtwoDim;
 
-        VertexDescriptor VDtaxi, VDcity, VDsky, VDcars, VDpeople, VDtitle, VDcontrols, VDarrow, VDendgame;
+        Pipeline Ptaxi, Pcity, PskyBox, Pcars, Ppeople, PtwoDim, Parrow;
 
-        Pipeline Ptaxi, Pcity, Psky, Pcars, Ppeople, Ptitle, Pcontrols, Parrow, Pendgame;
+        DescriptorSetLayout DSLglobal, DSLpeople, DSLtaxi, DSLcars, DSLcity, DSLskyBox, DSLtwoDim, DSLarrow;
 
-        Model Mtaxi[TAXI_ELEMENTS], Msky, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], Mtitle, Mcontrols, Marrow, Mendgame;
+        DescriptorSet DSglobal, DSpeople[PEOPLE], DStaxi[TAXI_ELEMENTS], DScars[CARS], DScity[MESH], DSskyBox, DStwoDim, DSarrow;
 
-        DescriptorSet DStaxi[TAXI_ELEMENTS], DScity[MESH], DSsky, DScars[CARS], DSpeople[PEOPLE], DStitle, DScontrols, DSarrow, DSendgame;
+        Model Mtaxi[TAXI_ELEMENTS], MskyBox, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], MtwoDim, Marrow;
 
-        Texture Tcity, Tsky, Tpeople, Ttaxy, Ttitle, Tcontrols, Tendgame;
+        Texture Tcity, TskyBox, Tpeople, Ttaxi, Ttitle, Tcontrols, Tendgame;
 
-        UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSky, uboCars[CARS], uboCity[MESH], uboPeople[PEOPLE], uboArrow;
-        GlobalUniformBufferObject guboTaxi[TAXI_ELEMENTS], guboCars[CARS], guboCity[MESH], guboPeople[PEOPLE];
-        SkyGUBO guboSky;
+        UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSkyBox, uboCars[CARS], uboCity[MESH], uboPeople[PEOPLE], uboArrow;
+        GlobalUniformBufferObject globalGUBO;
+        LocalGUBO guboTaxi[TAXI_ELEMENTS], guboCars[CARS], guboCity[MESH], guboPeople[PEOPLE];
+        SkyGUBO guboSkyBox;
         ArrowGUBO guboArrow;
 
         int currScene = -2; // Variables used for the scene management
@@ -131,6 +133,7 @@ class Application : public BaseProject {
         int random_index = -1;  // Index used to choose randomically the person to pickup
         int collisionCounter = 0;   // Variable used to count on how many NPC care we are colliding
         int totDrivesCompleted = 0; // Variables used to count the number of drives completed
+        int twoDimTexture = 0;
         float wheelRoll = 0.0f;
         float CamAlpha = 0.0f;
         float CamBeta = 0.0f;
@@ -144,11 +147,9 @@ class Application : public BaseProject {
 		bool closeDoor = false;
         bool alreadyInPhotoMode = false;
         bool isNight = false;
-        bool drawTitle = true;
-        bool drawControls = false;
+        bool drawTwoDimPlane = true;
         bool pickupPointSelected = false;
         bool pickedPassenger = false;
-        bool endGame = false;
         bool inCollisionZone = false;
 
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); // Initial pos of camera
@@ -340,7 +341,7 @@ class Application : public BaseProject {
             initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
             // Descriptor pool sizes
-            uniformBlocksInPool =  20 + (2 * MESH) + (2 * CARS) + (2 * PEOPLE);
+            uniformBlocksInPool =  20 + (3 * MESH) + (3 * CARS) + (3 * PEOPLE);
             texturesInPool = 13 + MESH + CARS + PEOPLE;
             setsInPool = 13 + MESH + CARS + PEOPLE;
 
@@ -360,14 +361,14 @@ class Application : public BaseProject {
             DSLtaxi.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}, // Uniform Buffer Object
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}, // Texture
-                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Global Uniform Buffer Object
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Local GUBO
             });
             DSLcity.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
-            DSLsky.init(this, {
+            DSLskyBox.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
@@ -382,23 +383,19 @@ class Application : public BaseProject {
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
-
-            DSLtitle.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT} // Only texture
+            DSLglobal.init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
-            DSLcontrols.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+            DSLtwoDim.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT} // Only texture
             });
             DSLarrow.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}, // UBO
                 {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Texture
             });
-            DSLendgame.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-            });
 
             // Initialization of Vertex Descriptors
-            VDtaxi.init(this, {
+            VDthreeDim.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
                             {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
@@ -408,77 +405,7 @@ class Application : public BaseProject {
                             {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
                                     sizeof(glm::vec3), NORMAL}
                     });
-            VDcity.init(this, {
-                    {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                                        sizeof(glm::vec3), POSITION},
-                                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                                        sizeof(glm::vec2), UV},
-                                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
-                                        sizeof(glm::vec3), NORMAL}
-                        });
-            VDsky.init(this, {
-                    {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                                    sizeof(glm::vec3), POSITION},
-                            {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                                    sizeof(glm::vec2), UV},
-                            {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
-                                    sizeof(glm::vec3), NORMAL}
-                    });
-            VDcars.init(this, {
-                    {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                                        sizeof(glm::vec3), POSITION},
-                                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                                        sizeof(glm::vec2), UV},
-                                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
-                                        sizeof(glm::vec3), NORMAL}
-                        });
-            VDpeople.init(this, {
-                    {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                                        sizeof(glm::vec3), POSITION},
-                                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                                        sizeof(glm::vec2), UV},
-                                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
-                                        sizeof(glm::vec3), NORMAL}
-                        });
-            
-            VDtitle.init(this, {
-                {0, sizeof(TwoDimVertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TwoDimVertex, pos),
-                        sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(TwoDimVertex, UV),
-                        sizeof(glm::vec2), UV}
-            });
-
-            VDcontrols.init(this, {
-                {0, sizeof(TwoDimVertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TwoDimVertex, pos),
-                        sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(TwoDimVertex, UV),
-                        sizeof(glm::vec2), UV}
-            });
-            
-            VDarrow.init(this, {
-                {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                        sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                        sizeof(glm::vec2), UV},
-                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
-                        sizeof(glm::vec3), NORMAL}
-            });
-
-            VDendgame.init(this, {
+            VDtwoDim.init(this, {
                 {0, sizeof(TwoDimVertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
                 {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TwoDimVertex, pos),
@@ -488,57 +415,45 @@ class Application : public BaseProject {
             });
 
             // Initialization of Pipelines
-            Ptaxi.init(this, &VDtaxi, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLtaxi});
-            Pcity.init(this, &VDcity, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcity});
-            // Deactivate culling for the city pipeline (when enabled the models are broken)
-            //Pcity.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
-            Psky.init(this, &VDsky, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLsky});
+            Ptaxi.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLtaxi, &DSLglobal});
+            Pcity.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcity, &DSLglobal});
+            Ppeople.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLpeople, &DSLglobal});
+            Pcars.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcars, &DSLglobal});
+            PskyBox.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLskyBox, &DSLglobal});
             // Deactivate culling for the sky pipeline (render the skybox from the inside)
-            Psky.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
-            Pcars.init(this, &VDcars, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcars});
-            Ppeople.init(this, &VDpeople, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLpeople});
-            Ptitle.init(this, &VDtitle, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtitle});
+            PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+            PtwoDim.init(this, &VDtwoDim, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtwoDim});
             // Setting for 2D rendering pipeline
-            Ptitle.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
-            Pcontrols.init(this, &VDcontrols, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLcontrols});
-            Pcontrols.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
-            Parrow.init(this, &VDarrow, "shaders/BaseVert.spv", "shaders/ArrowFrag.spv", {&DSLarrow});
-            Pendgame.init(this, &VDendgame, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLendgame});
-            Pendgame.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+            PtwoDim.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+            Parrow.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/ArrowFrag.spv", {&DSLarrow});
 
             // Initialization of Models
-            Mtaxi[0].init(this, &VDtaxi, "models/Car_Hatch_C_Door.obj", OBJ);
-            Mtaxi[1].init(this, &VDtaxi, "models/Car_Hatch_C_Extern.obj", OBJ);
-            Mtaxi[2].init(this, &VDtaxi, "models/Car_Hatch_C_Intern_no-steer.obj", OBJ);
-            Mtaxi[3].init(this, &VDtaxi, "models/TruckBodySteeringWheelO.mgcg", MGCG);
-            Mtaxi[4].init(this, &VDtaxi, "models/Car_Hatch_C_Wheel.obj", OBJ);
-            Mtaxi[5].init(this, &VDtaxi, "models/Car_Hatch_C_Wheel.obj", OBJ);
-            Mtaxi[6].init(this, &VDtaxi, "models/Car_Hatch_C_Wheel.obj", OBJ);
-			Mtaxi[7].init(this, &VDtaxi, "models/Car_Hatch_C_Wheel.obj", OBJ);
-            Msky.init(this, &VDsky, "models/Sphere2.obj", OBJ);
-            Mcars[0].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg", MGCG);
-            Mcars[1].init(this, &VDcars, "models/transport_cool_003_transport_cool_003.001.mgcg", MGCG);
-            Mcars[2].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg", MGCG);
-            Mcars[3].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg", MGCG);
-            Mcars[4].init(this, &VDcars, "models/transport_jeep_001_transport_jeep_001.001.mgcg", MGCG);
-            Mcars[5].init(this, &VDcars, "models/transport_jeep_010_transport_jeep_010.001.mgcg", MGCG);
-            Mcars[6].init(this, &VDcars, "models/transport_cool_001_transport_cool_001.001.mgcg", MGCG);
-            Mcars[7].init(this, &VDcars, "models/transport_cool_004_transport_cool_004.001.mgcg", MGCG);
-            Mcars[8].init(this, &VDcars, "models/transport_cool_010_transport_cool_010.001.mgcg", MGCG);
+            Mtaxi[0].init(this, &VDthreeDim, "models/Car_Hatch_C_Door.obj", OBJ);
+            Mtaxi[1].init(this, &VDthreeDim, "models/Car_Hatch_C_Extern.obj", OBJ);
+            Mtaxi[2].init(this, &VDthreeDim, "models/Car_Hatch_C_Intern_no-steer.obj", OBJ);
+            Mtaxi[3].init(this, &VDthreeDim, "models/TruckBodySteeringWheelO.mgcg", MGCG);
+            Mtaxi[4].init(this, &VDthreeDim, "models/Car_Hatch_C_Wheel.obj", OBJ);
+            Mtaxi[5].init(this, &VDthreeDim, "models/Car_Hatch_C_Wheel.obj", OBJ);
+            Mtaxi[6].init(this, &VDthreeDim, "models/Car_Hatch_C_Wheel.obj", OBJ);
+			Mtaxi[7].init(this, &VDthreeDim, "models/Car_Hatch_C_Wheel.obj", OBJ);
+            MskyBox.init(this, &VDthreeDim, "models/Sphere2.obj", OBJ);
+            Mcars[0].init(this, &VDthreeDim, "models/transport_cool_001_transport_cool_001.001.mgcg", MGCG);
+            Mcars[1].init(this, &VDthreeDim, "models/transport_cool_003_transport_cool_003.001.mgcg", MGCG);
+            Mcars[2].init(this, &VDthreeDim, "models/transport_cool_004_transport_cool_004.001.mgcg", MGCG);
+            Mcars[3].init(this, &VDthreeDim, "models/transport_cool_010_transport_cool_010.001.mgcg", MGCG);
+            Mcars[4].init(this, &VDthreeDim, "models/transport_jeep_001_transport_jeep_001.001.mgcg", MGCG);
+            Mcars[5].init(this, &VDthreeDim, "models/transport_jeep_010_transport_jeep_010.001.mgcg", MGCG);
+            Mcars[6].init(this, &VDthreeDim, "models/transport_cool_001_transport_cool_001.001.mgcg", MGCG);
+            Mcars[7].init(this, &VDthreeDim, "models/transport_cool_004_transport_cool_004.001.mgcg", MGCG);
+            Mcars[8].init(this, &VDthreeDim, "models/transport_cool_010_transport_cool_010.001.mgcg", MGCG);
 
             std::vector<TwoDimVertex> vertices = {{{-1.0, -1.0, 0.9f}, {0.0f, 0.0f}},
                     {{-1.0, 1.0, 0.9f}, {0.0f, 1.0f}},
                     {{ 1.0,-1.0, 0.9f}, {1.0f, 0.0f}},
                     {{ 1.0, 1.0, 0.9f}, {1.0f, 1.0f}}};
-            Mtitle.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
-            Mtitle.indices = {0, 1, 2, 1, 3, 2};
-            Mtitle.initMesh(this, &VDtitle);
-            Mcontrols.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
-            Mcontrols.indices = {0, 1, 2, 1, 3, 2};
-            Mcontrols.initMesh(this, &VDcontrols);
-            Mendgame.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
-            Mendgame.indices = {0, 1, 2, 1, 3, 2};
-            Mendgame.initMesh(this, &VDendgame);
+            MtwoDim.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
+            MtwoDim.indices = {0, 1, 2, 1, 3, 2};
+            MtwoDim.initMesh(this, &VDtwoDim);
 
             // Initialization of the models of the city (from json)
             nlohmann::json js;
@@ -555,7 +470,7 @@ class Application : public BaseProject {
                     std::string modelPath= j["models"][k]["model"];
                     std::string format = j["models"][k]["format"];
 
-                    Mcity[k].init(this, &VDcity, modelPath, (format[0] == 'O') ? OBJ : ((format[0] == 'G') ? GLTF : MGCG));
+                    Mcity[k].init(this, &VDthreeDim, modelPath, (format[0] == 'O') ? OBJ : ((format[0] == 'G') ? GLTF : MGCG));
 
                 }
             }catch (const nlohmann::json::exception& e) {
@@ -578,7 +493,7 @@ class Application : public BaseProject {
                     std::string modelPath= j2["models"][k]["model"];
                     std::string format = j2["models"][k]["format"];
 
-                    Mpeople[k].init(this, &VDpeople, modelPath, (format[0] == 'O') ? OBJ : ((format[0] == 'G') ? GLTF : MGCG));
+                    Mpeople[k].init(this, &VDthreeDim, modelPath, (format[0] == 'O') ? OBJ : ((format[0] == 'G') ? GLTF : MGCG));
 
                 }
             }catch (const nlohmann::json::exception& e) {
@@ -586,13 +501,13 @@ class Application : public BaseProject {
                 exit(1);
             }
 
-            Marrow.init(this, &VDarrow, "models/simple arrow.obj", OBJ);
+            Marrow.init(this, &VDthreeDim, "models/simple arrow.obj", OBJ);
 
             // Initialization of Textures
             Tcity.init(this,"textures/Textures_City.png");
-            Tsky.init(this, "textures/images.png");
+            TskyBox.init(this, "textures/images.png");
             Tpeople.init(this, "textures/Humano_01Business_01_Diffuse04.jpg");
-            Ttaxy.init(this, "textures/VehiclePack_baseColor.png");
+            Ttaxi.init(this, "textures/VehiclePack_baseColor.png");
             Ttitle.init(this, "textures/title.jpg");
             Tcontrols.init(this, "textures/controls.jpg");
             Tendgame.init(this, "textures/endgame.jpg");
@@ -605,20 +520,22 @@ class Application : public BaseProject {
             // Creation of the Pipelines
             Ptaxi.create();
             Pcity.create();
-            Psky.create();
-            Pcars.create();
             Ppeople.create();
-            Ptitle.create();
-            Pcontrols.create();
+            Pcars.create();
+            PskyBox.create();
+            PtwoDim.create();
             Parrow.create();
-            Pendgame.create();
 
             // Initialization of the Descriptor Sets
-            for(int i = 0; i<8; i++){
+            DSglobal.init(this, &DSLglobal, {
+                    {0, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+            });
+
+            for(int i = 0; i < TAXI_ELEMENTS; i++){
                 DStaxi[i].init(this, &DSLtaxi, {
                         {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                        {1, TEXTURE, 0, &Ttaxy},
-                        {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+                        {1, TEXTURE, 0, &Ttaxi},
+                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}
                 });
             }
 
@@ -626,13 +543,13 @@ class Application : public BaseProject {
                 DScity[i].init(this, &DSLcity, {
                         {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                         {1, TEXTURE, 0, &Tcity},
-                        {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}
                 });
             }
 
-            DSsky.init(this, &DSLsky, {
+            DSskyBox.init(this, &DSLskyBox, {
                     {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                    {1, TEXTURE, 0, &Tsky},
+                    {1, TEXTURE, 0, &TskyBox},
                     {2, UNIFORM, sizeof(SkyGUBO), nullptr}
             });
 
@@ -640,32 +557,25 @@ class Application : public BaseProject {
                 DScars[i].init(this, &DSLcars, {
                         {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                         {1, TEXTURE, 0, &Tcity},
-                        {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}
                 });
             }
+
             for(int i = 0; i < PEOPLE; i++) {
                 DSpeople[i].init(this, &DSLpeople, {
                         {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                         {1, TEXTURE, 0, &Tpeople},
-                        {2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}
                 });
             }
 
-            DStitle.init(this, &DSLtitle, {
-                {0, TEXTURE, 0, &Ttitle}
-            });
-
-            DScontrols.init(this, &DSLcontrols, {
-                {0, TEXTURE, 0, &Tcontrols}
+            DStwoDim.init(this, &DSLtwoDim, {
+                {0, TEXTURE, 0, (twoDimTexture == 0 ? &Ttitle : (twoDimTexture == 1 ? &Tcontrols : &Tendgame))}
             });
 
             DSarrow.init(this, &DSLarrow, {
                 {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
                 {1, UNIFORM, sizeof(ArrowGUBO), nullptr}
-            });
-
-            DSendgame.init(this, &DSLendgame, {
-                {0, TEXTURE, 0, &Tendgame}
             });
         }
 
@@ -675,16 +585,16 @@ class Application : public BaseProject {
             // Cleanup of the Pipelines
             Ptaxi.cleanup();
             Pcity.cleanup();
-            Psky.cleanup();
-            Pcars.cleanup();
             Ppeople.cleanup();
-            Ptitle.cleanup();
-            Pcontrols.cleanup();
+            Pcars.cleanup();
+            PskyBox.cleanup();
+            PtwoDim.cleanup();
             Parrow.cleanup();
-            Pendgame.cleanup();
 
             // Cleanup of the Descriptor Sets
-            for(int i = 0; i < 8; i++) {
+            DSglobal.cleanup();
+
+            for(int i = 0; i < TAXI_ELEMENTS; i++) {
                 DStaxi[i].cleanup();
             }
 
@@ -692,7 +602,7 @@ class Application : public BaseProject {
                 DScity[i].cleanup();
             }
 
-            DSsky.cleanup();
+            DSskyBox.cleanup();
 
             for(int i = 0; i < CARS; i++) {
                 DScars[i].cleanup();
@@ -702,10 +612,8 @@ class Application : public BaseProject {
                 DSpeople[i].cleanup();
             }
 
-            DStitle.cleanup();
-            DScontrols.cleanup();
+            DStwoDim.cleanup();
             DSarrow.cleanup();
-            DSendgame.cleanup();
 
         }
 
@@ -714,15 +622,15 @@ class Application : public BaseProject {
 
             // Cleanup of Textures
             Tcity.cleanup();
-            Tsky.cleanup();
+            TskyBox.cleanup();
             Tpeople.cleanup();
-            Ttaxy.cleanup();
+            Ttaxi.cleanup();
             Ttitle.cleanup();
             Tcontrols.cleanup();
             Tendgame.cleanup();
 
             // Cleanup of Models
-            for(int i = 0; i < 8; i++) {
+            for(int i = 0; i < TAXI_ELEMENTS; i++) {
                 Mtaxi[i].cleanup();
             }
 
@@ -730,7 +638,7 @@ class Application : public BaseProject {
                 Mcity[i].cleanup();
             }
 
-            Msky.cleanup();
+            MskyBox.cleanup();
 
             for(int i = 0; i < CARS; i++) {
                 Mcars[i].cleanup();
@@ -738,32 +646,27 @@ class Application : public BaseProject {
             for(int i = 0; i < PEOPLE; i++) {
                 Mpeople[i].cleanup();
             }
-            Mtitle.cleanup();
-            Mcontrols.cleanup();
+            MtwoDim.cleanup();
             Marrow.cleanup();
-            Mendgame.cleanup();
 
             // Cleanup of Descriptor Set Layouts
+            DSLglobal.cleanup();
             DSLtaxi.cleanup();
             DSLcity.cleanup();
-            DSLsky.cleanup();
+            DSLskyBox.cleanup();
             DSLcars.cleanup();
             DSLpeople.cleanup();
-            DSLtitle.cleanup();
-            DSLcontrols.cleanup();
+            DSLtwoDim.cleanup();
             DSLarrow.cleanup();
-            DSLendgame.cleanup();
 
             // Cleanup of Pipelines and Descriptor Sets
             Ptaxi.destroy();
             Pcity.destroy();
-            Psky.destroy();
-            Pcars.destroy();
             Ppeople.destroy();
-            Ptitle.destroy();
-            Pcontrols.destroy();
+            Pcars.destroy();
+            PskyBox.destroy();
+            PtwoDim.destroy();
             Parrow.destroy();
-            Pendgame.destroy();
 
         }
 
@@ -771,17 +674,18 @@ class Application : public BaseProject {
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
             // If we are not drawing a 2D scene:
-            if(!drawTitle && !drawControls && !endGame) {
+            if(!drawTwoDimPlane) {
                 // Bind the Pipelines, Descriptor Sets, Models and draw the scene
                 Ptaxi.bind(commandBuffer);
 
-                for(int i = 0; i < 8; i++){
+                for(int i = 0; i < TAXI_ELEMENTS; i++){
                     DStaxi[i].bind(commandBuffer, Ptaxi, 0, currentImage);
                     Mtaxi[i].bind(commandBuffer);
                     vkCmdDrawIndexed(commandBuffer,
                                     static_cast<uint32_t>(Mtaxi[i].indices.size()), 1, 0, 0, 0);
                 }
 
+                DSglobal.bind(commandBuffer, Ptaxi, 1, currentImage);
 
                 Pcity.bind(commandBuffer);
 
@@ -792,12 +696,15 @@ class Application : public BaseProject {
                                     static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
                 }
 
-                Psky.bind(commandBuffer);
+                DSglobal.bind(commandBuffer, Pcity, 1, currentImage);
 
-                DSsky.bind(commandBuffer, Psky, 0, currentImage);
-                Msky.bind(commandBuffer);
+                PskyBox.bind(commandBuffer);
+
+                DSskyBox.bind(commandBuffer, PskyBox, 0, currentImage);
+                DSglobal.bind(commandBuffer, PskyBox, 1, currentImage);
+                MskyBox.bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
-                                static_cast<uint32_t>(Msky.indices.size()), 1, 0, 0, 0);
+                                static_cast<uint32_t>(MskyBox.indices.size()), 1, 0, 0, 0);
 
                 Pcars.bind(commandBuffer);
 
@@ -807,6 +714,8 @@ class Application : public BaseProject {
                     vkCmdDrawIndexed(commandBuffer,
                                     static_cast<uint32_t>(Mcars[i].indices.size()), 1, 0, 0, 0);
                 }
+
+                DSglobal.bind(commandBuffer, Pcars, 1, currentImage);
 
                 Ppeople.bind(commandBuffer);
 
@@ -823,6 +732,8 @@ class Application : public BaseProject {
                     }
                 }
 
+                DSglobal.bind(commandBuffer, Ppeople, 1, currentImage);
+
                 Parrow.bind(commandBuffer);
                 DSarrow.bind(commandBuffer, Parrow, 0, currentImage);
                 Marrow.bind(commandBuffer);
@@ -831,26 +742,13 @@ class Application : public BaseProject {
 
             }
             // Else bind the right Pipeline, Descriptor Set and Model for the 2D scene
-            else if(drawTitle) {
-                Ptitle.bind(commandBuffer);
-                DStitle.bind(commandBuffer, Ptitle, 0, currentImage);
-                Mtitle.bind(commandBuffer);
+            // TODO
+            else {
+                PtwoDim.bind(commandBuffer);
+                DStwoDim.bind(commandBuffer, PtwoDim, 0, currentImage);
+                MtwoDim.bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
-                                static_cast<uint32_t>(Mtitle.indices.size()), 1, 0, 0, 0);
-            }
-            else if(drawControls) {
-                Pcontrols.bind(commandBuffer);
-                DScontrols.bind(commandBuffer, Pcontrols, 0, currentImage);
-                Mcontrols.bind(commandBuffer);
-                vkCmdDrawIndexed(commandBuffer,
-                                static_cast<uint32_t>(Mcontrols.indices.size()), 1, 0, 0, 0);
-            }
-            else if(endGame) {
-                Pendgame.bind(commandBuffer);
-                DSendgame.bind(commandBuffer, Pendgame, 0, currentImage);
-                Mendgame.bind(commandBuffer);
-                vkCmdDrawIndexed(commandBuffer,
-                                static_cast<uint32_t>(Mendgame.indices.size()), 1, 0, 0, 0);
+                                static_cast<uint32_t>(MtwoDim.indices.size()), 1, 0, 0, 0);
             }
 
         }
@@ -929,15 +827,8 @@ class Application : public BaseProject {
                      *  3: End game scene
                      */
                     currScene = (currScene + 1) % INGAME_SCENE_COUNT;
-                    if(currScene != -2) {
-                        drawTitle = false;
-                    }
-                    if(currScene == -1) {
-                        drawControls = true;
-                    }
-                    if(currScene != -1) {
-                        drawControls = false;
-                    }
+                    drawTwoDimPlane = (currScene < 0) || (currScene == 3);
+                    twoDimTexture = (currScene == -2 ? 0 : (currScene == -1 ? 1 : 2));
                     RebuildPipeline();
                 }
             } else {
@@ -1315,7 +1206,6 @@ class Application : public BaseProject {
                     money += (time(NULL) - pickupTime) * (isNight ? 7.9f : 4.1f);
                     if(!endlessGameMode) {
                         currScene = 3;
-                        endGame = true;
                         RebuildPipeline();
                         if(ma_sound_is_playing(&idleEngineSound)) {
                             ma_sound_stop(&idleEngineSound);
@@ -1331,6 +1221,24 @@ class Application : public BaseProject {
                         totDrivesCompleted++;
                     }
                 }
+
+                globalGUBO.directLightPos = glm::vec4(sunPos, 1.0f);
+                for(int i = 0; i < TAXI_LIGHT_COUNT; i++) {
+                    globalGUBO.taxiLightPos[i] = taxiLightPos[i];
+                }
+                globalGUBO.directLightCol = sunCol;
+                globalGUBO.rearLightCol = rearLightColor;
+                globalGUBO.frontLightCol = frontLightColor;
+                globalGUBO.frontLightDir = frontLightDirection;
+                globalGUBO.frontLightCosines = frontLightCosines;
+                globalGUBO.streetLightCol = streetLightCol;
+                globalGUBO.streetLightDirection = streetLightDirection;
+                globalGUBO.streetLightCosines = streetLightCosines;
+                globalGUBO.pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
+                globalGUBO.pickupPointCol = pickupPointColor;
+                globalGUBO.eyePos = glm::vec4(camPos, 1.0f);
+                globalGUBO.settingsAndNight = glm::vec4(float(graphicsSettings), (isNight ? 1.0f : 0.0f), 0.0f, 0.0f);
+                DSglobal.map(currentImage, &globalGUBO, sizeof(globalGUBO), 0);
 
                 // This block reads the "city.json" file to configure and update the city's mesh instances, lighting,
                 // and other scene parameters for rendering. For each mesh instance, it extracts transformation matrices
@@ -1358,16 +1266,7 @@ class Application : public BaseProject {
                         uboCity[k].mMat = mWorld;
                         uboCity[k].nMat = glm::inverse(glm::transpose(uboCity[k].mMat));
                         uboCity[k].mvpMat = Prj * mView * mWorld;
-                        DScity[k].map(currentImage, &uboCity[k], sizeof(uboCity[k]), 0);
-                        guboCity[k].directLightPos = glm::vec4(sunPos, 1.0f);
-                        for(int i = 0; i < TAXI_LIGHT_COUNT; i++) {
-                            guboCity[k].taxiLightPos[i] = taxiLightPos[i];
-                        }
-                        guboCity[k].directLightCol = sunCol;
-                        guboCity[k].rearLightCol = rearLightColor;
-                        guboCity[k].frontLightCol = frontLightColor;
-                        guboCity[k].frontLightDir = frontLightDirection;
-                        guboCity[k].frontLightCosines = frontLightCosines;
+                        DScity[k].map(currentImage, &uboCity[k], sizeof(uboCity[k]), 0);   
                         std::unordered_map<float, glm::vec3> distancesToPositions;
                         std::vector<float> distances;
                         float dist = 0.0f;
@@ -1380,13 +1279,7 @@ class Application : public BaseProject {
                         for(int i = 0; i < MAX_STREET_LIGHTS; i++) {
                             guboCity[k].streetLightPos[i] = glm::vec4(distancesToPositions[distances[i]], 1.0f);
                         }
-                        guboCity[k].streetLightCol = streetLightCol;
-                        guboCity[k].streetLightDirection = streetLightDirection;
-                        guboCity[k].streetLightCosines = streetLightCosines;
-                        guboCity[k].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
-                        guboCity[k].pickupPointCol = pickupPointColor;
-                        guboCity[k].eyePos = glm::vec4(camPos, 1.0f);
-                        guboCity[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
+                        guboCity[k].gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
                         DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
                     }
 
@@ -1407,16 +1300,6 @@ class Application : public BaseProject {
                     uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
                     uboTaxi[i].mvpMat = Prj * mView * uboTaxi[i].mMat;
                     DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);
-
-                    guboTaxi[i].directLightPos = glm::vec4(sunPos, 1.0f);
-                    for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
-                        guboTaxi[i].taxiLightPos[j] = taxiLightPos[j];
-                    }
-                    guboTaxi[i].directLightCol = sunCol;
-                    guboTaxi[i].rearLightCol = rearLightColor;
-                    guboTaxi[i].frontLightCol = frontLightColor;
-                    guboTaxi[i].frontLightDir = frontLightDirection;
-                    guboTaxi[i].frontLightCosines = frontLightCosines;
                     std::unordered_map<float, glm::vec3> distancesToPositions;
                     std::vector<float> distances;
                     float dist = 0.0f;
@@ -1429,13 +1312,7 @@ class Application : public BaseProject {
                     for(int j = 0; j < MAX_STREET_LIGHTS; j++) {
                         guboTaxi[i].streetLightPos[j] = glm::vec4(distancesToPositions[distances[j]], 1.0f);
                     }
-                    guboTaxi[i].streetLightCol = streetLightCol;
-                    guboTaxi[i].streetLightDirection = streetLightDirection;
-                    guboTaxi[i].streetLightCosines = streetLightCosines;
-                    guboTaxi[i].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
-                    guboTaxi[i].pickupPointCol = pickupPointColor;
-                    guboTaxi[i].eyePos = glm::vec4(camPos, 1.0f);
-                    guboTaxi[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
+                    guboTaxi[i].gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
                 }
 
@@ -1453,15 +1330,6 @@ class Application : public BaseProject {
                     uboCars[i].mMat = mWorldCars[i];
                     uboCars[i].nMat = glm::inverse(glm::transpose(uboCars[i].mMat));
                     DScars[i].map(currentImage, &uboCars[i], sizeof(uboCars[i]), 0);
-                    guboCars[i].directLightPos = glm::vec4(sunPos, 1.0f);
-                    for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
-                        guboCars[i].taxiLightPos[j] = taxiLightPos[j];
-                    }
-                    guboCars[i].directLightCol = sunCol;
-                    guboCars[i].rearLightCol = rearLightColor;
-                    guboCars[i].frontLightCol = frontLightColor;
-                    guboCars[i].frontLightDir = frontLightDirection;
-                    guboCars[i].frontLightCosines = frontLightCosines;
                     std::unordered_map<float, glm::vec3> distancesToPositions;
                     std::vector<float> distances;
                     float dist = 0.0f;
@@ -1474,13 +1342,7 @@ class Application : public BaseProject {
                     for(int j = 0; j < MAX_STREET_LIGHTS; j++) {
                         guboCars[i].streetLightPos[j] = glm::vec4(distancesToPositions[distances[j]], 1.0f);
                     }
-                    guboCars[i].streetLightCol = streetLightCol;
-                    guboCars[i].streetLightDirection = streetLightDirection;
-                    guboCars[i].streetLightCosines = streetLightCosines;
-                    guboCars[i].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
-                    guboCars[i].pickupPointCol = pickupPointColor;
-                    guboCars[i].eyePos = glm::vec4(camPos, 1.0f);
-                    guboCars[i].gammaMetallicSettingsNight = glm::vec4(128.0f, 1.0f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
+                    guboCars[i].gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
                     DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
                 }
 
@@ -1510,15 +1372,12 @@ class Application : public BaseProject {
                 // position and color, the camera's position, and graphical settings like gamma and metallic values.
                 // Finally, the data is mapped to the descriptor sets (`DSsky`) to prepare for rendering the sky.
                 glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), sphereCenter) * glm::scale(glm::mat4(1.0f), sphereScale);
-                uboSky.mvpMat = Prj * mView * (scaleMat);
-                uboSky.mMat = scaleMat;
-                uboSky.nMat = glm::inverse(glm::transpose(uboSky.mMat));
-                DSsky.map(currentImage, &uboSky, sizeof(uboSky), 0);
-                guboSky.lightDir = glm::vec4(sunPos, 1.0f);
-                guboSky.lightColor = glm::vec4(1.0f);
-                guboSky.eyePos = glm::vec4(camPos, 1.0f);
-                guboSky.gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
-                DSsky.map(currentImage, &guboSky, sizeof(guboSky), 2);
+                uboSkyBox.mvpMat = Prj * mView * (scaleMat);
+                uboSkyBox.mMat = scaleMat;
+                uboSkyBox.nMat = glm::inverse(glm::transpose(uboSkyBox.mMat));
+                DSskyBox.map(currentImage, &uboSkyBox, sizeof(uboSkyBox), 0);
+                guboSkyBox.gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
+                DSskyBox.map(currentImage, &guboSkyBox, sizeof(guboSkyBox), 2);
 
 
                 // Loads instances from `people.json`.
@@ -1547,15 +1406,6 @@ class Application : public BaseProject {
                         uboPeople[k].nMat = glm::inverse(glm::transpose(uboPeople[k].mMat));
                         uboPeople[k].mvpMat = Prj * mView * mWorld;
                         DSpeople[k].map(currentImage, &uboPeople[k], sizeof(uboPeople[k]), 0);
-                        guboPeople[k].directLightPos = glm::vec4(sunPos, 1.0f);
-                        for(int j = 0; j < TAXI_LIGHT_COUNT; j++) {
-                            guboPeople[k].taxiLightPos[j] = taxiLightPos[j];
-                        }
-                        guboPeople[k].directLightCol = sunCol;
-                        guboPeople[k].rearLightCol = rearLightColor;
-                        guboPeople[k].frontLightCol = frontLightColor;
-                        guboPeople[k].frontLightDir = frontLightDirection;
-                        guboPeople[k].frontLightCosines = frontLightCosines;
                         std::unordered_map<float, glm::vec3> distancesToPositions;
                         std::vector<float> distances;
                         float dist = 0.0f;
@@ -1568,13 +1418,7 @@ class Application : public BaseProject {
                         for(int i = 0; i < MAX_STREET_LIGHTS; i++) {
                             guboPeople[k].streetLightPos[i] = glm::vec4(distancesToPositions[distances[i]], 1.0f);
                         }
-                        guboPeople[k].streetLightCol = streetLightCol;
-                        guboPeople[k].streetLightDirection = streetLightDirection;
-                        guboPeople[k].streetLightCosines = streetLightCosines;
-                        guboPeople[k].pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
-                        guboPeople[k].pickupPointCol = pickupPointColor;
-                        guboPeople[k].eyePos = glm::vec4(camPos, 1.0f);
-                        guboPeople[k].gammaMetallicSettingsNight = glm::vec4(128.0f, 0.1f, float(graphicsSettings), (isNight ? 1.0f : 0.0f));
+                        guboPeople[k].gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
                         DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
                     }
 
