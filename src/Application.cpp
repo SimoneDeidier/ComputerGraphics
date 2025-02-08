@@ -384,7 +384,7 @@ class Application : public BaseProject {
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
             });
             DSLglobal.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Global GUBO
             });
             DSLtwoDim.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT} // Only texture
@@ -678,6 +678,7 @@ class Application : public BaseProject {
                 // Bind the Pipelines, Descriptor Sets, Models and draw the scene
                 Ptaxi.bind(commandBuffer);
 
+                DSglobal.bind(commandBuffer, Ptaxi, 1, currentImage);
                 for(int i = 0; i < TAXI_ELEMENTS; i++){
                     DStaxi[i].bind(commandBuffer, Ptaxi, 0, currentImage);
                     Mtaxi[i].bind(commandBuffer);
@@ -685,18 +686,15 @@ class Application : public BaseProject {
                                     static_cast<uint32_t>(Mtaxi[i].indices.size()), 1, 0, 0, 0);
                 }
 
-                DSglobal.bind(commandBuffer, Ptaxi, 1, currentImage);
-
                 Pcity.bind(commandBuffer);
 
+                DSglobal.bind(commandBuffer, Pcity, 1, currentImage);
                 for(int i = 0; i < MESH; i++) {
                     DScity[i].bind(commandBuffer, Pcity, 0, currentImage);
                     Mcity[i].bind(commandBuffer);
                     vkCmdDrawIndexed(commandBuffer,
                                     static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
                 }
-
-                DSglobal.bind(commandBuffer, Pcity, 1, currentImage);
 
                 PskyBox.bind(commandBuffer);
 
@@ -708,6 +706,7 @@ class Application : public BaseProject {
 
                 Pcars.bind(commandBuffer);
 
+                DSglobal.bind(commandBuffer, Pcars, 1, currentImage);
                 for(int i = 0; i < CARS; i++) {
                     DScars[i].bind(commandBuffer, Pcars, 0, currentImage);
                     Mcars[i].bind(commandBuffer);
@@ -715,10 +714,9 @@ class Application : public BaseProject {
                                     static_cast<uint32_t>(Mcars[i].indices.size()), 1, 0, 0, 0);
                 }
 
-                DSglobal.bind(commandBuffer, Pcars, 1, currentImage);
-
                 Ppeople.bind(commandBuffer);
 
+                DSglobal.bind(commandBuffer, Ppeople, 1, currentImage);
                 for(int i = 0; i < PEOPLE; i++) {
                     // Check for the person to not be drawn (picked up)
                     if((i == 3 || i == 7 || i == 35 || i == 37 || i == 44) && !drawPeople[i]) {
@@ -731,8 +729,6 @@ class Application : public BaseProject {
                                         static_cast<uint32_t>(Mpeople[i].indices.size()), 1, 0, 0, 0);
                     }
                 }
-
-                DSglobal.bind(commandBuffer, Ppeople, 1, currentImage);
 
                 Parrow.bind(commandBuffer);
                 DSarrow.bind(commandBuffer, Parrow, 0, currentImage);
