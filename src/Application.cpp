@@ -1200,6 +1200,8 @@ class Application : public BaseProject {
                     money += (time(NULL) - pickupTime) * (isNight ? 7.9f : 4.1f);
                     if(!endlessGameMode) {
                         currScene = 3;
+                        drawTwoDimPlane = true;
+                        twoDimTexture = 2;
                         RebuildPipeline();
                         if(ma_sound_is_playing(&idleEngineSound)) {
                             ma_sound_stop(&idleEngineSound);
