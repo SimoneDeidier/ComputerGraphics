@@ -7,9 +7,9 @@ layout(location = 2) in vec3 fragNormal;
 
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 1) uniform sampler2D textureSampler;
+layout(set = 0, binding = 1) uniform sampler2D textureSampler;
 
-layout(binding = 2) uniform GlobalUniformBufferObject {
+layout(set = 1, binding = 0) uniform GlobalUniformBufferObject {
 	vec4 directLightPos;
 	vec4 directLightColor;
 	vec4 taxiLightPos[4];
@@ -17,15 +17,19 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 	vec4 rearLightColor;
 	vec4 frontLightDirection;
 	vec4 frontLightCosines;
-	vec4 streetLightPos[5];
 	vec4 streetLightCol;
 	vec4 streetLightDirection;
 	vec4 streetLightCosines;
 	vec4 pickupPointPos;
 	vec4 pickupPointCol;
 	vec4 eyePos;
-	vec4 gammaMetallicSettingsNight;
+	vec4 settingsAndNight;
 } gubo;
+
+layout(set = 0, binding = 2) uniform LocalUniformBufferObject {
+		vec4 streetLightPos[5];
+		vec4 gammaAndMetallic;
+} lubo;
 
 // LAMBERT duffuse + BLINN specular
 vec3 BRDF(vec3 v, vec3 n, vec3 l, vec3 md, vec3 ms, float gamma) {
@@ -50,20 +54,20 @@ void main() {
 
 	vec3 directLightDir = normalize(gubo.directLightPos.xyz - fragPos);
 	vec3 directLightColor = gubo.directLightColor.rgb;
-	vec3 directLightBRDF = BRDF(viewerDir, norm, directLightDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
+	vec3 directLightBRDF = BRDF(viewerDir, norm, directLightDir, albedo, vec3(lubo.gammaAndMetallic.y), lubo.gammaAndMetallic.x);
 	res += directLightBRDF * directLightColor;
 
 	vec3 pickupPointDir = normalize(gubo.pickupPointPos.xyz - fragPos);
 	vec3 pickupPointColor = gubo.pickupPointCol.rgb * pow((5 / length(gubo.pickupPointPos.xyz - fragPos)), 2.0);
-	vec3 pickupPointBRDF = BRDF(viewerDir, norm, pickupPointDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
+	vec3 pickupPointBRDF = BRDF(viewerDir, norm, pickupPointDir, albedo, vec3(lubo.gammaAndMetallic.y), lubo.gammaAndMetallic.x);
 	res += pickupPointBRDF * pickupPointColor;
 
-	if(gubo.gammaMetallicSettingsNight.z == 0.0) {
+	if(gubo.settingsAndNight.x == 0.0) {
 		outColor = vec4(res, 1.0);
 		return;
 	}
 
-	if(gubo.gammaMetallicSettingsNight.w == 1.0) {
+	if(gubo.settingsAndNight.y == 1.0) {
 		for(int i = 0; i < 4; i++) {
 			vec3 taxiLightDir = normalize(gubo.taxiLightPos[i].xyz - fragPos);
 			vec3 taxiLightColor = vec3(0.0);
@@ -73,19 +77,19 @@ void main() {
 			else {
 				taxiLightColor = gubo.frontLightColor.rgb * dot(pow((3 / length(gubo.taxiLightPos[i].xyz - fragPos)), 2.0), clamp((dot(normalize(gubo.taxiLightPos[i].xyz - fragPos), gubo.frontLightDirection.xyz) - gubo.frontLightCosines.y) / (gubo.frontLightCosines.x - gubo.frontLightCosines.y), 0.0, 1.0));
 			}
-			vec3 taxiLightBRDF = BRDF(viewerDir, norm, taxiLightDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
+			vec3 taxiLightBRDF = BRDF(viewerDir, norm, taxiLightDir, albedo, vec3(lubo.gammaAndMetallic.y), lubo.gammaAndMetallic.x);
 			res += taxiLightBRDF * taxiLightColor;
 		}
 
-		if(gubo.gammaMetallicSettingsNight.z == 1.0) {
+		if(gubo.settingsAndNight.x == 1.0) {
 			outColor = vec4(res, 1.0);
 			return;
 		}
 
 		for(int i = 0; i < 5; i++) {
-			vec3 streetLightDir = normalize(gubo.streetLightPos[i].xyz - fragPos);
-			vec3 streetLightColor = gubo.streetLightCol.rgb * dot(pow((10 / length(gubo.streetLightPos[i].xyz - fragPos)), 2.0), clamp((dot(normalize(gubo.streetLightPos[i].xyz - fragPos), gubo.streetLightDirection.xyz) - gubo.streetLightCosines.y) / (gubo.streetLightCosines.x - gubo.streetLightCosines.y), 0.0, 1.0));
-			vec3 streetLightBRDF = BRDF(viewerDir, norm, streetLightDir, albedo, vec3(gubo.gammaMetallicSettingsNight.y), gubo.gammaMetallicSettingsNight.x);
+			vec3 streetLightDir = normalize(lubo.streetLightPos[i].xyz - fragPos);
+			vec3 streetLightColor = gubo.streetLightCol.rgb * dot(pow((10 / length(lubo.streetLightPos[i].xyz - fragPos)), 2.0), clamp((dot(normalize(lubo.streetLightPos[i].xyz - fragPos), gubo.streetLightDirection.xyz) - gubo.streetLightCosines.y) / (gubo.streetLightCosines.x - gubo.streetLightCosines.y), 0.0, 1.0));
+			vec3 streetLightBRDF = BRDF(viewerDir, norm, streetLightDir, albedo, vec3(lubo.gammaAndMetallic.y), lubo.gammaAndMetallic.x);
 			res += streetLightBRDF * streetLightColor;
 		}
 
