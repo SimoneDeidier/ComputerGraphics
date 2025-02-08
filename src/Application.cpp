@@ -6,78 +6,91 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "headers/miniaudio.h"
 
-// Number of models in the city json
-#define MESH 210
-// Number of autonomus cars
-#define CARS 9
-#define STREET_LIGHT_COUNT 36
-#define MAX_STREET_LIGHTS 5
-// Number of people in the city
-#define PEOPLE 45
-#define TAXI_ELEMENTS 8
-#define TAXI_LIGHT_COUNT 4
-#define PICKUP_COUNT 5
-#define INGAME_SCENE_COUNT 2
-#define GAMEMODE_COUNT 2
-#define GRAPHICS_SETTINGS_COUNT 3
-#define TAXI_COLL_PCOUNT 4
-#define COLLISION_BOXES_COUNT 9
+#define MESH 210    // Number of models in the city json
+#define CARS 9  // Number of autonomus cars
+#define STREET_LIGHT_COUNT 36   // Number of streetlights in the city
+#define MAX_STREET_LIGHTS 5 // Number of people in the city
+#define PEOPLE 45   // Number of people in the city
+#define TAXI_ELEMENTS 8 // Number of elements in the taxi model
+#define TAXI_LIGHT_COUNT 4  // Number of lights in the taxi
+#define PICKUP_COUNT 5  // Number of people that the player can pickup
+#define INGAME_SCENE_COUNT 2    // Number of active scenes in the game
+#define GAMEMODE_COUNT 2    // Number of game modes
+#define GRAPHICS_SETTINGS_COUNT 3   // Number of graphics settings
+#define TAXI_COLL_PCOUNT 4  // Number of collision points of the taxi
+#define COLLISION_BOXES_COUNT 9 // Number of internal collision boxes of the city
 
-#define MIN_DISTANCE_TO_PICKUP 4.75f
-#define COLLISION_SPHERE_RADIUS 0.75f
-#define PICKUP_POINT_Y_OFFSET 2.0f
-#define ARROW_Y_OFFSET 3.25f
+#define MIN_DISTANCE_TO_PICKUP 4.75f    // Minimum distance to pickup a person
+#define COLLISION_SPHERE_RADIUS 0.75f   // Radius of the collision sphere between taxi and cars
+#define PICKUP_POINT_Y_OFFSET 2.0f  // Y offset for the pickup point light
+#define ARROW_Y_OFFSET 3.25f    // Y offset for the pickup point arrow
 
+// One type of UBO used by the majority of the shaders
 struct UniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;
-    alignas(16) glm::mat4 mMat;
-    alignas(16) glm::mat4 nMat;
+    alignas(16) glm::mat4 mvpMat;   // Model-view-projection matrix
+    alignas(16) glm::mat4 mMat; // Model matrix
+    alignas(16) glm::mat4 nMat; // Normal matrix
 };
 
+/* Global GUBO used by the majority of the shaders.
+ * It contains all the parameters that are equally used by the majority of the shaders.
+ */
 struct GlobalUniformBufferObject {
-    alignas(16) glm::vec4 directLightPos;
-    alignas(16) glm::vec4 directLightCol;
-    alignas(16) glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT];
-    alignas(16) glm::vec4 frontLightCol;
-    alignas(16) glm::vec4 rearLightCol;
-    alignas(16) glm::vec4 frontLightDir;
-    alignas(16) glm::vec4 frontLightCosines;
-    alignas(16) glm::vec4 streetLightCol;
-    alignas(16) glm::vec4 streetLightDirection;
-    alignas(16) glm::vec4 streetLightCosines;
-    alignas(16) glm::vec4 pickupPointPos;
-    alignas(16) glm::vec4 pickupPointCol;
-    alignas(16) glm::vec4 eyePos;
-    alignas(16) glm::vec4 settingsAndNight;
+    alignas(16) glm::vec4 directLightPos; // Position of the sun
+    alignas(16) glm::vec4 directLightCol;   // Color of the sun
+    alignas(16) glm::vec4 taxiLightPos[TAXI_LIGHT_COUNT];   // Position of the taxi lights
+    alignas(16) glm::vec4 frontLightCol;    // Color of the front light
+    alignas(16) glm::vec4 rearLightCol; // Color of the rear light
+    alignas(16) glm::vec4 frontLightDir;    // Direction of the front light (SPOTLIGHTS)
+    alignas(16) glm::vec4 frontLightCosines;    // Cosines of the front light (SPOTLIGHTS)
+    alignas(16) glm::vec4 streetLightCol;   // Color of the streetlights
+    alignas(16) glm::vec4 streetLightDirection; // Direction of the streetlights (SPOTLIGHTS)
+    alignas(16) glm::vec4 streetLightCosines;   // Cosines of the streetlights (SPOTLIGHTS)
+    alignas(16) glm::vec4 pickupPointPos;   // Position of the pickup point
+    alignas(16) glm::vec4 pickupPointCol;   // Color of the pickup point
+    alignas(16) glm::vec4 eyePos;   // Position of the camera
+    alignas(16) glm::vec4 settingsAndNight;  // Vector containing some values:
+    /* settingsAndNight.x ==> graphics settings value (low - medium - high)
+     * settingsAndNight.y ==> boolean flag for the night (1 if it's night, 0 otherwise)
+     */
 };
 
+/* "Local" GUBO used by the majority of the shaders.
+ * There will be one different LUBO for each Descriptor Set.
+ * It contains some "local" parameters that are dependent from the model.
+ */
 struct LocalGUBO {
-    alignas(16) glm::vec4 streetLightPos[MAX_STREET_LIGHTS];
-    alignas(16) glm::vec4 gammaAndMetallic;
+    alignas(16) glm::vec4 streetLightPos[MAX_STREET_LIGHTS]; // Position of the 5 streetlights to count during the BRDF calculation
+    alignas(16) glm::vec4 gammaAndMetallic; // Vector containing some values:
+    /* gammaAndMetallic.x ==> gamma value (BRDF)
+     * gammaAndMetallic.y ==> metallic value (BRDF)
+     */
 };
 
+// "Local" GUBO used for the the skybox shader, it contains only the gamma and metallic values
 struct SkyGUBO {
     alignas(16) glm::vec4 gammaAndMetallic;
 };
 
+// GUBO used for the arrow shader, it only counts for the pickup light during the BRDF calculation
 struct ArrowGUBO {
-    alignas(16) glm::vec4 pickupPointPos;
-    alignas(16) glm::vec4 pickupPointCol;
-    alignas(16) glm::vec4 eyePos;
-    alignas(16) glm::vec4 gammaAndMetallic;
+    alignas(16) glm::vec4 pickupPointPos;   // Position of the pickup point
+    alignas(16) glm::vec4 pickupPointCol;   // Color of the pickup point
+    alignas(16) glm::vec4 eyePos;   // Position of the camera
+    alignas(16) glm::vec4 gammaAndMetallic; // Vector containing gamma and metallic values
 };
 
 // Vertex definition for 3D objects
 struct Vertex {
-    glm::vec3 pos;
-    glm::vec2 UV;
-    glm::vec3 normal;
+    glm::vec3 pos;  // Position
+    glm::vec2 UV;   // UV coordinates
+    glm::vec3 normal;   // Normal
 };
 
 // Vertex definition for 2D objects
 struct TwoDimVertex {
-    glm::vec3 pos;
-    glm::vec2 UV;
+    glm::vec3 pos;  // Position
+    glm::vec2 UV;   // UV coordinates
 };
 
 // Struct to easily manage collision boxes
@@ -92,49 +105,64 @@ class Application : public BaseProject {
 
     public:
 
-        // Game options setted by main menu
-        int graphicsSettings = 2;
-        bool endlessGameMode = false;
-        ma_engine engine;
-        ma_sound titleMusic;
-        ma_sound ingameMusic;
-        ma_sound idleEngineSound;
-        ma_sound accelerationEngineSound;
-        ma_sound pickupSound;
-        ma_sound moneySound;
-        ma_sound clacsonSound;
+        // Game options setted by main menu:
+        int graphicsSettings = 2;   // 0 = low, 1 = medium, 2 = high
+        bool endlessGameMode = false;   // True if the endless game mode is selected
+        ma_engine engine;   // Miniaudio engine (used to play sounds)
+        ma_sound titleMusic;    // Sound used in the title screen
+        ma_sound ingameMusic;   // Sound used in the game
+        ma_sound idleEngineSound;   // Sound used when the taxi is idle
+        ma_sound accelerationEngineSound;   // Sound used when the taxi is accelerating
+        ma_sound pickupSound;   // Sound used when the taxi picks up a person
+        ma_sound moneySound;    // Sound used when the taxi earns money
+        ma_sound clacsonSound;  // Sound used when the taxi collides with a car
     
     protected:
         
         float Ar;
 
+        // Vertex Descrpitors: just two, one for 3D objects and one for 2D objects
         VertexDescriptor VDthreeDim, VDtwoDim;
 
+        // Pipelines: one for each kind of object
         Pipeline Ptaxi, Pcity, PskyBox, Pcars, Ppeople, PtwoDim, Parrow;
 
+        // Descriptor Set Layouts: a global DSL and one for each kind of object
         DescriptorSetLayout DSLglobal, DSLpeople, DSLtaxi, DSLcars, DSLcity, DSLskyBox, DSLtwoDim, DSLarrow;
 
+        // Descriptor Sets: a global DS and one for each type of object (MODEL)
         DescriptorSet DSglobal, DSpeople[PEOPLE], DStaxi[TAXI_ELEMENTS], DScars[CARS], DScity[MESH], DSskyBox, DStwoDim, DSarrow;
 
+        // Models: one for each type of object
         Model Mtaxi[TAXI_ELEMENTS], MskyBox, Mcars[CARS], Mpeople[PEOPLE], Mcity[MESH], MtwoDim, Marrow;
 
+        // Textures:
         Texture Tcity, TskyBox, Tpeople, Ttaxi, Ttitle, Tcontrols, Tendgame;
 
+        // Uniform Buffers: one for each type of object
         UniformBufferObject uboTaxi[TAXI_ELEMENTS], uboSkyBox, uboCars[CARS], uboCity[MESH], uboPeople[PEOPLE], uboArrow;
+
+        // Global Uniform Buffer Object (one for all the shaders)
         GlobalUniformBufferObject globalGUBO;
+
+        // Local Uniform Buffers: one for each type of object
         LocalGUBO guboTaxi[TAXI_ELEMENTS], guboCars[CARS], guboCity[MESH], guboPeople[PEOPLE];
+
+        // Local GUBO for the skybox shader
         SkyGUBO guboSkyBox;
+
+        // Unique GUBO for the arrow shader
         ArrowGUBO guboArrow;
 
         int currScene = -2; // Variables used for the scene management
-        int lastSavedSceneValue;
+        int lastSavedSceneValue;    // Variable used to save the last scene value
         int currentPoints[CARS] = {0,0,0,0,0,0,0,0,0};  // Variable for the NPC cars
         int random_index = -1;  // Index used to choose randomically the person to pickup
         int collisionCounter = 0;   // Variable used to count on how many NPC cars we are colliding
-        int totDrivesCompleted = 0; // Variables used to count the number of drives completed
-        int twoDimTexture = 0;
-        float wheelRoll = 0.0f;
-        float CamAlpha = 0.0f;
+        int totDrivesCompleted = 0; // Variable used to count the number of drives completed
+        int twoDimTexture = 0;  // Index variable used to choose the 2D texture to draw
+        float wheelRoll = 0.0f; 
+        float CamAlpha = 0.0f;  
         float CamBeta = 0.0f;
         float money = 0.0f; // Variable used to store the money earned
         float wheelAndSteerAng = 0.0f;
@@ -142,14 +170,14 @@ class Application : public BaseProject {
         double pickupTime = 0.0;    // Variable used to time the pickup and dropoff
 
         // Boolean flag used in the code
-		bool openDoor = false;
-		bool closeDoor = false;
-        bool alreadyInPhotoMode = false;
-        bool isNight = false;
-        bool drawTwoDimPlane = true;
-        bool pickupPointSelected = false;
-        bool pickedPassenger = false;
-        bool inCollisionZone = false;
+		bool openDoor = false;  // True when the animation of door opening has to start
+		bool closeDoor = false; // True when the animation of door closing has to start
+        bool alreadyInPhotoMode = false;    // True when the player is in the photo mode
+        bool isNight = false;   // True when is nihgt in the game
+        bool drawTwoDimPlane = true;    // True when we have to draw the 2D plane
+        bool pickupPointSelected = false;   // True when the pickup point has been selected
+        bool pickedPassenger = false;   // True when the passenger has been picked up
+        bool inCollisionZone = false;   // True when the taxi is in the collision zone
 
         glm::vec3 camPos = glm::vec3(0.0, 1.5f, -5.0f); // Initial pos of camera
         glm::vec3 camPosInPhotoMode;
@@ -205,7 +233,7 @@ class Application : public BaseProject {
                                         glm::vec3(141.0f, -0.2f, -111.0f)};
         std::vector<glm::vec3> wayPoints[CARS] = {wayPoints1, wayPoints2, wayPoints3, wayPoints4, wayPoints5, wayPoints6, wayPoints7, wayPoints8, wayPoints9};
 
-        // Positions of the streetlights used by the shaders
+        // Positions of the streetlights (used by the shaders)
         glm::vec3 streetlightPos[STREET_LIGHT_COUNT] = {glm::vec3(-1.65f, 9.3f, -22.2f),
                                                         glm::vec3(-1.65f, 9.3f, -94.2f),
                                                         glm::vec3(-1.65f, 9.3f, -166.2f),
@@ -244,10 +272,12 @@ class Application : public BaseProject {
                                                         glm::vec3(146.1f, 9.3f, 41.1f)};
 
         // Offsets of the collision points from the starting position of the taxi
-        glm::vec3 taxiCollPOffsets[TAXI_COLL_PCOUNT] = {glm::vec3(-0.85f, 0.0f, -0.65f), // rear right
-                                                                glm::vec3(0.85f, 0.0f, -0.65f), // rear left
-                                                                glm::vec3(-0.85f, 0.0f, 2.7f), // front right
-                                                                glm::vec3(0.85f, 0.0f, 2.7f)}; // front left
+        glm::vec3 taxiCollPOffsets[TAXI_COLL_PCOUNT] = {glm::vec3(-0.85f, 0.0f, -0.65f),
+                                                                glm::vec3(0.85f, 0.0f, -0.65f),
+                                                                glm::vec3(-0.85f, 0.0f, 2.7f),
+                                                                glm::vec3(0.85f, 0.0f, 2.7f)};
+        
+        // Collision points of the taxi
         glm::vec3 taxiCollisionPoints[TAXI_COLL_PCOUNT];
 
         // List of five persons to pickup (one choosen randomically)
@@ -264,19 +294,20 @@ class Application : public BaseProject {
                                                     glm::vec4(107.84f, 0.0f, 44.0f, 0.0f),
                                                     glm::vec4(-7.0f, 0.0f, -46.13f, 0.0f)};
 
-        // Some values used in the the majority of the shaders 
-        glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);
-        glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);
-        glm::vec4 frontLightDirection = glm::vec4(0.0f, -1.0f * glm::abs(glm::sin(glm::radians(2.0f))), -1.0f * glm::abs(glm::cos(glm::radians(2.0f))), 0.0f);
-        glm::vec4 frontLightCosines = glm::vec4(glm::abs(glm::cos(10.0f)), glm::abs(glm::cos(15.0f)), 0.0f, 0.0f);
-        glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);
-        glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);
-        glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
-        glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);
-        glm::vec4 pickupPointColor = glm::vec4(247.0f / 255.0f, 76.0f / 255.0f, 63.0f / 255.0f, 1.0f);
-        glm::vec4 pickupPoint = glm::vec4(0.0f);
-        glm::vec4 dropoffPoint = glm::vec4(0.0f);
+        // Some constant values used in the the majority of the shaders:
+        glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);    // Color of the rear light
+        glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);   // Color of the front light
+        glm::vec4 frontLightDirection = glm::vec4(0.0f, -1.0f * glm::abs(glm::sin(glm::radians(2.0f))), -1.0f * glm::abs(glm::cos(glm::radians(2.0f))), 0.0f);  // Direction of the front light (SPOTLIGHTS)
+        glm::vec4 frontLightCosines = glm::vec4(glm::abs(glm::cos(10.0f)), glm::abs(glm::cos(15.0f)), 0.0f, 0.0f);  // Cosines of the front light (SPOTLIGHTS)
+        glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);  // Color of the sun
+        glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);  // Color of the streetlights
+        glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);    // Direction of the streetlights (SPOTLIGHTS)
+        glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);   // Cosines of the streetlights (SPOTLIGHTS)
+        glm::vec4 pickupPointColor = glm::vec4(247.0f / 255.0f, 76.0f / 255.0f, 63.0f / 255.0f, 1.0f);  // Color of the pickup point
+        glm::vec4 pickupPoint = glm::vec4(0.0f);    // Position of the pickup point
+        glm::vec4 dropoffPoint = glm::vec4(0.0f);   // Position of the dropoff point
 
+        // World matrices of the NPCs cars
         glm::mat4 mWorldCars[CARS];
 
         // Hash map used to check what people we don't want to draw (it has been picked up)
@@ -413,7 +444,8 @@ class Application : public BaseProject {
                         sizeof(glm::vec2), UV}
             });
 
-            // Initialization of Pipelines
+            // Initialization of Pipelines:
+            // Each pipeline, except for the 2D and Arrow ones, has two DSL: one for the global values and one for the local ones
             Ptaxi.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLtaxi, &DSLglobal});
             Pcity.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcity, &DSLglobal});
             Ppeople.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLpeople, &DSLglobal});
@@ -422,9 +454,11 @@ class Application : public BaseProject {
             // Deactivate culling for the sky pipeline (render the skybox from the inside)
             PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             PtwoDim.init(this, &VDtwoDim, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtwoDim});
-            // Setting for 2D rendering pipeline
+            // Settings for 2D rendering pipeline
             PtwoDim.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Parrow.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/ArrowFrag.spv", {&DSLarrow});
+
+            std::cout << "[ LOADING ]: Loading models:\t\t[                    ]" << std::endl;
 
             // Initialization of Models
             Mtaxi[0].init(this, &VDthreeDim, "models/Car_Hatch_C_Door.obj", OBJ);
@@ -446,13 +480,19 @@ class Application : public BaseProject {
             Mcars[7].init(this, &VDthreeDim, "models/transport_cool_004_transport_cool_004.001.mgcg", MGCG);
             Mcars[8].init(this, &VDthreeDim, "models/transport_cool_010_transport_cool_010.001.mgcg", MGCG);
 
+            // Initialization of the 2D plane
+            // Vector of TwoDimVertex, each element has the position and the UV coordinates
             std::vector<TwoDimVertex> vertices = {{{-1.0, -1.0, 0.9f}, {0.0f, 0.0f}},
                     {{-1.0, 1.0, 0.9f}, {0.0f, 1.0f}},
                     {{ 1.0,-1.0, 0.9f}, {1.0f, 0.0f}},
                     {{ 1.0, 1.0, 0.9f}, {1.0f, 1.0f}}};
+            // Set the vertices in the model
             MtwoDim.vertices = std::vector<unsigned char>((unsigned char*)vertices.data(), (unsigned char*)vertices.data() + sizeof(TwoDimVertex) * vertices.size());
+            // Set the indices of the model (two triangles)
             MtwoDim.indices = {0, 1, 2, 1, 3, 2};
             MtwoDim.initMesh(this, &VDtwoDim);
+
+            std::cout << "[ LOADING ]: Loading models:\t\t[=====               ]" << std::endl;
 
             // Initialization of the models of the city (from json)
             nlohmann::json js;
@@ -476,6 +516,8 @@ class Application : public BaseProject {
                 std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
                 exit(1);
             }
+
+            std::cout << "[ LOADING ]: Loading models:\t\t[==========          ]" << std::endl;
 
             // Initialization of people's models (from json)
             nlohmann::json js2;
@@ -503,13 +545,16 @@ class Application : public BaseProject {
             Marrow.init(this, &VDthreeDim, "models/simple arrow.obj", OBJ);
 
             // Initialization of Textures
-            Tcity.init(this,"textures/Textures_City.png");
+            Tcity.init(this,"textures/city.png");
             TskyBox.init(this, "textures/images.png");
-            Tpeople.init(this, "textures/Humano_01Business_01_Diffuse04.jpg");
-            Ttaxi.init(this, "textures/VehiclePack_baseColor.png");
+            Tpeople.init(this, "textures/person.jpg");
+            Ttaxi.init(this, "textures/taxi.png");
             Ttitle.init(this, "textures/title.jpg");
             Tcontrols.init(this, "textures/controls.jpg");
             Tendgame.init(this, "textures/endgame.jpg");
+
+            std::cout << "[ LOADING ]: Loading models:\t\t[====================]" << std::endl;
+            std::cout << "[ LOADING ]: Loading completed!" << std::endl;
 
         }
 
@@ -527,14 +572,14 @@ class Application : public BaseProject {
 
             // Initialization of the Descriptor Sets
             DSglobal.init(this, &DSLglobal, {
-                    {0, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+                    {0, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr} // Global GUBO
             });
 
             for(int i = 0; i < TAXI_ELEMENTS; i++){
                 DStaxi[i].init(this, &DSLtaxi, {
-                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                        {1, TEXTURE, 0, &Ttaxi},
-                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}
+                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr}, // Uniform Buffer Object
+                        {1, TEXTURE, 0, &Ttaxi},    // Texture
+                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}    // Local GUBO
                 });
             }
 
@@ -569,12 +614,14 @@ class Application : public BaseProject {
             }
 
             DStwoDim.init(this, &DSLtwoDim, {
+                // When initializing the Descriptor Set for the 2D plane, we need to pass the texture
+                // Check the value of twoDimTexture to know which texture to pass (0 = title, 1 = controls, 2 = endgame)
                 {0, TEXTURE, 0, (twoDimTexture == 0 ? &Ttitle : (twoDimTexture == 1 ? &Tcontrols : &Tendgame))}
             });
 
             DSarrow.init(this, &DSLarrow, {
-                {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                {1, UNIFORM, sizeof(ArrowGUBO), nullptr}
+                {0, UNIFORM, sizeof(UniformBufferObject), nullptr}, // UBO
+                {1, UNIFORM, sizeof(ArrowGUBO), nullptr}    // Texture
             });
         }
 
@@ -674,47 +721,56 @@ class Application : public BaseProject {
 
             // If we are not drawing a 2D scene:
             if(!drawTwoDimPlane) {
-                // Bind the Pipelines, Descriptor Sets, Models and draw the scene
-                Ptaxi.bind(commandBuffer);
 
+                Ptaxi.bind(commandBuffer);  // Bind the taxi Pipeline
+
+                // Bind the Global Descriptor Set in the set = 1 of the taxi Pipeline (just the GUBO)
                 DSglobal.bind(commandBuffer, Ptaxi, 1, currentImage);
                 for(int i = 0; i < TAXI_ELEMENTS; i++){
+                    // Bind the "Local" Descriptor Sets in the set = 0 (UBO, texture and Local GUBO)
                     DStaxi[i].bind(commandBuffer, Ptaxi, 0, currentImage);
                     Mtaxi[i].bind(commandBuffer);
                     vkCmdDrawIndexed(commandBuffer,
                                     static_cast<uint32_t>(Mtaxi[i].indices.size()), 1, 0, 0, 0);
                 }
 
-                Pcity.bind(commandBuffer);
+                Pcity.bind(commandBuffer);  // Bind the city Pipeline
 
+                // Bind the Global Descriptor Set in the set = 1 of the city Pipeline (just the GUBO)
                 DSglobal.bind(commandBuffer, Pcity, 1, currentImage);
                 for(int i = 0; i < MESH; i++) {
+                    // Bind the "Local" Descriptor Sets in the set = 0 (UBO, texture and Local GUBO)
                     DScity[i].bind(commandBuffer, Pcity, 0, currentImage);
                     Mcity[i].bind(commandBuffer);
                     vkCmdDrawIndexed(commandBuffer,
                                     static_cast<uint32_t>(Mcity[i].indices.size()), 1, 0, 0, 0);
                 }
 
-                PskyBox.bind(commandBuffer);
+                PskyBox.bind(commandBuffer);    // Bind the skybox Pipeline
 
+                // Bind the SkyBox "Local" Descriptor Set in the set = 0 of the skybox Pipeline (UBO, texture and Local GUBO)
                 DSskyBox.bind(commandBuffer, PskyBox, 0, currentImage);
+                // Bind the Global Descriptor Set in the set = 1 of the skybox Pipeline (just the GUBO)
                 DSglobal.bind(commandBuffer, PskyBox, 1, currentImage);
                 MskyBox.bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
                                 static_cast<uint32_t>(MskyBox.indices.size()), 1, 0, 0, 0);
 
-                Pcars.bind(commandBuffer);
+                Pcars.bind(commandBuffer);  // Bind the cars Pipeline
 
+                // Bind the Global Descriptor Set in the set = 1 of the cars Pipeline (just the GUBO)
                 DSglobal.bind(commandBuffer, Pcars, 1, currentImage);
                 for(int i = 0; i < CARS; i++) {
+                    // Bind the "Local" Descriptor Sets in the set = 0 (UBO, texture and Local GUBO)
                     DScars[i].bind(commandBuffer, Pcars, 0, currentImage);
                     Mcars[i].bind(commandBuffer);
                     vkCmdDrawIndexed(commandBuffer,
                                     static_cast<uint32_t>(Mcars[i].indices.size()), 1, 0, 0, 0);
                 }
 
-                Ppeople.bind(commandBuffer);
+                Ppeople.bind(commandBuffer);    // Bind the people Pipeline
 
+                // Bind the Global Descriptor Set in the set = 1 of the people Pipeline (just the GUBO)
                 DSglobal.bind(commandBuffer, Ppeople, 1, currentImage);
                 for(int i = 0; i < PEOPLE; i++) {
                     // Check for the person to not be drawn (picked up)
@@ -722,6 +778,7 @@ class Application : public BaseProject {
                         // do nothing ==> do not draw it
                     }
                     else {
+                        // Bind the "Local" Descriptor Sets in the set = 0 (UBO, texture and Local GUBO)
                         DSpeople[i].bind(commandBuffer, Ppeople, 0, currentImage);
                         Mpeople[i].bind(commandBuffer);
                         vkCmdDrawIndexed(commandBuffer,
@@ -729,18 +786,17 @@ class Application : public BaseProject {
                     }
                 }
 
-                Parrow.bind(commandBuffer);
-                DSarrow.bind(commandBuffer, Parrow, 0, currentImage);
+                Parrow.bind(commandBuffer);   // Bind the arrow Pipeline
+                DSarrow.bind(commandBuffer, Parrow, 0, currentImage);   // For the arrow just bind his DS
                 Marrow.bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
                                 static_cast<uint32_t>(Marrow.indices.size()), 1, 0, 0, 0);
 
             }
-            // Else bind the right Pipeline, Descriptor Set and Model for the 2D scene
-            // TODO
+            // Else bind the Pipeline, Descriptor Set and Model for the 2D scene
             else {
-                PtwoDim.bind(commandBuffer);
-                DStwoDim.bind(commandBuffer, PtwoDim, 0, currentImage);
+                PtwoDim.bind(commandBuffer);    // Bind the 2D Pipeline
+                DStwoDim.bind(commandBuffer, PtwoDim, 0, currentImage);   // Bind the 2D DS
                 MtwoDim.bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
                                 static_cast<uint32_t>(MtwoDim.indices.size()), 1, 0, 0, 0);
@@ -762,15 +818,15 @@ class Application : public BaseProject {
             static float CamYaw = M_PI;
             static float CamRoll = 0.0f;
 
-            //vector with all the directions of the cars
+            // Vector with all the directions of the cars
             glm::vec3 directions[CARS];
 
-            //Computation of the direction for each car (point to reach - pos of the car)
+            // Computation of the direction for each car (point to reach - pos of the car)
             for(int i = 0; i < CARS; i++) {
                 directions[i] = glm::normalize(wayPoints[i][currentPoints[i]] - carPositions[i]);
             }
 
-            //speed for NPC cars
+            // Speed for NPC cars
             float speedCar= 4.0f;
             float speed = 0.0f;
 
@@ -821,8 +877,11 @@ class Application : public BaseProject {
                      *  2: Photo mode
                      *  3: End game scene
                      */
-                    currScene = (currScene + 1) % INGAME_SCENE_COUNT;
-                    drawTwoDimPlane = (currScene < 0) || (currScene == 3);
+                    // When we are in first person view, we want to go back to the third person view and so on...
+                    currScene = (currScene + 1) % INGAME_SCENE_COUNT; 
+                    // Set it to true if we are not in the first, third person or photo view
+                    drawTwoDimPlane = (currScene < 0) || (currScene == 3); 
+                    // Set the value of the texture to show in the 2D plane
                     twoDimTexture = (currScene == -2 ? 0 : (currScene == -1 ? 1 : 2));
                     RebuildPipeline();
                 }
@@ -941,9 +1000,10 @@ class Application : public BaseProject {
                         taxiCollisionPoints[i] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), taxiPos), steeringAng, glm::vec3(0.0f, 1.0f, 0.0f)), taxiCollPOffsets[i])[3];
                     }
 
-                    // Boolean variable to check if the taxi is in collision with one of the collision boxes
+                    // Boolean variable: set it to true if the taxi is in collision with the external collision box
                     bool collisionCheck = checkCollision(taxiCollisionPoints, TAXI_COLL_PCOUNT, externalCollisionBox, true);
                     for(int i = 0; i < COLLISION_BOXES_COUNT; i++) {
+                        // For each internal collision box, check if the taxi is in collision with it and do the logical AND
                         collisionCheck = collisionCheck && checkCollision(taxiCollisionPoints, TAXI_COLL_PCOUNT, internalCollisionBoxes[i], false);
                     }
                     // If the taxi is not in collision, update the position
@@ -1054,13 +1114,12 @@ class Application : public BaseProject {
                 const float nearPlane = 0.1f;
                 const float farPlane = 375.0f;
                 glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
-                //Projection matrix
+                // Projection matrix
                 Prj[1][1] *= -1;
 
 
-                //World matrix for the city
-                glm::mat4 mWorld;
-                mWorld = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
+                // World matrix for the city
+                glm::mat4 mWorld  = glm::translate(glm::mat4(1), glm::vec3(0, 0, 3)) * glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
 
                 // Set the center and the scale (radius) of the sky box sphere
                 glm::vec3 sphereCenter = glm::vec3(40.0f, 0.0f, -75.0f);
@@ -1095,50 +1154,54 @@ class Application : public BaseProject {
                     }
                 }
                 
+                // Taxi's world matrix (one for each model of the taxi)
                 glm::mat4 mWorldTaxi[8];
 
-                // Taxi's world matrix 
+                // Set the the matrixes of the intern and extern of the taxi model
                 mWorldTaxi[1] = mWorldTaxi[2] =
-                glm::translate(glm::mat4(1.0), taxiPos) *
-                glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
+                    glm::translate(glm::mat4(1.0), taxiPos) *
+                    glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0));
 
+                // Vector with the offsets of the other taxi's elements
 				glm::vec3 offsets[6] = {
-					glm::vec3(-0.65f, 0.23f, 2.05f), //FR wheel
-					glm::vec3(0.65f, 0.23f, 2.05f), //FL wheel
-					glm::vec3(-0.65f, 0.2f, -0.1f), //BR wheel
-					glm::vec3(0.65f, 0.2f, -0.1f), //BL wheel
-					glm::vec3(0.45f, 0.75f, 1.5f), //steer
-					glm::vec3(-0.742f, 0.695f, 1.6f) //door
+					glm::vec3(-0.65f, 0.23f, 2.05f), // Front right wheel
+					glm::vec3(0.65f, 0.23f, 2.05f), // Front left wheel
+					glm::vec3(-0.65f, 0.2f, -0.1f), // Rear right wheel
+					glm::vec3(0.65f, 0.2f, -0.1f), // Rear left wheel
+					glm::vec3(0.45f, 0.75f, 1.5f), // Steering wheel
+					glm::vec3(-0.742f, 0.695f, 1.6f) // Door (rotating one)
 				};
+
                 glm::vec3 rotatedOffSet[6], finalWorldPos[6];
                 for (int i = 0; i < 6; i++) {
 					rotatedOffSet[i] = glm::vec3(glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(offsets[i], 1.0));
 					finalWorldPos[i] = taxiPos + rotatedOffSet[i];
                 }
-                // Wheel's world matrix
-				mWorldTaxi[4] =  //FR wheel
+
+                // Setting the world matrix for the other taxi's elements
+				mWorldTaxi[4] =  // Front right wheel
                     glm::translate(glm::mat4(1.0), finalWorldPos[0]) *
                     glm::rotate(glm::mat4(1.0), steeringAng - glm::radians(wheelAndSteerAng*15), glm::vec3(0, 1, 0)) *
 					glm::rotate(glm::mat4(1.0), wheelRoll, glm::vec3(1, 0, 0)) * //when I accelerate the wheel should spin
                     glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 0, 1)); //the wheel was facing left
-				mWorldTaxi[5] =  //FL wheel
+				mWorldTaxi[5] =  // Front left wheel
                     glm::translate(glm::mat4(1.0), finalWorldPos[1]) *
                     glm::rotate(glm::mat4(1.0), steeringAng - glm::radians(wheelAndSteerAng * 15), glm::vec3(0, 1, 0)) *
                     glm::rotate(glm::mat4(1.0), wheelRoll, glm::vec3(1, 0, 0)); //when I accelerate the wheel should spin
-				mWorldTaxi[6] = //BR wheel
+				mWorldTaxi[6] = // Rear right wheel
                     glm::translate(glm::mat4(1.0), finalWorldPos[2]) *
                     glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) *
                     glm::rotate(glm::mat4(1.0), wheelRoll, glm::vec3(1, 0, 0)) *
                     glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 0, 1));
-				mWorldTaxi[7] = //BL wheel
+				mWorldTaxi[7] = // Rear left wheel
                     glm::translate(glm::mat4(1.0), finalWorldPos[3]) *
                     glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) *
                     glm::rotate(glm::mat4(1.0), wheelRoll, glm::vec3(1, 0, 0)); //when I accelerate the wheel should spin
-				mWorldTaxi[3] = //steer
+				mWorldTaxi[3] = // Steering wheel
                     glm::translate(glm::mat4(1.0), finalWorldPos[4]) *
                     glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) *
                     glm::rotate(glm::mat4(1.0), wheelAndSteerAng, glm::vec3(0, 0, 1));
-				mWorldTaxi[0] = //door
+				mWorldTaxi[0] = // Door (rotating one)
 					glm::translate(glm::mat4(1.0), finalWorldPos[5]) *
 					glm::rotate(glm::mat4(1.0), steeringAng + glm::radians(openingDoorAngle), glm::vec3(0, 1, 0));
                  
@@ -1189,59 +1252,68 @@ class Application : public BaseProject {
 
                 // If the taxi is close to the dropoff point, we have already picked up the person and we are not moving
                 if(glm::distance(glm::vec3(dropoffPoint), taxiPos) < MIN_DISTANCE_TO_PICKUP && pickedPassenger && speed == 0.0f) {
+                    // Get the hash map index of the selected person
                     int map_index = ((random_index == 0) ? 3 : ((random_index == 1) ? 7 : ((random_index == 2) ? 35 : ((random_index == 3) ? 37 : 44))));
+                    // Set the value in the hash map to true ==> when the pipeline is rebuilded, we will draw it
                     drawPeople[map_index] = true;
+                    // Set the flag to false and start the animation to close the door
                     pickedPassenger = false;
                     openDoor = true;
+                    // Set to false the flag to say that we have to choose a new person to pick up
                     pickupPointSelected = false;
+                    // Rebuild the pipeline to draw the dropped off person
                     RebuildPipeline();
+                    // Reset the sound of the money and start it
                     if(ma_sound_at_end(&moneySound)) ma_sound_seek_to_pcm_frame(&moneySound, 0);
                     ma_sound_start(&moneySound);
+                    // Calculate the income of the drive: time passed multiplied by the rate that is higher if it is night
                     money += (time(NULL) - pickupTime) * (isNight ? 7.9f : 4.1f);
+                    // If we are not in the endless game mode
                     if(!endlessGameMode) {
-                        currScene = 3;
-                        drawTwoDimPlane = true;
-                        twoDimTexture = 2;
+                        currScene = 3;  // Set the scene to the end game scene
+                        drawTwoDimPlane = true; // Set the flag to draw the 2D plane
+                        twoDimTexture = 2;  // Set the texture index for the end game scene
                         RebuildPipeline();
+                        // Stop the taxi's sounds
                         if(ma_sound_is_playing(&idleEngineSound)) {
                             ma_sound_stop(&idleEngineSound);
                         }
                         if(ma_sound_is_playing(&accelerationEngineSound)) {
                             ma_sound_stop(&accelerationEngineSound);
                         }
+                        // Print the final score
                         std::cout << "\n\n\n\t--------- FINAL SCORE ---------\n" << std::endl;
                         std::cout << "\tTotal earnings: " << money << " $"<< std::endl;
                         std::cout << "\n\t--------- FINAL SCORE ---------" << std::endl;
                     }
                     else {
-                        totDrivesCompleted++;
+                        totDrivesCompleted++;   // Else if we are in the endless game mode, increment the number of drives completed
                     }
                 }
 
-                globalGUBO.directLightPos = glm::vec4(sunPos, 1.0f);
+                // SETTING OF THE PARAMETERS FOR THE GLOABL GUBO
+                globalGUBO.directLightPos = glm::vec4(sunPos, 1.0f);    // Set the sun position
                 for(int i = 0; i < TAXI_LIGHT_COUNT; i++) {
-                    globalGUBO.taxiLightPos[i] = taxiLightPos[i];
+                    globalGUBO.taxiLightPos[i] = taxiLightPos[i];   // Set the taxi lights positions
                 }
-                globalGUBO.directLightCol = sunCol;
-                globalGUBO.rearLightCol = rearLightColor;
-                globalGUBO.frontLightCol = frontLightColor;
-                globalGUBO.frontLightDir = frontLightDirection;
-                globalGUBO.frontLightCosines = frontLightCosines;
-                globalGUBO.streetLightCol = streetLightCol;
-                globalGUBO.streetLightDirection = streetLightDirection;
-                globalGUBO.streetLightCosines = streetLightCosines;
+                globalGUBO.directLightCol = sunCol; // Set the sun color
+                globalGUBO.rearLightCol = rearLightColor;   // Set the rear light color
+                globalGUBO.frontLightCol = frontLightColor; // Set the front light color
+                globalGUBO.frontLightDir = frontLightDirection; // Set the front light direction
+                globalGUBO.frontLightCosines = frontLightCosines;   // Set the front light cosines
+                globalGUBO.streetLightCol = streetLightCol; // Set the street light color
+                globalGUBO.streetLightDirection = streetLightDirection; // Set the street light direction
+                globalGUBO.streetLightCosines = streetLightCosines; // Set the street light cosines
+                // Set the pickup point position (if we have already picked up the person, set the dropoff point)
                 globalGUBO.pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
-                globalGUBO.pickupPointCol = pickupPointColor;
-                globalGUBO.eyePos = glm::vec4(camPos, 1.0f);
-                globalGUBO.settingsAndNight = glm::vec4(float(graphicsSettings), (isNight ? 1.0f : 0.0f), 0.0f, 0.0f);
-                DSglobal.map(currentImage, &globalGUBO, sizeof(globalGUBO), 0);
+                globalGUBO.pickupPointCol = pickupPointColor;   // Set the pickup point color
+                globalGUBO.eyePos = glm::vec4(camPos, 1.0f);    // Set the camera position
+                globalGUBO.settingsAndNight = glm::vec4(float(graphicsSettings), (isNight ? 1.0f : 0.0f), 0.0f, 0.0f);  // Set the graphics settings and if it is night
+                DSglobal.map(currentImage, &globalGUBO, sizeof(globalGUBO), 0); // Map the global GUBO to the descriptor set
 
-                // This block reads the "city.json" file to configure and update the city's mesh instances, lighting,
-                // and other scene parameters for rendering. For each mesh instance, it extracts transformation matrices
-                // and calculates related data, such as normal and MVP matrices. It also sets up lighting parameters,
-                // including the nearest streetlights, vehicle lights.
+                // Read the "city.json" file to configure and update the city's mesh instances
                 nlohmann::json js;
-                std::ifstream ifs2("models/city.json");
+                std::ifstream ifs2("models/city.json"); // Open the JSON file
                 if (!ifs2.is_open()) {
                     std::cout << "[ ERROR ]: Scene file not found!" << std::endl;
                     exit(-1);
@@ -1258,24 +1330,34 @@ class Application : public BaseProject {
                         for(int l = 0; l < 16; l++) {
                             TMj[l] = TMjson[l];
                         }
+                        // Set the world matrix for the city element
                         mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                        uboCity[k].mMat = mWorld;
-                        uboCity[k].nMat = glm::inverse(glm::transpose(uboCity[k].mMat));
-                        uboCity[k].mvpMat = Prj * mView * mWorld;
-                        DScity[k].map(currentImage, &uboCity[k], sizeof(uboCity[k]), 0);   
+                        uboCity[k].mMat = mWorld;   // Set the model matrix
+                        uboCity[k].nMat = glm::inverse(glm::transpose(uboCity[k].mMat));    // Set the normal matrix
+                        uboCity[k].mvpMat = Prj * mView * mWorld;   // Set the MVP matrix
+                        DScity[k].map(currentImage, &uboCity[k], sizeof(uboCity[k]), 0); 
+                        // Hash map used to take the 5 positions of the street lights closest to the city element 
                         std::unordered_map<float, glm::vec3> distancesToPositions;
-                        std::vector<float> distances;
+                        std::vector<float> distances;   // Vector used to store the distances
                         float dist = 0.0f;
+                        // For each street light:
                         for(int i = 0; i < STREET_LIGHT_COUNT; i++) {
+                            // Calculate the distance between the city element and the street light
                             dist = glm::distance(streetlightPos[i], glm::vec3(mWorld[3]));
+                            // Store the distance in the vector
                             distances.push_back(dist);
+                            // Store the position of the street light in the hash map using the distance as key
                             distancesToPositions[dist] = streetlightPos[i];
                         }
+                        // Sort the distances vector in ascending order
                         std::sort(distances.begin(), distances.end());
+                        // Set in the "Local" GUBO the positions of the 5 closest street lights using the distances as keys
                         for(int i = 0; i < MAX_STREET_LIGHTS; i++) {
                             guboCity[k].streetLightPos[i] = glm::vec4(distancesToPositions[distances[i]], 1.0f);
                         }
+                        // Set the gamma and metallic values
                         guboCity[k].gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
+                        // Map the "Local" GUBO to the descriptor set
                         DScity[k].map(currentImage, &guboCity[k], sizeof(guboCity[k]), 2);
                     }
 
@@ -1439,16 +1521,21 @@ class Application : public BaseProject {
             }
         }
 
+        // Helper function to check if a vector of points is inside a collision box
         bool checkCollision(glm::vec3 *points, int dim, CollisionBox collBox, bool ext) {
+            // If we are checking for external collision (the model is inside the collision box and cannot exit)
             if(ext) {
                 for(int i = 0; i < dim; i++) {
+                    // Check the x and z coordinates of the points and in case return false
                     if(points[i].x <= collBox.xMin || points[i].x >= collBox.xMax || points[i].z <= collBox.zMin || points[i].z >= collBox.zMax) {
                         return false;
                     }
                 }
             }
+            // Else we are checking for internal collision (the model is outside the collision box and cannot enter)
             else {
                 for(int i = 0; i < dim; i++) {
+                    // Check the x and z coordinates of the points and in case return false
                     if((points[i].x >= collBox.xMin && points[i].x <= collBox.xMax) && (points[i].z >= collBox.zMin && points[i].z <= collBox.zMax)) {
                         return false;
                     }
@@ -1459,11 +1546,9 @@ class Application : public BaseProject {
 
 };
 
-
-// This is the main: probably you do not need to touch this!
 int main(int argc, char* argv[]) {
 
-    Application app;
+    Application app;    // Create the application object
 
     int choose = 0;
     int oldChoose = 0;
@@ -1474,20 +1559,22 @@ int main(int argc, char* argv[]) {
     float musicVolume = 25.0f;
     float soundVolume = 100.0f;
     
-    std::ifstream f("files/logo.txt");
+    std::ifstream f("files/logo.txt");  // Load the file with the logo for the CLI
     if (f.is_open()) {
-        std::cout << f.rdbuf();
+        std::cout << f.rdbuf(); // Print the logo
     }
+    // Print the main menu
     do {
         std::cout << "--------- MAIN MENU ---------\n" << std::endl;
         std::cout << "1 - Start the game" << std::endl;
         std::cout << "2 - Settings" << std::endl;
         std::cout << "3 - Exit" << std::endl;
         std::cout << "\nChoosing: ";
-        std::cin >> choose;
+        std::cin >> choose; // Get the user's choice
         switch(choose) {
-            case 2: {
-                oldChoose = choose;
+            case 2: {   // If the user chooses the settings
+                oldChoose = choose; // Save the choice
+                // Print the settings menu
                 do {
                     std::cout << std::fixed;
                     std::cout << std::setprecision(2);
@@ -1498,27 +1585,27 @@ int main(int argc, char* argv[]) {
                     std::cout << "4 - Sound and FX volume:" << "\t< " << soundVolume << " >" << std::endl;
                     std::cout << "5 - Back" << std::endl;
                     std::cout << "\nChoosing: ";
-                    std::cin >> choose;
+                    std::cin >> choose; // Get the user's choice
                     switch(choose) {
-                        case 1: {
-                            gameMode = (gameMode + 1) % GAMEMODE_COUNT;
+                        case 1: {   // If the user chooses the game mode
+                            gameMode = (gameMode + 1) % GAMEMODE_COUNT; // Change the game mode from arcade to endless and vice versa
                             break;
                         }
-                        case 2: {
-                            graphicSetting = (graphicSetting + 1) % GRAPHICS_SETTINGS_COUNT;
+                        case 2: {   // If the user chooses the graphic settings
+                            graphicSetting = (graphicSetting + 1) % GRAPHICS_SETTINGS_COUNT;    // Change the graphic settings (low, medium, high)
                             break;
                         }
-                        case 3: {
+                        case 3: {   // If the user chooses the music volume
                             do {
                                 std::cout << "Enter the music volume [0.0 - 100.0]: ";
-                                std::cin >> musicVolume;
-                            } while(musicVolume < 0.0f || musicVolume > 100.0f);
+                                std::cin >> musicVolume;    // Get the music volume
+                            } while(musicVolume < 0.0f || musicVolume > 100.0f);    
                             break;
                         }
-                        case 4: {
+                        case 4: {   // If the user chooses the sound and FX volume
                             do {
                                 std::cout << "Enter the sound and FX volume [0.0 - 100.0]: ";
-                                std::cin >> soundVolume;
+                                std::cin >> soundVolume;    // Get the sound and FX volume
                             } while(soundVolume < 0.0f || soundVolume > 100.0f);
                             break;
                         }
@@ -1528,79 +1615,79 @@ int main(int argc, char* argv[]) {
                             break;
                     }
                 } while(choose != 5);
-                choose = oldChoose;
+                choose = oldChoose; // Go back to the main menu
                 break;
             }
-            case 3: {
+            case 3: {   // If the user chooses to exit
                 std::cout << "Closing the sofware..." << std::endl;
                 return EXIT_SUCCESS;
             }
             default:
                 break;
         }
-    } while(choose == 2);
+    } while(choose == 2);   // If the user chooses the settings, go back to the main menu
 
-    app.graphicsSettings = graphicSetting;
-    app.endlessGameMode = (gameMode == 1);
+    app.graphicsSettings = graphicSetting;  // Set the graphic settings
+    app.endlessGameMode = (gameMode == 1);  // Set the game mode (arcade or endless)
 
-    std::cout << "[ SOUND ]: Initializing sound resources..." << std::endl;
-    // initialize the miniaudio engine
+    std::cout << "[ LOADING ]: Loading sound resources:\t[                    ]" << std::endl;
+    // Initialize the miniaudio engine (used for the sound)
     ma_result result = ma_engine_init(NULL, &app.engine);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize miniaudio engine!");
     }
-    // initialize title music
+    // Initialize title music
     result = ma_sound_init_from_file(&app.engine, "audios/title.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.titleMusic);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize title sound!");
     }
-    ma_sound_set_looping(&app.titleMusic, MA_TRUE);
-    ma_sound_set_volume(&app.titleMusic, musicVolume / 100.0f);
-    // initialize in-game music
+    ma_sound_set_looping(&app.titleMusic, MA_TRUE); // Set the title music to loop
+    ma_sound_set_volume(&app.titleMusic, musicVolume / 100.0f); // Set the volume of the title music
+    // Initialize in-game music
     result = ma_sound_init_from_file(&app.engine, "audios/ingame.mp3", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.ingameMusic);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize ingame sound!");
     }
-    ma_sound_set_looping(&app.ingameMusic, MA_TRUE);
-    ma_sound_set_volume(&app.ingameMusic, musicVolume / 100.0f);
-    // initialize idle engine sound
+    ma_sound_set_looping(&app.ingameMusic, MA_TRUE);    // Set the in-game music to loop
+    ma_sound_set_volume(&app.ingameMusic, musicVolume / 100.0f);    // Set the volume of the in-game music
+    // Initialize idle engine sound
     result = ma_sound_init_from_file(&app.engine, "audios/idle.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.idleEngineSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize idle engine sound!");
     }
-    ma_sound_set_looping(&app.idleEngineSound, MA_TRUE);
-    ma_sound_set_volume(&app.idleEngineSound, soundVolume / 100.0f + 1.0f);
-    // initialize accelearion engine sound
+    ma_sound_set_looping(&app.idleEngineSound, MA_TRUE);    // Set the idle engine sound to loop
+    ma_sound_set_volume(&app.idleEngineSound, soundVolume / 100.0f + 1.0f);   // Set the volume of the idle engine sound
+    // Initialize accelearion engine sound
     result = ma_sound_init_from_file(&app.engine, "audios/acceleration.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.accelerationEngineSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize acceleration engine sound!");
     }
-    ma_sound_set_looping(&app.accelerationEngineSound, MA_TRUE);
-    ma_sound_set_volume(&app.accelerationEngineSound, soundVolume / 100.0f + 0.5f);
-    // initialize pickup sound
+    ma_sound_set_looping(&app.accelerationEngineSound, MA_TRUE);    // Set the acceleration engine sound to loop
+    ma_sound_set_volume(&app.accelerationEngineSound, soundVolume / 100.0f + 0.5f);  // Set the volume of the acceleration engine sound
+    // Initialize pickup sound
     result = ma_sound_init_from_file(&app.engine, "audios/pickup.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.pickupSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize pickup sound!");
     }
-    ma_sound_set_volume(&app.pickupSound, soundVolume / 100.0f + 1.0f);
-    // initialize money sound
+    ma_sound_set_volume(&app.pickupSound, soundVolume / 100.0f + 1.0f);   // Set the volume of the pickup sound
+    // Initialize money sound
     result = ma_sound_init_from_file(&app.engine, "audios/money.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.moneySound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize money sound!");
     }
-    ma_sound_set_volume(&app.moneySound, soundVolume / 100.0f + 2.0f);
-    // intialize clacson sound
+    ma_sound_set_volume(&app.moneySound, soundVolume / 100.0f + 2.0f);  // Set the volume of the money sound
+    // Intialize clacson sound
     result = ma_sound_init_from_file(&app.engine, "audios/clacson.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.clacsonSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize clacson sound!");
     }
-    ma_sound_set_volume(&app.clacsonSound, soundVolume / 100.0f - 0.5f);
-    std::cout << "[ SOUND ]: Sound resources initialized!" << std::endl;
+    ma_sound_set_volume(&app.clacsonSound, soundVolume / 100.0f - 0.5f);    // Set the volume of the clacson sound
+    std::cout << "[ LOADING ]: Loading sound resources:\t[====================]" << std::endl;
 
-    srand(time(NULL));
+    srand(time(NULL));  // Initialize the random seed
 
     try {
-        app.run();
+        app.run();  // Run the application
     } catch (const std::exception& e) {
         std::cerr << "[ EXCEPTION ]:" << e.what() << std::endl;
         return EXIT_FAILURE;

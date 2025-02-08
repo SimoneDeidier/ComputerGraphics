@@ -463,7 +463,6 @@ protected:
     }
 
     void createInstance() {
-std::cout << "Starting createInstance()\n"  << std::flush;
     	VkApplicationInfo appInfo{};
        	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     	appInfo.pApplicationName = windowTitle.c_str();
@@ -618,8 +617,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-
-		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;		
+	
 		return VK_FALSE;
 	}
 
@@ -676,8 +674,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-		
-		std::cout << "Physical devices found: " << deviceCount << "\n";
+
 		
 		for (const auto& device : devices) {
 			if(checkIfItHasDeviceExtension(device, "VK_KHR_portability_subset")) {
@@ -688,7 +685,6 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 			if (suitable) {
 				physicalDevice = device;
 				msaaSamples = getMaxUsableSampleCount();
-				std::cout << "\n\nMaximum samples for anti-aliasing: " << msaaSamples << "\n\n\n";
 				break;
 			} else {
 				std::cout << "Device " << device << " is not suitable\n";
@@ -2469,7 +2465,6 @@ void Model::loadModelOBJ(std::string file) {
 	std::vector<tinyobj::material_t> materials;
 	std::string warn, err;
 	
-	std::cout << "Loading : " << file << "[OBJ]\n";	
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
 						  file.c_str())) {
 		throw std::runtime_error(warn + err);
@@ -2526,8 +2521,6 @@ void Model::loadModelOBJ(std::string file) {
 			indices.push_back((vertices.size()/mainStride)-1);
 		}
 	}
-	std::cout << "[OBJ] Vertices: "<< (vertices.size()/mainStride);
-	std::cout << " Indices: "<< indices.size() << "\n";
 	
 }
 
@@ -2538,7 +2531,6 @@ void Model::loadModelGLTF(std::string file, bool encoded) {
 	
 	int mainStride = VD->Bindings[0].stride;
 
-	std::cout << "Loading : " << file << (encoded ? "[MGCG]" : "[GLTF]") << "\n";	
 	if(encoded) {
 		auto modelString = readFile(file);
 		
@@ -2578,7 +2570,6 @@ void Model::loadModelGLTF(std::string file, bool encoded) {
 	}
 
 	for (const auto& mesh :  model.meshes) {
-		std::cout << "Primitives: " << mesh.primitives.size() << "\n";
 		for (const auto& primitive :  mesh.primitives) {
 			if (primitive.indices < 0) {
 				continue;
@@ -2740,8 +2731,6 @@ void Model::loadModelGLTF(std::string file, bool encoded) {
 		}
 	}
 
-	std::cout << (encoded ? "[MGCG]" : "[GLTF]") << " Vertices: " << (vertices.size()/mainStride)
-			  << " Indices: " << indices.size() << "\n";
 }
 
 void Model::createVertexBuffer() {
@@ -2777,8 +2766,6 @@ void Model::initMesh(BaseProject *bp, VertexDescriptor *vd) {
 	BP = bp;
 	VD = vd;
 	int mainStride = VD->Bindings[0].stride;
-	std::cout << "[Manual] Vertices: " << (vertices.size()/mainStride)
-			  << " Indices: " << indices.size() << "\n";
 	createVertexBuffer();
 	createIndexBuffer();
 }
@@ -2832,8 +2819,6 @@ void Texture::createTextureImage(std::string files[], VkFormat Fmt = VK_FORMAT_R
 			std::cout << "Not found: " << files[i] << "\n";
 			throw std::runtime_error("failed to load texture image!");
 		}
-		std::cout << "[" << i << "]" << files[i] << " -> size: " << texWidth
-				  << "x" << texHeight << ", ch: " << texChannels <<"\n";
 				  
 		if(i == 0) {
 			curWidth = texWidth;
@@ -2975,10 +2960,6 @@ void Pipeline::init(BaseProject *bp, VertexDescriptor *vd,
 	
 	auto vertShaderCode = readFile(VertShader);
 	auto fragShaderCode = readFile(FragShader);
-	std::cout << "Vertex shader <" << VertShader << "> len: " << 
-				vertShaderCode.size() << "\n";
-	std::cout << "Fragment shader <" << FragShader << "> len: " <<
-				fragShaderCode.size() << "\n";
 	
 	vertShaderModule =
 			createShaderModule(vertShaderCode);
