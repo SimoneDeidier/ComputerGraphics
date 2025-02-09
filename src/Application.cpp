@@ -1,10 +1,8 @@
 #include "headers/Starter.hpp"
 #include <iostream>
-#include <fstream>
-#include <iomanip>
 
 #define MINIAUDIO_IMPLEMENTATION
-#include "headers/miniaudio.h"
+#include "headers/miniaudio.h"  // Miniaudio library (used to play sounds)
 
 #define MESH 210    // Number of models in the city json
 #define CARS 9  // Number of autonomus cars
@@ -67,14 +65,17 @@ struct LocalGUBO {
      */
 };
 
-// "Local" GUBO used for the the skybox shader, it contains only the gamma and metallic values
+// GUBO used for the the skybox shader
 struct SkyGUBO {
-    alignas(16) glm::vec4 gammaAndMetallic;
+    alignas(16) glm::vec4 directLightPos; // Position of the sun
+    alignas(16) glm::vec4 directLightCol;   // Color of the sun
+    alignas(16) glm::vec4 eyePos;   // Position of the camera
+    alignas(16) glm::vec4 gammaAndMetallic; // Vector containing gamma and metallic values
 };
 
 // GUBO used for the arrow shader, it only counts for the pickup light during the BRDF calculation
 struct ArrowGUBO {
-    alignas(16) glm::vec4 pickupPointPos;   // Position of the pickup point
+    alignas(16) glm::vec4 pickupPointPos;   // Position of the pickup point (POINT LIGHT)
     alignas(16) glm::vec4 pickupPointCol;   // Color of the pickup point
     alignas(16) glm::vec4 eyePos;   // Position of the camera
     alignas(16) glm::vec4 gammaAndMetallic; // Vector containing gamma and metallic values
@@ -297,12 +298,16 @@ class Application : public BaseProject {
         // Some constant values used in the the majority of the shaders:
         glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);    // Color of the rear light
         glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);   // Color of the front light
+        // TODO comment
         glm::vec4 frontLightDirection = glm::vec4(0.0f, -1.0f * glm::abs(glm::sin(glm::radians(2.0f))), -1.0f * glm::abs(glm::cos(glm::radians(2.0f))), 0.0f);  // Direction of the front light (SPOTLIGHTS)
         glm::vec4 frontLightCosines = glm::vec4(glm::abs(glm::cos(10.0f)), glm::abs(glm::cos(15.0f)), 0.0f, 0.0f);  // Cosines of the front light (SPOTLIGHTS)
+
         glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);  // Color of the sun
         glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);  // Color of the streetlights
+        // TODO comment
         glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);    // Direction of the streetlights (SPOTLIGHTS)
         glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);   // Cosines of the streetlights (SPOTLIGHTS)
+
         glm::vec4 pickupPointColor = glm::vec4(247.0f / 255.0f, 76.0f / 255.0f, 63.0f / 255.0f, 1.0f);  // Color of the pickup point
         glm::vec4 pickupPoint = glm::vec4(0.0f);    // Position of the pickup point
         glm::vec4 dropoffPoint = glm::vec4(0.0f);   // Position of the dropoff point
@@ -371,6 +376,7 @@ class Application : public BaseProject {
             initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
             // Descriptor pool sizes
+            // TODO check on values
             uniformBlocksInPool =  20 + (3 * MESH) + (3 * CARS) + (3 * PEOPLE);
             texturesInPool = 13 + MESH + CARS + PEOPLE;
             setsInPool = 13 + MESH + CARS + PEOPLE;
@@ -445,12 +451,12 @@ class Application : public BaseProject {
             });
 
             // Initialization of Pipelines:
-            // Each pipeline, except for the 2D and Arrow ones, has two DSL: one for the global values and one for the local ones
+            // Each pipeline, except for the SkyBox, 2D and Arrow ones, has two DSL: one for the global values and one for the local ones
             Ptaxi.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLtaxi, &DSLglobal});
             Pcity.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcity, &DSLglobal});
             Ppeople.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLpeople, &DSLglobal});
             Pcars.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcars, &DSLglobal});
-            PskyBox.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLskyBox, &DSLglobal});
+            PskyBox.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLskyBox});
             // Deactivate culling for the sky pipeline (render the skybox from the inside)
             PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             PtwoDim.init(this, &VDtwoDim, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtwoDim});
@@ -458,6 +464,7 @@ class Application : public BaseProject {
             PtwoDim.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
             Parrow.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/ArrowFrag.spv", {&DSLarrow});
 
+            std::cout << "[ LOADING ]: -------------------------------------------------" << std::endl;
             std::cout << "[ LOADING ]: Loading models:\t\t[                    ]" << std::endl;
 
             // Initialization of Models
@@ -546,7 +553,7 @@ class Application : public BaseProject {
 
             // Initialization of Textures
             Tcity.init(this,"textures/city.png");
-            TskyBox.init(this, "textures/images.png");
+            TskyBox.init(this, "textures/skybox.png");
             Tpeople.init(this, "textures/person.jpg");
             Ttaxi.init(this, "textures/taxi.png");
             Ttitle.init(this, "textures/title.jpg");
@@ -748,10 +755,8 @@ class Application : public BaseProject {
 
                 PskyBox.bind(commandBuffer);    // Bind the skybox Pipeline
 
-                // Bind the SkyBox "Local" Descriptor Set in the set = 0 of the skybox Pipeline (UBO, texture and Local GUBO)
+                // Bind the SkyBox Descriptor Set in the set = 0 of the skybox Pipeline (UBO, texture and Local GUBO)
                 DSskyBox.bind(commandBuffer, PskyBox, 0, currentImage);
-                // Bind the Global Descriptor Set in the set = 1 of the skybox Pipeline (just the GUBO)
-                DSglobal.bind(commandBuffer, PskyBox, 1, currentImage);
                 MskyBox.bind(commandBuffer);
                 vkCmdDrawIndexed(commandBuffer,
                                 static_cast<uint32_t>(MskyBox.indices.size()), 1, 0, 0, 0);
@@ -968,7 +973,7 @@ class Application : public BaseProject {
                     static float currentSpeed = 0.0f;
                     float targetSpeed = moveSpeed * -m.z;
                     // Adjust this value to control the damping effect
-                    const float dampingFactor = 3.0f;
+                    const float dampingFactor = 3.0f;   // TODO comments on this part
                     float speedDifference = targetSpeed - currentSpeed;
                     if (fabs(speedDifference) < 0.01f) {
                         currentSpeed = targetSpeed;
@@ -1061,7 +1066,7 @@ class Application : public BaseProject {
                             glm::vec3(0, 1, 0));
                     }
                     // Else if we are in the first person view
-                    else {
+                    else { // TODO comments
                         const float ROT_SPEED = glm::radians(120.0f);
                         CamYaw -= ROT_SPEED * deltaT * r.y;
                         CamPitch -= ROT_SPEED * deltaT * r.x;
@@ -1084,7 +1089,7 @@ class Application : public BaseProject {
                     }
                 }
                 // Else if we are in photo mode
-                else if(currScene == 2) {
+                else if(currScene == 2) {   // TODO comments
 
                     if(!alreadyInPhotoMode) {
                         camPosInPhotoMode = camPos;
@@ -1367,101 +1372,110 @@ class Application : public BaseProject {
                     exit(1);
                 }
 
-                // This loop configures the transformation matrices, lighting, and graphical settings for each taxi object in the scene.
-                // For each taxi:
-                // - The Model-View-Projection (MVP) matrix, model matrix (`mMat`), and normal matrix (`nMat`) are calculated and stored in `uboTaxi`.
-                // - The taxi's descriptor set (`DStaxi`) is updated with these matrices for rendering.
-                // - Lighting parameters, such as the sun's position and color, as well as taxi-specific light positions, are configured in `guboTaxi`.
-                // - Finally, this data is mapped to the descriptor set for rendering each taxi with its specific configurations.
+                // For each mesh of the taxi
                 for(int i=0; i<8; i++){
-                    uboTaxi[i].mMat = mWorldTaxi[i];
-                    uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));
-                    uboTaxi[i].mvpMat = Prj * mView * uboTaxi[i].mMat;
-                    DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);
+                    uboTaxi[i].mMat = mWorldTaxi[i];    // Set the model matrix
+                    uboTaxi[i].nMat = glm::inverse(glm::transpose(uboTaxi[i].mMat));    // Set the normal matrix
+                    uboTaxi[i].mvpMat = Prj * mView * uboTaxi[i].mMat;  // Set the MVP matrix
+                    DStaxi[i].map(currentImage, &uboTaxi[i], sizeof(uboTaxi[i]), 0);    // Map the UBO to the descriptor set
+                    // Hash map used to take the 5 positions of the street lights closest to the taxi element
                     std::unordered_map<float, glm::vec3> distancesToPositions;
-                    std::vector<float> distances;
-                    float dist = 0.0f;
+                    std::vector<float> distances;   // Vector used to store the distances
+                    float dist = 0.0f;  // Distance variable
+                    // For each street light:
                     for(int j = 0; j < STREET_LIGHT_COUNT; j++) {
+                        // Calculate the distance between the taxi element and the street light
                         dist = glm::distance(streetlightPos[j], glm::vec3(mWorldTaxi[1][3]));
+                        // Store the distance in the vector
                         distances.push_back(dist);
+                        // Store the position of the street light in the hash map using the distance as key
                         distancesToPositions[dist] = streetlightPos[j];
                     }
+                    // Sort the distances vector in ascending order
                     std::sort(distances.begin(), distances.end());
+                    // Set in the "Local" GUBO the positions of the 5 closest street lights using the distances as keys
                     for(int j = 0; j < MAX_STREET_LIGHTS; j++) {
                         guboTaxi[i].streetLightPos[j] = glm::vec4(distancesToPositions[distances[j]], 1.0f);
                     }
+                    // Set the gamma and metallic values
                     guboTaxi[i].gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
+                    // Map the "Local" GUBO to the descriptor set
                     DStaxi[i].map(currentImage, &guboTaxi[i], sizeof(guboTaxi[i]), 2);
                 }
 
+                // Set the position of the taxi's collision sphere center (used for collision with NPCs)
                 glm::vec4 taxiCollisionSphereCenter = glm::translate(mWorldTaxi[1], glm::vec3(0.0f, 0.0f, 1.0f))[3];
 
-
-                // This loop configures the transformation matrices, lighting, and graphical settings for each (autonomous) car in the scene.
-                // For each car:
-                // - The Model-View-Projection (MVP) matrix, model matrix (`mMat`), and normal matrix (`nMat`) are calculated and stored in `uboCars`.
-                // - The taxi's descriptor set (`DScars`) is updated with these matrices for rendering.
-                // - Lighting parameters, such as the sun's position and color, as well as taxi-specific light positions, are configured in `guboCars`.
-                // - Finally, this data is mapped to the descriptor set for rendering each taxi with its specific configurations.
+                // For each NPC car
                 for(int i = 0; i < CARS; i++) {
-                    uboCars[i].mvpMat = Prj * mView * mWorldCars[i];
-                    uboCars[i].mMat = mWorldCars[i];
-                    uboCars[i].nMat = glm::inverse(glm::transpose(uboCars[i].mMat));
-                    DScars[i].map(currentImage, &uboCars[i], sizeof(uboCars[i]), 0);
+                    uboCars[i].mvpMat = Prj * mView * mWorldCars[i];    // Set the MVP matrix
+                    uboCars[i].mMat = mWorldCars[i];    // Set the model matrix
+                    uboCars[i].nMat = glm::inverse(glm::transpose(uboCars[i].mMat));    // Set the normal matrix
+                    DScars[i].map(currentImage, &uboCars[i], sizeof(uboCars[i]), 0);    // Map the UBO to the descriptor set
+                    // Hash map used to take the 5 positions of the street lights closest to the NPC car element
                     std::unordered_map<float, glm::vec3> distancesToPositions;
-                    std::vector<float> distances;
-                    float dist = 0.0f;
+                    std::vector<float> distances;   // Vector used to store the distances
+                    float dist = 0.0f;  // Distance variable
+                    // For each street light:
                     for(int j = 0; j < STREET_LIGHT_COUNT; j++) {
+                        // Calculate the distance between the NPC car element and the street light
                         dist = glm::distance(streetlightPos[j], glm::vec3(mWorldCars[i][3]));
+                        // Store the distance in the vector
                         distances.push_back(dist);
+                        // Store the position of the street light in the hash map using the distance as key
                         distancesToPositions[dist] = streetlightPos[j];
                     }
+                    // Sort the distances vector in ascending order
                     std::sort(distances.begin(), distances.end());
+                    // Set in the "Local" GUBO the positions of the 5 closest street lights using the distances as keys
                     for(int j = 0; j < MAX_STREET_LIGHTS; j++) {
                         guboCars[i].streetLightPos[j] = glm::vec4(distancesToPositions[distances[j]], 1.0f);
                     }
+                    // Set the gamma and metallic values
                     guboCars[i].gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
+                    // Map the "Local" GUBO to the descriptor set
                     DScars[i].map(currentImage, &guboCars[i], sizeof(guboCars[i]), 2);
                 }
 
                 glm::vec4 carCollisionSphereCenter = glm::vec4(0.0f);
+                // Counter to check on how many cars the taxi is colliding
                 collisionCounter = 0;
+                // For each NPC car
                 for(int i = 0; i < CARS; i++) {
+                    // Set the center of the collision sphere for the NPC car as the center of the car model
                     carCollisionSphereCenter = mWorldCars[i][3];
+                    // Check if the two collision spheres are colliding (dist < 2 * radius)
                     if(glm::distance(glm::vec3(taxiCollisionSphereCenter), glm::vec3(carCollisionSphereCenter)) < 2 * COLLISION_SPHERE_RADIUS) {
+                        // If so, increment the collision counter
                         collisionCounter++;
                     }
                 }
+                // If the taxi is colliding with at least one NPC car and it wasn't already colliding
                 if(collisionCounter > 0 && !inCollisionZone) {
-                    inCollisionZone = true;
-                    money -= 100.0f;
+                    inCollisionZone = true; // Set the flag to true
+                    money -= 100.0f;    // Decrement the money by 100
+                    // Reset the sound of the clacson and start it
                     if(ma_sound_at_end(&clacsonSound)) ma_sound_seek_to_pcm_frame(&clacsonSound, 0);
                     ma_sound_start(&clacsonSound);
                 }
+                // Else if the taxi is not colliding with any NPC car and it was colliding
                 else if(collisionCounter == 0 && inCollisionZone) {
-                    inCollisionZone = false;
+                    inCollisionZone = false;    // Set the flag to false
                 }
 
-                // This code block sets up the sky's transformations, lighting parameters.
-                // It first calculates a transformation matrix (`scaleMat`) to position and scale the sky object
-                // based on its center (`sphereCenter`) and scale (`sphereScale`). The Model-View-Projection (MVP)
-                // matrix, model matrix (`mMat`), and normal matrix (`nMat`) are updated accordingly.
-                // The uniform buffer objects (`uboSky` and `guboSky`) are populated with data such as the sun's
-                // position and color, the camera's position, and graphical settings like gamma and metallic values.
-                // Finally, the data is mapped to the descriptor sets (`DSsky`) to prepare for rendering the sky.
+                // Set the sky box's center and scale (translate and scale the sky box sphere)
                 glm::mat4 scaleMat = glm::translate(glm::mat4(1.0f), sphereCenter) * glm::scale(glm::mat4(1.0f), sphereScale);
-                uboSkyBox.mvpMat = Prj * mView * (scaleMat);
-                uboSkyBox.mMat = scaleMat;
-                uboSkyBox.nMat = glm::inverse(glm::transpose(uboSkyBox.mMat));
-                DSskyBox.map(currentImage, &uboSkyBox, sizeof(uboSkyBox), 0);
-                guboSkyBox.gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
-                DSskyBox.map(currentImage, &guboSkyBox, sizeof(guboSkyBox), 2);
+                uboSkyBox.mvpMat = Prj * mView * (scaleMat);    // Set the MVP matrix
+                uboSkyBox.mMat = scaleMat;  // Set the model matrix
+                uboSkyBox.nMat = glm::inverse(glm::transpose(uboSkyBox.mMat));  // Set the normal matrix
+                DSskyBox.map(currentImage, &uboSkyBox, sizeof(uboSkyBox), 0);   // Map the UBO to the descriptor set
+                guboSkyBox.directLightPos = glm::vec4(sunPos, 1.0f);    // Set the sun position
+                guboSkyBox.directLightCol = sunCol; // Set the sun color
+                guboSkyBox.eyePos = glm::vec4(camPos, 1.0f);    // Set the camera position
+                guboSkyBox.gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);  // Set the gamma and metallic values
+                DSskyBox.map(currentImage, &guboSkyBox, sizeof(guboSkyBox), 2);  // Map the "Local" GUBO to the descriptor set
 
-
-                // Loads instances from `people.json`.
-                // - Reads transformation matrices and calculates model (`mMat`), normal (`nMat`), and MVP matrices for each person.
-                // - Configures lighting, nearest streetlights, and rendering settings for each instance.
-                // - Updates descriptor sets (`DSpeople` and `guboPeople`) for rendering.
+                // Read the "people.json" file to configure and update the people's mesh instances
                 nlohmann::json js3;
                 std::ifstream ifs3("models/people.json");
                 if (!ifs3.is_open()) {
@@ -1479,24 +1493,34 @@ class Application : public BaseProject {
 
                         for(int l = 0; l < 16; l++) {TMj[l] = TMjson[l];}
 
+                        // Set the world matrix for the people element
                         mWorld=glm::mat4(TMj[0],TMj[4],TMj[8],TMj[12],TMj[1],TMj[5],TMj[9],TMj[13],TMj[2],TMj[6],TMj[10],TMj[14],TMj[3],TMj[7],TMj[11],TMj[15]);
-                        uboPeople[k].mMat = mWorld;
-                        uboPeople[k].nMat = glm::inverse(glm::transpose(uboPeople[k].mMat));
-                        uboPeople[k].mvpMat = Prj * mView * mWorld;
-                        DSpeople[k].map(currentImage, &uboPeople[k], sizeof(uboPeople[k]), 0);
+                        uboPeople[k].mMat = mWorld; // Set the model matrix
+                        uboPeople[k].nMat = glm::inverse(glm::transpose(uboPeople[k].mMat));    // Set the normal matrix
+                        uboPeople[k].mvpMat = Prj * mView * mWorld;  // Set the MVP matrix
+                        DSpeople[k].map(currentImage, &uboPeople[k], sizeof(uboPeople[k]), 0);  // Map the UBO to the descriptor set
+                        // Hash map used to take the 5 positions of the street lights closest to the people element
                         std::unordered_map<float, glm::vec3> distancesToPositions;
-                        std::vector<float> distances;
-                        float dist = 0.0f;
+                        std::vector<float> distances;   // Vector used to store the distances
+                        float dist = 0.0f;  // Distance variable
+                        // For each street light:
                         for(int i = 0; i < STREET_LIGHT_COUNT; i++) {
+                            // Calculate the distance between the people element and the street light
                             dist = glm::distance(streetlightPos[i], glm::vec3(mWorld[3]));
+                            // Store the distance in the vector
                             distances.push_back(dist);
+                            // Store the position of the street light in the hash map using the distance as key
                             distancesToPositions[dist] = streetlightPos[i];
                         }
+                        // Sort the distances vector in ascending order
                         std::sort(distances.begin(), distances.end());
+                        // Set in the "Local" GUBO the positions of the 5 closest street lights using the distances as keys
                         for(int i = 0; i < MAX_STREET_LIGHTS; i++) {
                             guboPeople[k].streetLightPos[i] = glm::vec4(distancesToPositions[distances[i]], 1.0f);
                         }
+                        // Set the gamma and metallic values
                         guboPeople[k].gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);
+                        // Map the "Local" GUBO to the descriptor set
                         DSpeople[k].map(currentImage, &guboPeople[k], sizeof(guboPeople[k]), 2);
                     }
 
@@ -1506,17 +1530,22 @@ class Application : public BaseProject {
                     exit(1);
                 }
 
+                // Set the position of the arrow (if we have already picked up the person, set the dropoff point)
+                // The arrow will move up and down with a sinusoidal movement
                 glm::vec3 arrowPosition = (!pickedPassenger ? glm::vec3(pickupPoint.x, ARROW_Y_OFFSET + (glm::cos(cTime) / 4.0f), pickupPoint.z) : glm::vec3(dropoffPoint.x, ARROW_Y_OFFSET + (glm::cos(cTime) / 4.0f), dropoffPoint.z));
+                // Set the world matrix for the arrow translating it to the position and rotating it around the Z axis
+                // The arrow will also rotate around the Y axis with a turn factor of 10 degrees per tick
                 glm::mat4 mWorldArrow = glm::rotate(glm::rotate(glm::translate(glm::mat4(1.0), arrowPosition), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)), glm::radians(10.0f) * cTime, glm::vec3(0.0f, 1.0f, 0.0f));
-                uboArrow.mvpMat = Prj * mView * mWorldArrow;
-                uboArrow.mMat = mWorldArrow;
-                uboArrow.nMat = glm::inverse(glm::transpose(uboArrow.mMat));
-                DSarrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
+                uboArrow.mvpMat = Prj * mView * mWorldArrow;    // Set the MVP matrix
+                uboArrow.mMat = mWorldArrow;    // Set the model matrix
+                uboArrow.nMat = glm::inverse(glm::transpose(uboArrow.mMat));    // Set the normal matrix
+                DSarrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);  // Map the UBO to the descriptor set
+                // Set the position of the arrow's pickup point (if we have already picked up the person, set the dropoff point)
                 guboArrow.pickupPointPos = (!pickedPassenger ? glm::vec4(pickupPoint.x, PICKUP_POINT_Y_OFFSET, pickupPoint.z, pickupPoint.w) : glm::vec4(dropoffPoint.x, PICKUP_POINT_Y_OFFSET, dropoffPoint.z, dropoffPoint.w));
-                guboArrow.pickupPointCol = pickupPointColor;
-                guboArrow.eyePos = glm::vec4(camPos, 1.0f);
-                guboArrow.gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);
-                DSarrow.map(currentImage, &guboArrow, sizeof(guboArrow), 1);
+                guboArrow.pickupPointCol = pickupPointColor;    // Set the pickup point color (POINTLIGHT)
+                guboArrow.eyePos = glm::vec4(camPos, 1.0f); // Set the camera position
+                guboArrow.gammaAndMetallic = glm::vec4(128.0f, 1.0f, 0.0f, 0.0f);   // Set the gamma and metallic values
+                DSarrow.map(currentImage, &guboArrow, sizeof(guboArrow), 1);    // Map the GUBO to the descriptor set
 
             }
         }
