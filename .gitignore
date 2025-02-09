@@ -4,7 +4,6 @@
 # Object files
 *.o
 *.ko
-*.obj
 *.elf
 
 # Linker output
@@ -50,4 +49,32 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# MacOS specific files
 .DS_Store
+
+# Simo compile files
+src/compile
+src/shaders/compileShader
+
+# Output files
+src/Application
+
+# IDE files
+.idea/*
+src/.idea/*
+.vscode/*
+src/.vscode/*
+
+# Other compile files
+src/compileMac
+src/shaders/compile
+src/*.sh
+src/shaders/*.sh
+
+# Shader output files
+src/shaders/*.spv
+
+# Test folder
+test/*
+test/**

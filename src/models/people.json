@@ -1,0 +1,549 @@
+{
+  "models": [
+    {"id": "p1", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p2", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p3", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p4", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p5", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p6", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p7", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p8", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p9", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p10", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p11", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p12", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p13", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p14", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p15", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p16", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p17", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p18", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p19", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p20", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p21", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p22", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p23", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p24", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p25", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p26", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p27", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p28", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p29", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p30", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p31", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p32", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p33", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p34", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p35", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p36", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p37", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p38", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p39", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p40", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p41", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p42", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p43", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p44", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"},
+    {"id": "p45", "model": "models/uploads-files-2104560-Humano_01Business_01_30K.obj", "format": "OBJ"}
+  ],
+  "textures": [
+    {"id": "t0", "texture": "textures/Humano_01Business_01_Diffuse01.jpg"}
+  ],
+  "instances": [
+    {
+      "id": "p1",
+      "model": "p1",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 0,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075,46,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p2",
+      "model": "p2",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, -10,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, 6,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p3",
+      "model": "p3",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, -36,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, 26,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p4",
+      "model": "p4",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, -79,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p5",
+      "model": "p5",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, -36,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -26,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p6",
+      "model": "p6",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 10,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p7",
+      "model": "p7",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 36,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, 26,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p8",
+      "model": "p8",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 36,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -29,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p9",
+      "model": "p9",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 62,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p10",
+      "model": "p10",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 70,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, 46,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p11",
+      "model": "p11",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 82,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, 3,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p12",
+      "model": "p12",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 108,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -5,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p13",
+      "model": "p13",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 100,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -4,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p14",
+      "model": "p14",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 123,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -14,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p15",
+      "model": "p15",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 108,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -26,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p16",
+      "model": "p16",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, -62,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -46,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p17",
+      "model": "p17",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, -30,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -48,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p18",
+      "model": "p18",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, -10,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p19",
+      "model": "p19",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, -36,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -98,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p20",
+      "model": "p20",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, -62,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -98,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p21",
+      "model": "p21",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 46,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -46,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p22",
+      "model": "p22",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 15,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p23",
+      "model": "p23",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 51,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -72,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p24",
+      "model": "p24",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 36,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -55,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p25",
+      "model": "p25",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 62,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -98,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p26",
+      "model": "p26",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 82,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -46,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p27",
+      "model": "p27",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 82,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -98,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p28",
+      "model": "p28",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 108,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -46,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p29",
+      "model": "p29",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 134,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -98,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p30",
+      "model": "p30",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 134,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -96,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p31",
+      "model": "p31",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, -36,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -134,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p32",
+      "model": "p32",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, -36,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -154,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p33",
+      "model": "p33",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, -52,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p34",
+      "model": "p34",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, -52,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -134,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p35",
+      "model": "p35",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, -49,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -134,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p36",
+      "model": "p36",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 26,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -115,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p37",
+      "model": "p37",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 36,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -118,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p38",
+      "model": "p38",
+      "texture": "t0",
+      "transform": [
+        0, 0, -0.0075, 7,
+        0, 0.0075, 0, 0,
+        0.0075, 0, 0, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p39",
+      "model": "p39",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 36,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -170,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p40",
+      "model": "p40",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 62,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p41",
+      "model": "p41",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 85,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -123,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p42",
+      "model": "p42",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 82,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -144,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p43",
+      "model": "p43",
+      "texture": "t0",
+      "transform": [
+        -0.0075, 0, 0, 108,
+        0, 0.0075, 0, 0,
+        0, 0, -0.0075, -118,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p44",
+      "model": "p44",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 102,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -125,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "id": "p45",
+      "model": "p45",
+      "texture": "t0",
+      "transform": [
+        0.0075, 0, 0, 151,
+        0, 0.0075, 0, 0,
+        0, 0, 0.0075, -144,
+        0, 0, 0, 1
+      ]
+    }
+  ]
+}
