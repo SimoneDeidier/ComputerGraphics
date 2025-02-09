@@ -399,7 +399,7 @@ class Application : public BaseProject {
             Ar = (float)w / (float)h;
         }
 
-        // initialization of Descriptor Set Layouts, Vertex Descriptors, Pipelines, Models and Textures
+        // Initialization of Descriptor Set Layouts, Vertex Descriptors, Pipelines, Models and Textures
         void localInit() {
 
             // Initialization of Descriptor Set Layouts
@@ -409,24 +409,24 @@ class Application : public BaseProject {
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Local GUBO
             });
             DSLcity.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},   // UBO
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},   // Texture
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}    // Local GUBO
             });
             DSLskyBox.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},   // UBO
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},   // Texture
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}    // Local GUBO
             });
             DSLcars.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},   // UBO
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},   // Texture
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}    // Local GUBO
             });
             DSLpeople.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},   // UBO
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},   // Texture
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}    // Local GUBO
             });
             DSLglobal.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Global GUBO
@@ -440,22 +440,22 @@ class Application : public BaseProject {
             });
 
             // Initialization of Vertex Descriptors
-            VDthreeDim.init(this, {
+            VDthreeDim.init(this, { // Vertex Descriptor for 3D objects
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
-                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),   // Position
                                     sizeof(glm::vec3), POSITION},
-                            {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                            {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),   // UV coordinates   
                                     sizeof(glm::vec2), UV},
-                            {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                            {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),    // Normal
                                     sizeof(glm::vec3), NORMAL}
                     });
-            VDtwoDim.init(this, {
+            VDtwoDim.init(this, {   // Vertex Descriptor for 2D objects
                 {0, sizeof(TwoDimVertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
-                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TwoDimVertex, pos),
+                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TwoDimVertex, pos),  // Position
                         sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(TwoDimVertex, UV),
+                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(TwoDimVertex, UV), // UV coordinates
                         sizeof(glm::vec2), UV}
             });
 
@@ -477,6 +477,7 @@ class Application : public BaseProject {
             std::cout << "[ LOADING ]: Loading models:\t\t[                    ]" << std::endl;
 
             // Initialization of Models
+            // Initialization of the taxi model
             Mtaxi[0].init(this, &VDthreeDim, "models/Car_Hatch_C_Door.obj", OBJ);
             Mtaxi[1].init(this, &VDthreeDim, "models/Car_Hatch_C_Extern.obj", OBJ);
             Mtaxi[2].init(this, &VDthreeDim, "models/Car_Hatch_C_Intern_no-steer.obj", OBJ);
@@ -485,7 +486,9 @@ class Application : public BaseProject {
             Mtaxi[5].init(this, &VDthreeDim, "models/Car_Hatch_C_Wheel.obj", OBJ);
             Mtaxi[6].init(this, &VDthreeDim, "models/Car_Hatch_C_Wheel.obj", OBJ);
 			Mtaxi[7].init(this, &VDthreeDim, "models/Car_Hatch_C_Wheel.obj", OBJ);
+            // Initialization of the skybox model (sphere)
             MskyBox.init(this, &VDthreeDim, "models/Sphere2.obj", OBJ);
+            // Initialization of the NPC cars models
             Mcars[0].init(this, &VDthreeDim, "models/transport_cool_001_transport_cool_001.001.mgcg", MGCG);
             Mcars[1].init(this, &VDthreeDim, "models/transport_cool_003_transport_cool_003.001.mgcg", MGCG);
             Mcars[2].init(this, &VDthreeDim, "models/transport_cool_004_transport_cool_004.001.mgcg", MGCG);
@@ -521,12 +524,12 @@ class Application : public BaseProject {
                 json j;
                 ifs>>j;
 
+                // For each model in the json file, we initialize the model
                 for(int k = 0; k < MESH; k++) {
-                    std::string modelPath= j["models"][k]["model"];
-                    std::string format = j["models"][k]["format"];
-
+                    std::string modelPath= j["models"][k]["model"]; // Get the path of the model
+                    std::string format = j["models"][k]["format"];  // Get the format of the model
+                    // Initialize the model
                     Mcity[k].init(this, &VDthreeDim, modelPath, (format[0] == 'O') ? OBJ : ((format[0] == 'G') ? GLTF : MGCG));
-
                 }
             }catch (const nlohmann::json::exception& e) {
                 std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
@@ -546,28 +549,29 @@ class Application : public BaseProject {
                 json j2;
                 ifs2>>j2;
 
+                // For each model in the json file, we initialize the model
                 for(int k = 0; k < PEOPLE; k++) {
-                    std::string modelPath= j2["models"][k]["model"];
-                    std::string format = j2["models"][k]["format"];
-
+                    std::string modelPath= j2["models"][k]["model"];    // Get the path of the model
+                    std::string format = j2["models"][k]["format"];    // Get the format of the model
+                    // Initialize the model
                     Mpeople[k].init(this, &VDthreeDim, modelPath, (format[0] == 'O') ? OBJ : ((format[0] == 'G') ? GLTF : MGCG));
-
                 }
             }catch (const nlohmann::json::exception& e) {
                 std::cout << "[ EXCEPTION ]: " << e.what() << std::endl;
                 exit(1);
             }
 
+            // Initialization of the arrow model
             Marrow.init(this, &VDthreeDim, "models/simple arrow.obj", OBJ);
 
             // Initialization of Textures
-            Tcity.init(this,"textures/city.png");
-            TskyBox.init(this, "textures/skybox.png");
-            Tpeople.init(this, "textures/person.jpg");
-            Ttaxi.init(this, "textures/taxi.png");
-            Ttitle.init(this, "textures/title.jpg");
-            Tcontrols.init(this, "textures/controls.jpg");
-            Tendgame.init(this, "textures/endgame.jpg");
+            Tcity.init(this,"textures/city.png");   // Texture of the city
+            TskyBox.init(this, "textures/skybox.png");  // Texture of the skybox
+            Tpeople.init(this, "textures/person.jpg");  // Texture of the people
+            Ttaxi.init(this, "textures/taxi.png");  // Texture of the taxi
+            Ttitle.init(this, "textures/title.jpg");    // Texture of the title screen
+            Tcontrols.init(this, "textures/controls.jpg");  // Texture of the controls screen
+            Tendgame.init(this, "textures/endgame.jpg");    // Texture of the endgame screen
 
             std::cout << "[ LOADING ]: Loading models:\t\t[====================]" << std::endl;
             std::cout << "[ LOADING ]: Loading completed!" << std::endl;
@@ -601,31 +605,31 @@ class Application : public BaseProject {
 
             for(int i = 0; i < MESH; i++) {
                 DScity[i].init(this, &DSLcity, {
-                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                        {1, TEXTURE, 0, &Tcity},
-                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}
+                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr}, // Uniform Buffer Object
+                        {1, TEXTURE, 0, &Tcity},    // Texture
+                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}    // Local GUBO
                 });
             }
 
             DSskyBox.init(this, &DSLskyBox, {
-                    {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                    {1, TEXTURE, 0, &TskyBox},
-                    {2, UNIFORM, sizeof(SkyGUBO), nullptr}
+                    {0, UNIFORM, sizeof(UniformBufferObject), nullptr}, // Uniform Buffer Object
+                    {1, TEXTURE, 0, &TskyBox},  // Texture
+                    {2, UNIFORM, sizeof(SkyGUBO), nullptr}  // Local GUBO
             });
 
             for(int i = 0; i < CARS; i++) {
                 DScars[i].init(this, &DSLcars, {
-                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                        {1, TEXTURE, 0, &Tcity},
-                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}
+                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr}, // Uniform Buffer Object
+                        {1, TEXTURE, 0, &Tcity},    // Texture
+                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}    // Local GUBO
                 });
             }
 
             for(int i = 0; i < PEOPLE; i++) {
                 DSpeople[i].init(this, &DSLpeople, {
-                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-                        {1, TEXTURE, 0, &Tpeople},
-                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}
+                        {0, UNIFORM, sizeof(UniformBufferObject), nullptr}, // Uniform Buffer Object
+                        {1, TEXTURE, 0, &Tpeople},  // Texture
+                        {2, UNIFORM, sizeof(LocalGUBO), nullptr}    // Local GUBO
                 });
             }
 
@@ -637,7 +641,7 @@ class Application : public BaseProject {
 
             DSarrow.init(this, &DSLarrow, {
                 {0, UNIFORM, sizeof(UniformBufferObject), nullptr}, // UBO
-                {1, UNIFORM, sizeof(ArrowGUBO), nullptr}    // Texture
+                {1, UNIFORM, sizeof(ArrowGUBO), nullptr}    // GUBO
             });
         }
 
@@ -984,8 +988,8 @@ class Application : public BaseProject {
                 }
             }
 
-            static float steeringAng = 0.0f;
-            float oldSteeringAng = steeringAng;
+            static float steeringAng = 0.0f;    // Steering angle of the taxi
+            float oldSteeringAng = steeringAng; // Old steering angle of the taxi (used to check if the user is steering)
             glm::mat4 mView;
 
             // If the scene is the title or control and the title muisc is not playing, start it
@@ -1165,7 +1169,7 @@ class Application : public BaseProject {
                     CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
                             (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
 
-
+                    // Compute the camera position based on the user input (WASD keys + RF keys)
                     glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
                     glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
                     camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * m.x * ux * deltaT;
