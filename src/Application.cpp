@@ -4,6 +4,8 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "headers/miniaudio.h"  // Miniaudio library (used to play sounds)
 
+// TODO posizione della telecamera quando si passa in prima persona
+
 #define MESH 210    // Number of models in the city json
 #define CARS 9  // Number of autonomus cars
 #define STREET_LIGHT_COUNT 36   // Number of streetlights in the city
