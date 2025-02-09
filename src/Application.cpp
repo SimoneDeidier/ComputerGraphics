@@ -4,8 +4,6 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "headers/miniaudio.h"  // Miniaudio library (used to play sounds)
 
-// TODO posizione della telecamera quando si passa in prima persona
-
 #define MESH 210    // Number of models in the city json
 #define CARS 9  // Number of autonomus cars
 #define STREET_LIGHT_COUNT 36   // Number of streetlights in the city
@@ -19,6 +17,7 @@
 #define GRAPHICS_SETTINGS_COUNT 3   // Number of graphics settings
 #define TAXI_COLL_PCOUNT 4  // Number of collision points of the taxi
 #define COLLISION_BOXES_COUNT 9 // Number of internal collision boxes of the city
+#define TAXI_ELEMENTS_W_OFFSETS_C 6 // Number of elements in the taxi model with offsets
 
 #define MIN_DISTANCE_TO_PICKUP 4.75f    // Minimum distance to pickup a person
 #define COLLISION_SPHERE_RADIUS 0.75f   // Radius of the collision sphere between taxi and cars
@@ -300,16 +299,20 @@ class Application : public BaseProject {
         // Some constant values used in the the majority of the shaders:
         glm::vec4 rearLightColor = glm::vec4(238.0f / 255.0f, 0.0f, 0.0f, 1.0f);    // Color of the rear light
         glm::vec4 frontLightColor = glm::vec4(238.0f / 255.0f, 221.0f / 255.0f, 130.0f / 255.0f, 1.0f);   // Color of the front light
-        // TODO comment
+        // Direction of the spot lights ==> angle of 2 degrees
+        // - On Y ==> -|cos(2°)|
+        // - On Z ==> -|sin(2°)|
         glm::vec4 frontLightDirection = glm::vec4(0.0f, -1.0f * glm::abs(glm::sin(glm::radians(2.0f))), -1.0f * glm::abs(glm::cos(glm::radians(2.0f))), 0.0f);  // Direction of the front light (SPOTLIGHTS)
+        // Cosines for the inner and outer angles of the spot light (inner constant, inner-outer decreasing)
+        // Inner angle: 10°, outer angle: 15°
         glm::vec4 frontLightCosines = glm::vec4(glm::abs(glm::cos(10.0f)), glm::abs(glm::cos(15.0f)), 0.0f, 0.0f);  // Cosines of the front light (SPOTLIGHTS)
-
         glm::vec4 sunCol = glm::vec4(253.0f / 255.0f, 251.0f / 255.0f, 211.0f / 255.0f, 1.0f);  // Color of the sun
         glm::vec4 streetLightCol = glm::vec4(255.0f / 255.0f, 230.0f / 255.0f, 146.0f / 255.0f, 1.0f);  // Color of the streetlights
-        // TODO comment
+        // Direction of the spot lights ==> towards the terrain (-1 on Y)
         glm::vec4 streetLightDirection = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);    // Direction of the streetlights (SPOTLIGHTS)
+        // Cosines for the inner and outer angles of the spot light (inner constant, inner-outer decreasing)
+        // Inner angle: 15°, outer angle: 22.5°
         glm::vec4 streetLightCosines = glm::vec4(glm::abs(glm::cos(15.0f)), glm::abs(glm::cos(22.5f)), 0.0f, 0.0f);   // Cosines of the streetlights (SPOTLIGHTS)
-
         glm::vec4 pickupPointColor = glm::vec4(247.0f / 255.0f, 76.0f / 255.0f, 63.0f / 255.0f, 1.0f);  // Color of the pickup point
         glm::vec4 pickupPoint = glm::vec4(0.0f);    // Position of the pickup point
         glm::vec4 dropoffPoint = glm::vec4(0.0f);   // Position of the dropoff point
@@ -377,11 +380,15 @@ class Application : public BaseProject {
             windowResizable = GLFW_TRUE;
             initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 
-            // Descriptor pool sizes
-            // TODO check on values
-            uniformBlocksInPool =  20 + (3 * MESH) + (3 * CARS) + (3 * PEOPLE);
-            texturesInPool = 13 + MESH + CARS + PEOPLE;
-            setsInPool = 13 + MESH + CARS + PEOPLE;
+            // Descriptor pool sizes:
+            // 2 uniforms (UBO and GUBO) for: taxi, city, NPCs, people, skybox and arrow, plus one Global GUBO
+            uniformBlocksInPool =  (2 * TAXI_ELEMENTS) + (2 * MESH) + (2 * CARS) + (2 * PEOPLE) + 2 + 2 + 1;
+            // One texture for each model (taxi, city, NPCs and people)
+            // Plus one for the skybox and three for the 2D plane
+            texturesInPool = TAXI_ELEMENTS + MESH + CARS + PEOPLE + 1 + 3;
+            // One set for each model (taxi, city, NPCs and people)
+            // Plus one for the skybox, one for the 2D plane, one for the arrow and one for the Global GUBO
+            setsInPool = TAXI_ELEMENTS + MESH + CARS + PEOPLE + 1 + 1 + 1 + 1;
 
             Ar = (float)windowWidth / (float)windowHeight;
 
@@ -429,7 +436,7 @@ class Application : public BaseProject {
             });
             DSLarrow.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}, // UBO
-                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // Texture
+                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS} // GUBO
             });
 
             // Initialization of Vertex Descriptors
@@ -817,13 +824,16 @@ class Application : public BaseProject {
             static bool debounce = false;
             static int curDebounce = 0;
 
-            static bool autoTime = true;
-            static float cTime = 0.0f;
-            const float turnTime = 72.0f;
-            const float angTurnTimeFact = 2.0f * M_PI / turnTime;
-            static float CamPitch = glm::radians(20.0f);
+            static bool autoTime = true;    // Boolean set to true to auto update the time
+            static float cTime = 0.0f;  // Current time
+            const float turnTime = 72.0f;   // Time to turn 360° (cyclic timer)
+            const float angTurnTimeFact = 2.0f * M_PI / turnTime;   // Factor to convert the time in angle
+            // Initial values for the camera (first person view)
+            static float CamPitch = glm::radians(0.0f);
             static float CamYaw = M_PI;
             static float CamRoll = 0.0f;
+            // Initial values for the camera (third person view)
+            static float camOffsetAngle = 0.0f;
 
             // Vector with all the directions of the cars
             glm::vec3 directions[CARS];
@@ -885,7 +895,17 @@ class Application : public BaseProject {
                      *  3: End game scene
                      */
                     // When we are in first person view, we want to go back to the third person view and so on...
-                    currScene = (currScene + 1) % INGAME_SCENE_COUNT; 
+                    currScene = (currScene + 1) % INGAME_SCENE_COUNT;
+                    // When changed to third person view, reset the camera to initial position
+                    if(currScene == 0) {
+                        camOffsetAngle = 0.0f;  // Reset the camera offset angle
+                    }
+                    // When changed to first person view, reset the camera to initial position
+                    if(currScene == 1) {
+                        CamPitch = glm::radians(0.0f);  // Set the pitch to 0
+                        CamYaw = M_PI;  // Set the yaw to PI
+                        CamRoll = 0.0f; // Set the roll to 0
+                    }
                     // Set it to true if we are not in the first, third person or photo view
                     drawTwoDimPlane = (currScene < 0) || (currScene == 3); 
                     // Set the value of the texture to show in the 2D plane
@@ -904,16 +924,23 @@ class Application : public BaseProject {
                 if (!debounce) {
                     debounce = true;
                     curDebounce = GLFW_KEY_P;
-					// Check if I'm already in photo mode
+					// If I'm already in photo mode
 					if (currScene == 2) {
-                        //If I am in photo mode I esc
+                        // Exit the photo mode and return to the last saved scene
                         currScene = lastSavedSceneValue;
 					}
                     else {
-                        //Save the scene I am leaving
+                        // Save the scene I am leaving
 						lastSavedSceneValue = currScene;
-                        //so I enter in photo mode
+                        // Enter in photo mode
 						currScene = 2;
+                        // Check if the sounds of the taxi are playing and stop them
+                        if(ma_sound_is_playing(&idleEngineSound)) {
+                            ma_sound_stop(&idleEngineSound);
+                        }
+                        if(ma_sound_is_playing(&accelerationEngineSound)) {
+                            ma_sound_stop(&accelerationEngineSound);
+                        }
                     }
                     RebuildPipeline();
                 }
@@ -929,20 +956,13 @@ class Application : public BaseProject {
             float deltaT;
             glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
             bool fire = false;
+            // Get user inputs
             getSixAxis(deltaT, m, r, fire);
-            // getSixAxis() is defined in Starter.hpp in the base class.
-            // It fills the float point variable passed in its first parameter with the time
-            // since the last call to the procedure.
-            // It fills vec3 in the second parameters, with three values in the -1,1 range corresponding
-            // to motion (with left stick of the gamepad, or ASWD + RF keys on the keyboard)
-            // It fills vec3 in the third parameters, with three values in the -1,1 range corresponding
-            // to motion (with right stick of the gamepad, or Arrow keys + QE keys on the keyboard, or mouse)
-            // If fills the last boolean variable with true if fire has been pressed:
-            // SPACE on the keyboard, A or B button on the Gamepad, Right mouse button
 
             if (autoTime) {
-                cTime += deltaT;
-                cTime = (cTime > turnTime) ? (cTime - turnTime) : cTime;
+                cTime += deltaT;    // Update the time
+                // If the time is greater than the turn time, subtract the turn time (make it cyclic)
+                cTime = (cTime > turnTime) ? (cTime - turnTime) : cTime;    
             }
 
             static float steeringAngCars[CARS];
@@ -989,10 +1009,9 @@ class Application : public BaseProject {
                     static float currentSpeed = 0.0f;
                     float targetSpeed = moveSpeed * -m.z;
                     // Adjust this value to control the damping effect
-                    const float dampingFactor = 3.0f;   // TODO comments on this part
+                    const float dampingFactor = 3.0f;
                     float speedDifference = targetSpeed - currentSpeed;
-                    // If the difference between the targetSpeed and the current speed is small-> current speed become
-                    // equal to the targetSpeed
+                    // If the difference between the targetSpeed and the current speed is small ==> current speed become equal to the targetSpeed
                     if (fabs(speedDifference) < 0.01f) {
                         currentSpeed = targetSpeed;
                     } else {
@@ -1075,7 +1094,6 @@ class Application : public BaseProject {
                         // Update camera position for lookAt view, keeping into account the current SteeringAng
                         float x, y;
                         float radius = 5.0f;
-                        static float camOffsetAngle = 0.0f;
                         const float camRotationSpeed = glm::radians(90.0f);
 
                         // Update camera offset angle based on mouse movement
@@ -1092,7 +1110,7 @@ class Application : public BaseProject {
                             glm::vec3(0, 1, 0));
                     }
                     // Else if we are in the first person view
-                    else { // TODO comments
+                    else {
                         // Define the camera rotation speed
                         const float ROT_SPEED = glm::radians(120.0f);
                         // Rotation y axis of the camera based on user input
@@ -1101,9 +1119,11 @@ class Application : public BaseProject {
                         CamPitch -= ROT_SPEED * deltaT * r.x;
                         // Rotation z axis of the camera based on user input
                         CamRoll -= ROT_SPEED * deltaT * r.z;
-                        // Limitations of the rotations
+                        // Limit the yaw (Y axis rotation) between (PI / 2) and (3 * PI / 2)
                         CamYaw = (CamYaw < M_PI_2 ? M_PI_2 : (CamYaw > 1.5 * M_PI ? 1.5 * M_PI : CamYaw));
+                        // Limit the pitch (X axis rotation) between (-PI / 4) and (PI / 4)
                         CamPitch = (CamPitch < -0.25 * M_PI ? -0.25 * M_PI : (CamPitch > 0.25 * M_PI ? 0.25 * M_PI : CamPitch));
+                        // Limit the roll (Z axis rotation) between (-PI) and (PI)
                         CamRoll = (CamRoll < -M_PI ? -M_PI : (CamRoll > M_PI ? M_PI : CamRoll));
 
                         // Define an offset for the camera position relative to the taxi
@@ -1124,7 +1144,7 @@ class Application : public BaseProject {
                     }
                 }
                 // Else if we are in photo mode
-                else if(currScene == 2) {   // TODO comments
+                else if(currScene == 2) {
 
                     // Check if we are entering photo mode for the first time
                     if(!alreadyInPhotoMode) {
@@ -1141,9 +1161,10 @@ class Application : public BaseProject {
                     CamAlpha = CamAlpha - ROT_SPEED2 * deltaT * r.y;
                     // Rotate the camera around the X-axis based on user input
                     CamBeta = CamBeta - ROT_SPEED2 * deltaT * r.x;
-                    //Limitation of the rotation around X-axis
+                    // Limitation of the rotation around X-axis
                     CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
                             (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
+
 
                     glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
                     glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
@@ -1154,13 +1175,13 @@ class Application : public BaseProject {
                     // Build the final view matrix by applying rotations and translation:
                     mView = glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
                             glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
-                            glm::translate(glm::mat4(1.0), -camPosInPhotoMode); //View matrix
+                            glm::translate(glm::mat4(1.0), -camPosInPhotoMode);
 
 
                 }
 
-                const float nearPlane = 0.1f;
-                const float farPlane = 375.0f;
+                const float nearPlane = 0.1f;   // Near plane
+                const float farPlane = 375.0f;  // Far plane
                 glm::mat4 Prj = glm::perspective(glm::radians(45.0f), Ar, nearPlane, farPlane);
                 // Projection matrix
                 Prj[1][1] *= -1;
@@ -1220,10 +1241,13 @@ class Application : public BaseProject {
 					glm::vec3(-0.742f, 0.695f, 1.6f) // Door (rotating one)
 				};
 
-                glm::vec3 rotatedOffSet[6], finalWorldPos[6];
-                for (int i = 0; i < 6; i++) {
-					rotatedOffSet[i] = glm::vec3(glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(offsets[i], 1.0));
-					finalWorldPos[i] = taxiPos + rotatedOffSet[i];
+                // Compute the final position of the other taxi's elements
+                glm::vec3 rotatedOffsets[TAXI_ELEMENTS_W_OFFSETS_C], finalWorldPos[TAXI_ELEMENTS_W_OFFSETS_C];
+                for (int i = 0; i < TAXI_ELEMENTS_W_OFFSETS_C; i++) {
+                    // Rotate the offsets based on the steering angle
+					rotatedOffsets[i] = glm::vec3(glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(offsets[i], 1.0));
+                    // Compute the final position of the elements
+					finalWorldPos[i] = taxiPos + rotatedOffsets[i];
                 }
 
                 // Setting the world matrix for the other taxi's elements
@@ -1728,32 +1752,32 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize idle engine sound!");
     }
     ma_sound_set_looping(&app.idleEngineSound, MA_TRUE);    // Set the idle engine sound to loop
-    ma_sound_set_volume(&app.idleEngineSound, soundVolume / 100.0f + 1.0f);   // Set the volume of the idle engine sound
+    ma_sound_set_volume(&app.idleEngineSound, 2.0f * soundVolume / 100.0f);   // Set the volume of the idle engine sound
     // Initialize accelearion engine sound
     result = ma_sound_init_from_file(&app.engine, "audios/acceleration.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.accelerationEngineSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize acceleration engine sound!");
     }
     ma_sound_set_looping(&app.accelerationEngineSound, MA_TRUE);    // Set the acceleration engine sound to loop
-    ma_sound_set_volume(&app.accelerationEngineSound, soundVolume / 100.0f + 0.5f);  // Set the volume of the acceleration engine sound
+    ma_sound_set_volume(&app.accelerationEngineSound, 1.5f * soundVolume / 100.0f);  // Set the volume of the acceleration engine sound
     // Initialize pickup sound
     result = ma_sound_init_from_file(&app.engine, "audios/pickup.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.pickupSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize pickup sound!");
     }
-    ma_sound_set_volume(&app.pickupSound, soundVolume / 100.0f + 1.0f);   // Set the volume of the pickup sound
+    ma_sound_set_volume(&app.pickupSound, 2.0f * soundVolume / 100.0f);   // Set the volume of the pickup sound
     // Initialize money sound
     result = ma_sound_init_from_file(&app.engine, "audios/money.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.moneySound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize money sound!");
     }
-    ma_sound_set_volume(&app.moneySound, soundVolume / 100.0f + 2.0f);  // Set the volume of the money sound
+    ma_sound_set_volume(&app.moneySound, 3.0f * soundVolume / 100.0f);  // Set the volume of the money sound
     // Intialize clacson sound
     result = ma_sound_init_from_file(&app.engine, "audios/clacson.wav", MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &app.clacsonSound);
     if(result != MA_SUCCESS) {
         throw std::runtime_error("[ ERROR ]: Failed to initialize clacson sound!");
     }
-    ma_sound_set_volume(&app.clacsonSound, soundVolume / 100.0f - 0.5f);    // Set the volume of the clacson sound
+    ma_sound_set_volume(&app.clacsonSound, 0.25f * soundVolume / 100.0f);    // Set the volume of the clacson sound
     std::cout << "[ LOADING ]: Loading sound resources:\t[====================]" << std::endl;
 
     srand(time(NULL));  // Initialize the random seed
