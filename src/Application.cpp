@@ -906,10 +906,13 @@ class Application : public BaseProject {
                     curDebounce = GLFW_KEY_P;
 					// Check if I'm already in photo mode
 					if (currScene == 2) {
+                        //If I am in photo mode I esc
                         currScene = lastSavedSceneValue;
 					}
                     else {
+                        //Save the scene I am leaving
 						lastSavedSceneValue = currScene;
+                        //so I enter in photo mode
 						currScene = 2;
                     }
                     RebuildPipeline();
@@ -921,11 +924,21 @@ class Application : public BaseProject {
                     curDebounce = 0;
                 }
             }
-            
+
+            // Integration with the timers and the controllers
             float deltaT;
             glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
             bool fire = false;
             getSixAxis(deltaT, m, r, fire);
+            // getSixAxis() is defined in Starter.hpp in the base class.
+            // It fills the float point variable passed in its first parameter with the time
+            // since the last call to the procedure.
+            // It fills vec3 in the second parameters, with three values in the -1,1 range corresponding
+            // to motion (with left stick of the gamepad, or ASWD + RF keys on the keyboard)
+            // It fills vec3 in the third parameters, with three values in the -1,1 range corresponding
+            // to motion (with right stick of the gamepad, or Arrow keys + QE keys on the keyboard, or mouse)
+            // If fills the last boolean variable with true if fire has been pressed:
+            // SPACE on the keyboard, A or B button on the Gamepad, Right mouse button
 
             if (autoTime) {
                 cTime += deltaT;
@@ -970,6 +983,7 @@ class Application : public BaseProject {
                     alreadyInPhotoMode = false;
                     // Third person view or first person
                     const float steeringSpeed = glm::radians(45.0f);
+                    // Max speed of the taxi
                     const float moveSpeed = 7.5f;
 
                     static float currentSpeed = 0.0f;
@@ -977,25 +991,35 @@ class Application : public BaseProject {
                     // Adjust this value to control the damping effect
                     const float dampingFactor = 3.0f;   // TODO comments on this part
                     float speedDifference = targetSpeed - currentSpeed;
+                    // If the difference between the targetSpeed and the current speed is small-> current speed become
+                    // equal to the targetSpeed
                     if (fabs(speedDifference) < 0.01f) {
                         currentSpeed = targetSpeed;
                     } else {
+                        // Otherwise speed gradually change
                         currentSpeed += speedDifference * dampingFactor * deltaT;
                     }
+                    // If I am not opening/closing the door I update the speed
                     if(!openDoor && !closeDoor) {
                         speed = currentSpeed * deltaT;
                     }
-                    wheelRoll -= currentSpeed;       
+                    wheelRoll -= currentSpeed;
+                    // If the speed is very small it is forced to 0
                     speed = (abs(speed) < 0.01f) ? 0.0f : speed;
+                    // Store the current steering angle before updating it
                     oldSteeringAng = steeringAng;
+                    // Adjust the steering angle based on player input
                     steeringAng += (speed >= 0 ? -m.x : m.x) * steeringSpeed * deltaT;
+                    // If the steering angle has not changed, gradually reset the wheel alignment
                     if (steeringAng == oldSteeringAng) {
                         wheelAndSteerAng = (wheelAndSteerAng < 0.0f ? wheelAndSteerAng + 0.25f : (wheelAndSteerAng > 0.0f ? wheelAndSteerAng - 0.25f : wheelAndSteerAng));
                     }
                     else if (steeringAng > oldSteeringAng) {
+                        // If the new steering angle is greater than the old one, limit the wheel rotation
                         wheelAndSteerAng = (wheelAndSteerAng > -1.5f ? wheelAndSteerAng - 0.25f : wheelAndSteerAng);
                     }
                     else {
+                        // If the new steering angle is smaller than the old one, limit the wheel rotation in the other direction
                         wheelAndSteerAng = (wheelAndSteerAng < 1.5f ? wheelAndSteerAng + 0.25f : wheelAndSteerAng);
                     }
                     if (speed == 0.0f) {
@@ -1069,19 +1093,28 @@ class Application : public BaseProject {
                     }
                     // Else if we are in the first person view
                     else { // TODO comments
+                        // Define the camera rotation speed
                         const float ROT_SPEED = glm::radians(120.0f);
+                        // Rotation y axis of the camera based on user input
                         CamYaw -= ROT_SPEED * deltaT * r.y;
+                        // Rotation x axis of the camera based on user input
                         CamPitch -= ROT_SPEED * deltaT * r.x;
+                        // Rotation z axis of the camera based on user input
                         CamRoll -= ROT_SPEED * deltaT * r.z;
+                        // Limitations of the rotations
                         CamYaw = (CamYaw < M_PI_2 ? M_PI_2 : (CamYaw > 1.5 * M_PI ? 1.5 * M_PI : CamYaw));
                         CamPitch = (CamPitch < -0.25 * M_PI ? -0.25 * M_PI : (CamPitch > 0.25 * M_PI ? 0.25 * M_PI : CamPitch));
                         CamRoll = (CamRoll < -M_PI ? -M_PI : (CamRoll > M_PI ? M_PI : CamRoll));
 
+                        // Define an offset for the camera position relative to the taxi
                         glm::vec3 camOffset(0.35f, 1.05f, 0.7f);
+                        // Compute camera offset based on the steering angle
                         glm::vec3 rotatedCamOffset = glm::vec3(
                             glm::rotate(glm::mat4(1.0), steeringAng, glm::vec3(0, 1, 0)) * glm::vec4(camOffset, 1.0)
                         );
+                        //Update the position of the camera
                         camPos = taxiPos + rotatedCamOffset;
+                        // Build the final view matrix by applying rotations and translation:
                         mView=
                             glm::rotate(glm::mat4(1.0f), -CamRoll, glm::vec3(0, 0, 1)) *
                             glm::rotate(glm::mat4(1.0f), -CamPitch, glm::vec3(1, 0, 0)) *
@@ -1093,15 +1126,22 @@ class Application : public BaseProject {
                 // Else if we are in photo mode
                 else if(currScene == 2) {   // TODO comments
 
+                    // Check if we are entering photo mode for the first time
                     if(!alreadyInPhotoMode) {
+                        // Save the current camera position before entering photo mode
                         camPosInPhotoMode = camPos;
                         alreadyInPhotoMode = true;
                     }
+                    // Define the camera rotation speed
                     const float ROT_SPEED2 = glm::radians(240.0f);
+                    // Define the camera speed
                     const float MOVE_SPEED2 = 7.5f;
 
+                    // Rotate the camera around the Y-axis based on user input
                     CamAlpha = CamAlpha - ROT_SPEED2 * deltaT * r.y;
+                    // Rotate the camera around the X-axis based on user input
                     CamBeta = CamBeta - ROT_SPEED2 * deltaT * r.x;
+                    //Limitation of the rotation around X-axis
                     CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
                             (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
 
@@ -1111,6 +1151,7 @@ class Application : public BaseProject {
                     camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * m.y * glm::vec3(0, 1, 0) * deltaT;
                     camPosInPhotoMode = camPosInPhotoMode + MOVE_SPEED2 * -m.z * uz * deltaT;
 
+                    // Build the final view matrix by applying rotations and translation:
                     mView = glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
                             glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
                             glm::translate(glm::mat4(1.0), -camPosInPhotoMode); //View matrix
