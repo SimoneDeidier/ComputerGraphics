@@ -61,32 +61,10 @@ vec3 calculateSkyColor(vec3 lightDir) {
     }
 }
 
-/* BRDF function, used to calculate the color of the fragment, parameters:
- * - v: viewer direction
- * - n: normal of the fragment
- * - l: light direction
- * - md: diffuse material
- * - ms: specular material
- * - gamma: gamma value
- */
-vec3 BRDF(vec3 v, vec3 n, vec3 l, vec3 md, vec3 ms, float gamma) {
-
-    vec3 diffuse = md * clamp(dot(n, l), 0.0, 1.0);   // Lambertian diffuse component
-    vec3 specular = ms * vec3(pow(clamp(dot(n, normalize(v + l)), 0.0, 1.0), gamma));    // Blinn-Phong specular component
-    return (diffuse + specular);    // Return the sum of the two components
-}
-
 void main() {
 
-    vec3 norm = normalize(fragNormal);  // Normal of the fragment
-    vec3 viewerDir = normalize(gubo.eyePos.xyz - fragPos);  // Viewer direction
     vec3 albedo = texture(textureSampler, fragUV).rgb;  // Albedo of the fragment
-    vec3 lightDir = normalize(gubo.directLightPos.xyz - fragPos);   // Light direction
-    vec3 lightColor = gubo.directLightColor.rgb;    // Color of the direct light
     vec3 ambient = 0.05 * albedo;   // Ambient light (5% of the albedo)
-
-    // Calculate the BRDF of the fragment with the direct light
-    vec3 brdf = BRDF(viewerDir, norm, lightDir, albedo, vec3(gubo.gammaAndMetallic.y), gubo.gammaAndMetallic.x);
 
     // Calculate the sky color based on the sun elevation
     vec3 skyColor = calculateSkyColor(gubo.directLightPos.xyz);
@@ -94,6 +72,6 @@ void main() {
     // Mix the albedo with the sky color
     vec3 finalColor = mix(albedo, skyColor, 0.75);
 
-    outColor = vec4(brdf * lightColor + finalColor + ambient, 1.0); // Output the resulting color
+    outColor = vec4( finalColor + ambient, 1.0); // Output the resulting color
 
 }

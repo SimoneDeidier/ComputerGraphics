@@ -467,7 +467,7 @@ class Application : public BaseProject {
             Pcars.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/BaseFrag.spv", {&DSLcars, &DSLglobal});
             PskyBox.init(this, &VDthreeDim, "shaders/BaseVert.spv", "shaders/SkyFrag.spv", {&DSLskyBox});
             // Deactivate culling for the sky pipeline (render the skybox from the inside)
-            PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+            PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_FRONT_BIT, false);
             PtwoDim.init(this, &VDtwoDim, "shaders/TwoDimVert.spv", "shaders/TwoDimFrag.spv", {&DSLtwoDim});
             // Settings for 2D rendering pipeline
             PtwoDim.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
