@@ -69,9 +69,6 @@ struct LocalGUBO {
 // GUBO used for the skybox shader
 struct SkyGUBO {
     alignas(16) glm::vec4 directLightPos; // Position of the sun
-    alignas(16) glm::vec4 directLightCol;   // Color of the sun
-    alignas(16) glm::vec4 eyePos;   // Position of the camera
-    alignas(16) glm::vec4 gammaAndMetallic; // Vector containing gamma and metallic values
 };
 
 // GUBO used for the arrow shader, it only counts for the pickup light during the BRDF calculation
@@ -835,7 +832,6 @@ class Application : public BaseProject {
             // Initial values for the camera (first person view)
             static float CamPitch = glm::radians(0.0f);
             static float CamYaw = M_PI;
-            static float CamRoll = 0.0f;
             // Initial values for the camera (third person view)
             static float camOffsetAngle = 0.0f;
 
@@ -908,7 +904,6 @@ class Application : public BaseProject {
                     if(currScene == 1) {
                         CamPitch = glm::radians(0.0f);  // Set the pitch to 0
                         CamYaw = M_PI;  // Set the yaw to PI
-                        CamRoll = 0.0f; // Set the roll to 0
                     }
                     // Set it to true if we are not in the first, third person or photo view
                     drawTwoDimPlane = (currScene < 0) || (currScene == 3); 
@@ -1121,14 +1116,11 @@ class Application : public BaseProject {
                         CamYaw -= ROT_SPEED * deltaT * r.y;
                         // Rotation x axis of the camera based on user input
                         CamPitch -= ROT_SPEED * deltaT * r.x;
-                        // Rotation z axis of the camera based on user input
-                        CamRoll -= ROT_SPEED * deltaT * r.z;
+                        // IMPORTANT: do not update the roll angle!! (fixed)
                         // Limit the yaw (Y axis rotation) between (PI / 2) and (3 * PI / 2)
                         CamYaw = (CamYaw < M_PI_2 ? M_PI_2 : (CamYaw > 1.5 * M_PI ? 1.5 * M_PI : CamYaw));
                         // Limit the pitch (X axis rotation) between (-PI / 4) and (PI / 4)
                         CamPitch = (CamPitch < -0.25 * M_PI ? -0.25 * M_PI : (CamPitch > 0.25 * M_PI ? 0.25 * M_PI : CamPitch));
-                        // Limit the roll (Z axis rotation) between (-PI) and (PI)
-                        CamRoll = (CamRoll < -M_PI ? -M_PI : (CamRoll > M_PI ? M_PI : CamRoll));
 
                         // Define an offset for the camera position relative to the taxi
                         glm::vec3 camOffset(0.35f, 1.05f, 0.7f);
@@ -1140,7 +1132,6 @@ class Application : public BaseProject {
                         camPos = taxiPos + rotatedCamOffset;
                         // Build the final view matrix by applying rotations and translation:
                         mView=
-                            glm::rotate(glm::mat4(1.0f), -CamRoll, glm::vec3(0, 0, 1)) *
                             glm::rotate(glm::mat4(1.0f), -CamPitch, glm::vec3(1, 0, 0)) *
                             glm::rotate(glm::mat4(1.0f), -CamYaw - steeringAng, glm::vec3(0, 1, 0)) *
                             glm::translate(glm::mat4(1.0f), -camPos);
@@ -1541,9 +1532,6 @@ class Application : public BaseProject {
                 uboSkyBox.nMat = glm::inverse(glm::transpose(uboSkyBox.mMat));  // Set the normal matrix
                 DSskyBox.map(currentImage, &uboSkyBox, sizeof(uboSkyBox), 0);   // Map the UBO to the descriptor set
                 guboSkyBox.directLightPos = glm::vec4(sunPos, 1.0f);    // Set the sun position
-                guboSkyBox.directLightCol = sunCol; // Set the sun color
-                guboSkyBox.eyePos = glm::vec4(camPos, 1.0f);    // Set the camera position
-                guboSkyBox.gammaAndMetallic = glm::vec4(128.0f, 0.1f, 0.0f, 0.0f);  // Set the gamma and metallic values
                 DSskyBox.map(currentImage, &guboSkyBox, sizeof(guboSkyBox), 2);  // Map the "Local" GUBO to the descriptor set
 
                 // Read the "people.json" file to configure and update the people's mesh instances
