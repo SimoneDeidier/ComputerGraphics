@@ -66,7 +66,7 @@ struct LocalGUBO {
      */
 };
 
-// GUBO used for the the skybox shader
+// GUBO used for the skybox shader
 struct SkyGUBO {
     alignas(16) glm::vec4 directLightPos; // Position of the sun
     alignas(16) glm::vec4 directLightCol;   // Color of the sun
