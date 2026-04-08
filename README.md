@@ -1,5 +1,14 @@
 # Taxi Driver - Vulkan Game Prototype
 
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](https://en.cppreference.com/w/cpp/17)
+[![Vulkan](https://img.shields.io/badge/API-Vulkan-A41E22?logo=vulkan&logoColor=white)](https://www.vulkan.org/)
+[![GLSL](https://img.shields.io/badge/Shaders-GLSL-5586A4?logo=opengl&logoColor=white)](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language)
+[![SPIR--V](https://img.shields.io/badge/Target-SPIR--V-5C2D91)](https://www.khronos.org/spir/)
+[![GLFW](https://img.shields.io/badge/Windowing-GLFW-1E1E1E)](https://www.glfw.org/)
+[![Course Project](https://img.shields.io/badge/Type-Course%20Project-2E8B57)](#credits)
+[![Politecnico di Milano](https://img.shields.io/badge/Politecnico%20di%20Milano-A.Y.%202023%2F24-003A70)](#credits)
+[![Repo](https://img.shields.io/badge/GitHub-SimoneDeidier%2FComputerGraphics-181717?logo=github)](https://github.com/SimoneDeidier/ComputerGraphics)
+
 **Real-time 3D game prototype** developed for the Computer Graphics course (Politecnico di Milano, A.Y. 2023/24).
 
 This project highlights practical work in **C++ engineering**, **Vulkan rendering pipeline design**, and **shader programming**.
