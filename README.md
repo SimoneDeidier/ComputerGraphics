@@ -2,7 +2,7 @@
 
 **Real-time 3D game prototype** developed for the Computer Graphics course (Politecnico di Milano, A.Y. 2023/24).
 
-This project is presented here as a **portfolio piece for game development roles**, with emphasis on **C++ engineering**, **Vulkan rendering pipeline design**, and **shader programming**.
+This project highlights practical work in **C++ engineering**, **Vulkan rendering pipeline design**, and **shader programming**.
 
 ## Team
 
@@ -10,11 +10,11 @@ This project is presented here as a **portfolio piece for game development roles
 - De Ciechi Samuele
 - Deidier Simone
 
-## Portfolio Summary
+## Project Overview
 
 Taxi Driver is a compact open-city driving experience built around one complete gameplay loop: **find passenger, pick up, deliver, score, repeat**.
 
-What makes it a **strong technical showcase**:
+Core implementation highlights:
 
 - **Real-time rendering architecture** with multiple Vulkan pipelines and descriptor set strategies.
 - **Custom GLSL shader suite** (vertex + fragment), compiled to SPIR-V.
@@ -22,7 +22,7 @@ What makes it a **strong technical showcase**:
 - **Multi-camera gameplay design** (third person, first person, photo mode).
 - **End-to-end C++ gameplay systems**: movement, collisions, scene switching, scoring, and audio events.
 
-## Why This Project Matters For Game Dev Roles
+## Engineering Value and Design Rationale
 
 This is not just a graphics demo. It demonstrates **practical engine-side thinking**:
 
